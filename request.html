@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Request an Inspection | VIGN USA: Verity Insight Group Network</title>
+    <meta name="description" content="VIGN USA (Verity Insight Group Network): nationwide mystery shopping, property and field inspections, and loan servicing / collateral inspections. You are the eyes and ears of corporate America.">
+    <link rel="icon" href="images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/vign.css">
+    <script src="js/vign.js" defer></script>
+</head>
+<body class="">
+<header class="site-header">
+    <div class="header-inner">
+        <a href="index.html" class="brand brand-stack" aria-label="VIGN USA home">
+            <img src="images/vign-logo.png" alt="VIGN USA logo" width="72" height="62">
+            <span class="brand-text">
+                <small>Verity Insight Group Network</small>
+            </span>
+        </a>
+
+        <button class="nav-toggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="site-nav">
+            <span></span><span></span><span></span>
+        </button>
+
+        <div class="nav-wrap" id="site-nav">
+            <nav class="site-nav" aria-label="Main">
+                <a href="index.html">Home</a>
+
+                <div class="nav-drop">
+                    <a href="index.html#services" class="nav-drop-btn" aria-haspopup="true">
+                        Services <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+                    </a>
+                    <div class="nav-drop-menu">
+                                                    <a href="service-mystery-shoppers.html"><i class="fa-solid fa-cart-shopping" aria-hidden="true"></i>Mystery Shoppers</a>
+                                                    <a href="service-loan-servicing.html"><i class="fa-solid fa-house" aria-hidden="true"></i>Loan Servicing</a>
+                                                    <a href="service-property-inspections.html"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i>Property &amp; Field Inspections</a>
+                                                    <a href="service-loan-collateral.html"><i class="fa-solid fa-car" aria-hidden="true"></i>Loan Servicing &amp; Collateral Inspections</a>
+                                                    <a href="service-mystery-shopping-cx.html"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>Mystery Shopping &amp; Customer Experience</a>
+                                            </div>
+                </div>
+
+                <a href="request.html" class="is-active" aria-current="page">Request Inspection</a>
+                <a href="index.html#faq">FAQ</a>
+                <a href="index.html#contact">Contact</a>
+            </nav>
+
+            <div class="nav-actions">
+                <a href="tel:+15169240087" class="nav-phone"><i class="fa-solid fa-phone" aria-hidden="true"></i>516 924-0087</a>
+                <a href="login.html" class="nav-signin"><i class="fa-regular fa-circle-user" aria-hidden="true"></i>Sign in</a>
+                <a href="join.html" class="btn btn-nav"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> For Inspectors</a>
+            </div>
+        </div>
+    </div>
+</header>
+<main>
+    <section class="page-hero page-hero-blue">
+        <div class="container">
+            <span class="eyebrow mono">For clients · Request an inspection</span>
+            <h1>Tell us what to check.</h1>
+            <p class="lead">Send the details below and our team will confirm the assignment, price and timeline. Have a long list? Call us and we'll set you up with a client account to import it.</p>
+        </div>
+    </section>
+
+    <section class="section section-tight">
+        <div class="container request-grid">
+            <form class="card form request-form" method="post" action="#" enctype="multipart/form-data" novalidate>
+                                                
+                <!-- 1. Contact -->
+                <h3 class="form-section"><span class="sec-num"></span> Your details</h3>
+                <label>Full name *<input type="text" name="full_name" value="" maxlength="100" autocomplete="name" required></label>
+                <div class="form-row two">
+                    <label>Company<input type="text" name="company" value="" maxlength="150" autocomplete="organization" placeholder="ABC Servicing"></label>
+                    <label>Your role<input type="text" name="role" value="" maxlength="80" placeholder="Asset manager, store owner…"></label>
+                </div>
+                <div class="form-row two">
+                    <label>Email *<input type="email" name="email" value="" maxlength="150" autocomplete="email" required></label>
+                    <label>Phone<input type="tel" name="phone" value="" maxlength="30" autocomplete="tel"></label>
+                </div>
+
+                <!-- 2. Service -->
+                <h3 class="form-section"><span class="sec-num"></span> Service needed</h3>
+                <div class="service-picks">
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="mystery" data-group="shop"  required>
+                            <span>Mystery Shoppers</span>
+                        </label>
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="loan" data-group="property"  required>
+                            <span>Loan Servicing</span>
+                        </label>
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="property" data-group="property"  required>
+                            <span>Property &amp; Field Inspections</span>
+                        </label>
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="collateral" data-group="property"  required>
+                            <span>Loan Servicing &amp; Collateral Inspections</span>
+                        </label>
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="cx" data-group="shop"  required>
+                            <span>Mystery Shopping &amp; Customer Experience</span>
+                        </label>
+                                            <label class="role-pick">
+                            <input type="radio" name="service" value="other" data-group="any"  required>
+                            <span>Other / Not sure</span>
+                        </label>
+                                    </div>
+
+                <!-- Timing & files -->
+                <h3 class="form-section"><span class="sec-num"></span> Timing &amp; files</h3>
+                <div class="form-row two">
+                    <label>Preferred date<input type="date" name="preferred_date" value=""></label>
+                    <label>Turnaround
+                        <select name="turnaround">
+                            <option >Standard</option><option >Rush (24–48 hours)</option><option >Flexible</option>                        </select>
+                    </label>
+                </div>
+                <label><span>Upload files <span class="muted">(photos, prior reports, contracts, lists of locations)</span></span>
+                    <span class="file-drop">
+                        <input type="file" name="files[]" multiple accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx">
+                        <span class="file-hint">PDF, JPG, PNG, CSV or Excel · max 20 MB per file</span>
+                    </span>
+                </label>
+                <label>Notes / location<textarea name="notes" rows="5" maxlength="3000" placeholder="Address or location to be inspected, deadlines and any special instructions…"></textarea></label>
+
+                <button type="submit" class="btn btn-primary btn-lg btn-block">Send request <span class="arr">→</span></button>
+                <p class="form-note">Demo form. Nothing is saved, uploaded or sent yet.</p>
+            </form>
+
+            <aside class="request-aside">
+                <div class="card mini sticky">
+                    <h3>What happens next</h3>
+                    <ol class="mini-steps">
+                        <li>We review your request</li>
+                        <li>We confirm price and timeline</li>
+                        <li>A local inspector or shopper is assigned</li>
+                        <li>You get the graded report online</li>
+                    </ol>
+                    <hr>
+                    <p class="muted small">Prefer to talk?</p>
+                    <p><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:+15169240087" class="big-phone">516 924-0087</a></p>
+                    <p class="small"><a href="mailto:Processateagle@aol.com">Processateagle@aol.com</a></p>
+                </div>
+            </aside>
+        </div>
+    </section>
+</main>
+<footer class="site-footer">
+    <div class="stripes" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="container footer-grid">
+        <div>
+            <a href="index.html" class="brand brand-light">
+                <img src="images/vign-logo.png" alt="VIGN USA logo" width="66" height="57">
+                <span class="brand-text"><small>Verity Insight Group Network</small></span>
+            </a>
+            <p class="footer-slogan">"You Are The Eyes and Ears of Corporate America"</p>
+        </div>
+        <div>
+            <h4>Services</h4>
+            <ul>
+                                    <li><a href="service-mystery-shoppers.html">Mystery Shoppers</a></li>
+                                    <li><a href="service-loan-servicing.html">Loan Servicing</a></li>
+                                    <li><a href="service-property-inspections.html">Property &amp; Field Inspections</a></li>
+                                    <li><a href="service-loan-collateral.html">Loan Servicing &amp; Collateral Inspections</a></li>
+                                    <li><a href="service-mystery-shopping-cx.html">Mystery Shopping &amp; Customer Experience</a></li>
+                            </ul>
+        </div>
+        <div>
+            <h4>Network</h4>
+            <ul>
+                <li><a href="join.html">Join as Inspector / Shopper</a></li>
+                <li><a href="login.html">Client Login</a></li>
+                <li><a href="login.html">Inspector Login</a></li>
+                <li><a href="index.html#faq">FAQ</a></li>
+            </ul>
+        </div>
+        <div>
+            <h4>Contact</h4>
+            <ul>
+                <li><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:+15169240087">516 924-0087</a></li>
+                <li><i class="fa-solid fa-envelope" aria-hidden="true"></i> <a href="mailto:Processateagle@aol.com">Processateagle@aol.com</a></li>
+                <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Nationwide coverage</li>
+            </ul>
+        </div>
+    </div>
+    <div class="container footer-bottom">
+        <span>© 2026 VIGN USA, Verity Insight Group Network. All rights reserved.</span>
+        <span>Field observation only. Reports document observed conditions.</span>
+    </div>
+</footer>
+<script>
+// Static preview: forms are not connected yet. Show a note instead of submitting.
+document.querySelectorAll('form').forEach(function (f) {
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var n = f.querySelector('.preview-note');
+    if (!n) {
+      n = document.createElement('p');
+      n.className = 'preview-note';
+      n.setAttribute('role', 'status');
+      n.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fff7e0;border:1px solid #f0d58a;color:#5a4500;font-size:14px';
+      f.appendChild(n);
+    }
+    n.textContent = 'Preview only: this form is not connected yet. On the live site it will be sent to VIGN.';
+  });
+});
+</script>
+<script>
+// Static preview: pre-select the service from ?service=... (the PHP version does this on the server)
+(function(){var s=new URLSearchParams(location.search).get("service");if(!s)return;var r=document.querySelector("input[name=service][value=\""+CSS.escape(s)+"\"]");if(r){r.checked=true;r.dispatchEvent(new Event("change",{bubbles:true}));}})();
+</script>
+</body>
+</html>

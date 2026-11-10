@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Login | VIGN USA: Verity Insight Group Network</title>
+    <meta name="description" content="VIGN USA (Verity Insight Group Network): nationwide mystery shopping, property and field inspections, and loan servicing / collateral inspections. You are the eyes and ears of corporate America.">
+    <link rel="icon" href="images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="css/vign.css">
+    <script src="js/vign.js" defer></script>
+</head>
+<body class="auth-page">
+<div class="auth-wrap">
+    <aside class="auth-side">
+        <a href="index.html" class="brand brand-light">
+            <img src="images/vign-logo.png" alt="VIGN USA logo" width="84" height="73">
+            <span class="brand-text"><small>Verity Insight Group Network</small></span>
+        </a>
+        <div class="auth-side-copy">
+            <h2>The eyes and ears of corporate America, in one portal.</h2>
+            <ul class="check-list light">
+                <li><b>Clients</b>: submit assignments and view graded results</li>
+                <li><b>Inspectors &amp; shoppers</b>: complete forms on site from your phone</li>
+                <li><b>Staff</b>: assign, review and deliver reports</li>
+            </ul>
+        </div>
+        <p class="auth-side-foot">© 2026 VIGN USA</p>
+    </aside>
+
+    <main class="auth-main">
+        <div class="auth-box">
+            <a href="index.html" class="brand auth-mobile-brand">
+                <img src="images/vign-logo.png" alt="VIGN USA logo" width="54" height="47">
+                <span class="brand-text"><small>Verity Insight Group Network</small></span>
+            </a>
+
+            <h1>Sign in</h1>
+            <p class="muted">Welcome back. Sign in to your VIGN account.</p>
+
+            
+            <form method="post" action="#" class="form" autocomplete="on">
+                                <label>Email address
+                    <input type="email" name="email" value="" maxlength="150" autocomplete="username" required autofocus>
+                </label>
+                <label>
+                    <!-- <span class="label-row">Password <a href="#" class="small-link">Forgot password?</a></span> -->
+                    <span class="password-field">
+                        <input type="password" name="password" id="password" maxlength="200" autocomplete="current-password" required>
+                        <button type="button" class="pw-toggle" data-target="password" aria-label="Show password">Show</button>
+                    </span>
+                </label>
+                <label class="checkbox"><input type="checkbox" name="remember"> Remember me</label>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+
+            <p class="muted small center">
+                Inspector or shopper? <a href="join.html">Join the network free</a><br>
+                Client accounts are created by VIGN staff.
+            </p>
+            <p class="center"><a href="index.html" class="small-link">← Back to website</a></p>
+        </div>
+    </main>
+</div>
+<script>
+// Static preview: forms are not connected yet. Show a note instead of submitting.
+document.querySelectorAll('form').forEach(function (f) {
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var n = f.querySelector('.preview-note');
+    if (!n) {
+      n = document.createElement('p');
+      n.className = 'preview-note';
+      n.setAttribute('role', 'status');
+      n.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fff7e0;border:1px solid #f0d58a;color:#5a4500;font-size:14px';
+      f.appendChild(n);
+    }
+    n.textContent = 'Preview only: this form is not connected yet. On the live site it will be sent to VIGN.';
+  });
+});
+</script>
+</body>
+</html>

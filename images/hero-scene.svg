@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 700" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cfe0f7"/><stop offset="1" stop-color="#eef4fc"/>
+    </linearGradient>
+    <linearGradient id="lawn" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#7fb069"/><stop offset="1" stop-color="#4f8a3f"/>
+    </linearGradient>
+  </defs>
+  <rect width="600" height="700" fill="url(#sky)"/>
+  <circle cx="90" cy="300" r="120" fill="#6f9e5a"/><circle cx="20" cy="360" r="110" fill="#5f8f4c"/>
+  <circle cx="560" cy="330" r="110" fill="#6f9e5a"/>
+  <!-- house -->
+  <polygon points="140,300 330,150 520,300" fill="#3c4a63"/>
+  <rect x="160" y="295" width="350" height="290" fill="#f4f1ea"/>
+  <g stroke="#e2ddd2" stroke-width="2">
+    <line x1="160" y1="330" x2="510" y2="330"/><line x1="160" y1="365" x2="510" y2="365"/><line x1="160" y1="400" x2="510" y2="400"/>
+    <line x1="160" y1="435" x2="510" y2="435"/><line x1="160" y1="470" x2="510" y2="470"/><line x1="160" y1="505" x2="510" y2="505"/><line x1="160" y1="540" x2="510" y2="540"/>
+  </g>
+  <rect x="190" y="340" width="70" height="90" fill="#9db8d9" stroke="#2b3a52" stroke-width="6"/>
+  <rect x="410" y="340" width="70" height="90" fill="#9db8d9" stroke="#2b3a52" stroke-width="6"/>
+  <line x1="225" y1="340" x2="225" y2="430" stroke="#2b3a52" stroke-width="4"/><line x1="445" y1="340" x2="445" y2="430" stroke="#2b3a52" stroke-width="4"/>
+  <rect x="295" y="400" width="80" height="185" fill="#12306b"/>
+  <circle cx="362" cy="495" r="5" fill="#f5c518"/>
+  <rect x="280" y="585" width="110" height="18" fill="#b9b2a4"/><rect x="270" y="603" width="130" height="18" fill="#a59d8e"/>
+  <!-- roof window -->
+  <circle cx="330" cy="240" r="26" fill="#9db8d9" stroke="#2b3a52" stroke-width="6"/>
+  <!-- lawn & path -->
+  <rect y="585" width="600" height="115" fill="url(#lawn)"/>
+  <polygon points="300,621 370,621 430,700 240,700" fill="#d8d2c5"/>
+  <circle cx="175" cy="590" r="34" fill="#5f8f4c"/><circle cx="500" cy="592" r="38" fill="#5f8f4c"/>
+</svg>
