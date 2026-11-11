@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Menu | VIGN USA Admin</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="adm">
+<!-- SMK admin/index.php: "Admin Menu" tile grid. Each tile opens its own table section below. -->
+<main class="amain" id="app"></main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    VA.shell('menu');
+    VA.menu(document.getElementById('app'));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin Sign In | VIGN USA</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="adm">
+<!-- SMK admin/login.php: admin sign in -->
+<div class="alogin">
+    <div class="alogin-box">
+        <a href="../index.html" class="brand" style="margin-bottom:18px">
+            <img src="../images/vign-logo.png" alt="VIGN USA logo" width="58" height="50">
+            <span class="brand-text"><small>Verity Insight Group Network</small></span>
+        </a>
+        <h1 style="font-size:1.6rem;margin-bottom:4px">Admin Sign In</h1>
+        <p class="muted">For VIGN administrators only.</p>
+        <form class="form" id="f" style="margin-top:16px" autocomplete="off">
+            <label>Email <input type="text" name="u" maxlength="150"></label>
+            <label>Password <input type="password" name="p" maxlength="200"></label>
+            <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+        </form>
+        <p class="alert" style="margin-top:16px">Preview: no password needed. Click <b>Sign In</b> to open the sample Admin Menu.</p>
+        <p class="center small" style="margin-top:12px"><a href="../index.html">← Back to website</a></p>
+    </div>
+</div>
+<script>
+document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); location.href = 'index.html'; });
+</script>
+</body>
+</html>
