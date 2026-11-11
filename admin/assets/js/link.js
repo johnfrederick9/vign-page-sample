@@ -97,6 +97,7 @@ V.menu = function (app) {
     function show(key, scroll) {
         V.$$('[data-tile]').forEach(function (b) { var on = b.dataset.tile === key; b.classList.toggle('on', on); b.setAttribute('aria-selected', on); });
         V.$$('.sect').forEach(function (x) { x.classList.toggle('on', x.id === 'sec-' + key); });
+        var sk = V.sec(key); if (sk && sk._draw) sk._draw();
         if (scroll) V.$('#sec-' + key).scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 };
@@ -189,9 +190,51 @@ function visible(r) {
     return 'Admin + ' + V.esc(r.who);
 }
 
+/* ---------- LoyalServe way: click the name / number to edit; click a balance to see the invoices ---------- */
+// column that is the link in each tile (no separate Edit column, like SMK)
+var LINK = { requests: 'id', jobs: 'id', signups: 'name', finished: 'id', invoices: 'id', statements: 'id', documents: 'name', clients: 'name' };
+// tiles with no edit form: the link runs their main job instead
+var LINKACT = { jobs: 'assign', finished: 'review' };
+function owed(client) { var inv = V.sec('invoices'); prep(inv); return live(inv).filter(function (r) { return r.client === client && r.billed != null && r.bal > 0; }).reduce(function (t, r) { return t + r.bal; }, 0); }
+function balBox(client, amt) { return '<a href="#" class="balbox ' + (amt > 0 ? 'due' : 'ok') + '" data-bal="' + V.esc(client) + '" title="See ' + V.esc(client) + '\'s invoices">' + V.money(amt) + '</a>'; }
+// SMK showinvoices.php: the client's invoices; click the invoice # to edit it; Charge Balance / Record payment per row
+V.clientInvoices = function (client) {
+    var inv = V.sec('invoices'); prep(inv);
+    var cl = V.sec('clients').rows.filter(function (c) { return c.name === client; })[0] || {};
+    var list = live(inv).filter(function (r) { return r.client === client; }).sort(function (a, b) { return (b.billed == null ? 1e9 : b.billed) - (a.billed == null ? 1e9 : a.billed); });
+    var canCharge = cl.agree === 'Yes' && !!cl.card;
+    var total = owed(client);
+    var body = '<dl class="dl1"><dt>Plan</dt><dd>' + V.esc(cl.plan || '—') + '</dd><dt>Agreement</dt><dd>' + V.pill(cl.agree || 'No') + '</dd><dt>Card on file</dt><dd>' + V.esc(cl.card || 'None') + '</dd><dt>Owes now</dt><dd><b class="' + (total > 0 ? 'late' : '') + '">' + V.money(total) + '</b></dd></dl>' +
+        '<div class="tbl-wrap" style="margin-top:12px"><table class="tbl"><thead><tr><th>Invoice #</th><th>Billed</th><th>For</th><th>Due</th><th class="r">Amount</th><th class="r">Balance</th><th>Status</th><th>Action</th></tr></thead><tbody>' +
+        (list.length ? list.map(function (r) {
+            var a = r.billed == null ? '<span class="muted small">Automatic</span>' : r.bal > 0 ? (canCharge ? btn('charge', 'fa-credit-card', 'Charge balance', 'pri') : '') + btn('pay', 'fa-money-check-dollar', 'Record payment') : '';
+            var ix = inv.rows.indexOf(r); return '<tr data-inv="' + ix + '"><td><a href="#" class="lnk" data-invedit="' + ix + '">' + V.esc(r.id) + '</a></td><td>' + (r.billed == null ? 'Bills ' + V.day(r.next) : V.day(r.billed)) + '</td><td>' + V.esc(r.period) + '</td><td>' + V.day(r.due) + '</td><td class="r">' + V.money(r.amount) + '</td><td class="r"><b>' + V.money(r.bal) + '</b></td><td>' + V.pill(r.status) + '</td><td class="acts">' + a + '</td></tr>';
+        }).join('') : '<tr><td colspan="8" class="empty">No invoices</td></tr>') + '</tbody></table></div>' +
+        (canCharge ? '' : '<p class="note1"><i class="fa-solid fa-lock"></i> No card charge here: ' + (cl.agree !== 'Yes' ? 'the agreement is not signed yet.' : 'no card on file.') + ' Record a check or ACH payment instead.</p>');
+    var m = V.modal('Invoices for ' + V.esc(client), body);
+    m.classList.add('wide');
+    var again = function () { var a = V.sec('invoices')._draw, c = V.sec('clients')._draw; if (a) a(); if (c) c(); V.clientInvoices(client); };
+    V.$('tbody', m).addEventListener('click', function (e) {
+        var ed = e.target.closest('[data-invedit]');
+        if (ed) { e.preventDefault(); m.classList.remove('open'); V.sec('invoices')._edit(inv.rows[+ed.dataset.invedit]); return; }
+        var b = e.target.closest('[data-act]'); if (!b) return;
+        var r = inv.rows[+b.closest('tr').dataset.inv];
+        if (b.dataset.act === 'charge') { var amt = r.bal; r.paid = (r.paid || 0) + amt; V.toast(cl.card + ' charged ' + V.money(amt) + ' for ' + r.id + ' (preview only, no real charge).'); again(); return; }
+        V.RUN.pay(r, inv, again);
+    });
+};
+
 /* ---------- table cells ---------- */
 function cell(s, c, r) {
     var v = r[c[0]], t = c[2];
+    if (LINK[s.key] === c[0]) {
+        var inner = c[0] === 'name' && (r.email || r.contact) ? '<b>' + V.esc(v) + '</b><small>' + V.esc(r.contact ? r.contact + ' · ' + r.email : r.email) + '</small>'
+            : s.key === 'documents' ? '<b><i class="fa-regular ' + (r.type === '1099' ? 'fa-file-lines' : 'fa-file-pdf') + '" style="color:var(--r);margin-right:6px"></i>' + V.esc(v) + '</b><small>' + V.esc(r.size || '') + '</small>'
+            : '<b>' + V.esc(v) + '</b>';
+        return '<a href="#" class="lnk" data-open="' + r._i + '" title="' + (LINKACT[s.key] ? 'Open' : 'Edit') + '">' + inner + '</a>';
+    }
+    if (s.key === 'clients' && c[0] === 'bal') return balBox(r.name, owed(r.name));
+    if (s.key === 'invoices' && c[0] === 'bal' && r.billed != null) return balBox(r.client, r.bal);
     if (c[0] === 'margin') return V.money((r.price || 0) - (r.pay || 0));
     if (s.key === 'invoices' && c[0] === 'billed' && v == null) return '<span class="muted">Bills ' + V.day(r.next) + '</span><small>automatic</small>';
     if (s.key === 'jobs' && c[0] === 'inspector') return v ? V.esc(v) : '<b class="late">Unassigned</b>';
@@ -239,7 +282,7 @@ function build(s, el) {
         '<div class="tools-right"><div class="srch"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Search..." data-q></div>Show <select class="sel" data-show><option>10</option><option>25</option><option>100</option></select></div></div>' +
         '<div class="tbl-wrap"><table class="tbl"><thead><tr><th style="width:36px"><input type="checkbox" data-all aria-label="Select all"></th>' +
         s.cols.map(function (c) { return '<th data-sort="' + c[0] + '"' + (c[2] === 'r' || c[2] === 'money' ? ' class="r"' : '') + '>' + c[1] + '</th>'; }).join('') +
-        (acts ? '<th>Action</th>' : '') + (s.fields.length ? '<th>Edit</th>' : '') + '</tr></thead><tbody></tbody><tfoot></tfoot></table></div>' +
+        (acts ? '<th>Action</th>' : '') + '</tr></thead><tbody></tbody><tfoot></tfoot></table></div>' +
         '<div class="tbl-foot"><span data-info></span><div class="pager" data-pager></div></div>';
 
     var tb = V.$('tbody', el);
@@ -254,7 +297,9 @@ function build(s, el) {
     var bk = V.$('[data-bulk]', el); if (bk) bk.addEventListener('change', function () { if (bk.value) apply(bk.value); bk.value = ''; });
     tb.addEventListener('click', function (e) {
         var b = e.target.closest('[data-act]'); if (b) { var r = s.rows[+b.closest('tr').dataset.i]; V.RUN[b.dataset.act](r, s, draw); return; }
-        var ed = e.target.closest('[data-edit]'); if (ed) edit(s.rows[+ed.dataset.edit]);
+        var bal = e.target.closest('[data-bal]'); if (bal) { e.preventDefault(); V.clientInvoices(bal.dataset.bal); return; }
+        var op = e.target.closest('[data-open]');
+        if (op) { e.preventDefault(); var row = s.rows[+op.dataset.open]; if (LINKACT[s.key]) V.RUN[LINKACT[s.key]](row, s, draw); else edit(row); }
     });
 
     function picked() { return V.$$('tbody input[type=checkbox]:checked', el).map(function (c) { return s.rows[+c.dataset.i]; }); }
@@ -294,13 +339,12 @@ function build(s, el) {
         var all = rows(), pages = Math.max(1, Math.ceil(all.length / st.show));
         st.page = Math.min(st.page, pages - 1);
         var part = all.slice(st.page * st.show, st.page * st.show + st.show);
-        var ncol = s.cols.length + 1 + (acts ? 1 : 0) + (s.fields.length ? 1 : 0);
+        var ncol = s.cols.length + 1 + (acts ? 1 : 0);
         tb.innerHTML = part.length ? part.map(function (r) {
             var late = (s.key === 'invoices' && r.status === 'Past due') || (s.key === 'jobs' && !r.inspector);
             return '<tr data-i="' + r._i + '" class="' + (r._del ? 'deleted' : '') + (late ? ' hl' : '') + '"><td><input type="checkbox" data-i="' + r._i + '" aria-label="Select row"></td>' +
                 s.cols.map(function (c) { return '<td' + (c[2] === 'r' || c[2] === 'money' ? ' class="r"' : '') + '>' + cell(s, c, r) + '</td>'; }).join('') +
-                (acts ? '<td class="acts">' + acts(r) + '</td>' : '') +
-                (s.fields.length ? '<td><button class="edit-btn" data-edit="' + r._i + '"><i class="fa-solid fa-pen"></i> Edit</button></td>' : '') + '</tr>';
+                (acts ? '<td class="acts">' + acts(r) + '</td>' : '') + '</tr>';
         }).join('') : '<tr><td colspan="' + ncol + '" class="empty">No records found</td></tr>';
         if (s.key === 'invoices') {
             var tot = function (f) { return all.reduce(function (t, r) { return t + (r[f] || 0); }, 0); };
@@ -329,7 +373,7 @@ function build(s, el) {
         var m = V.$('#editModal');
         if (!m) { m = document.createElement('div'); m.id = 'editModal'; m.className = 'modal'; m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); document.body.appendChild(m); }
         var isNew = !row, r = row || {};
-        m.innerHTML = '<div class="modal-box"><div class="modal-h"><h3>' + (isNew ? V.esc(s.add) : 'Edit: ' + V.esc(r.name || r.title || r.subject || r.client || r.inspector || r.id)) + '</h3><button class="modal-x" data-x aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>' +
+        m.innerHTML = '<div class="modal-box"><div class="modal-h"><h3>' + (isNew ? V.esc(s.add) : s.key === 'invoices' ? 'Edit invoice ' + V.esc(r.id) + ' · ' + V.esc(r.client) : 'Edit: ' + V.esc(r.name || r.title || r.subject || r.client || r.inspector || r.id)) + '</h3><button class="modal-x" data-x aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>' +
             '<form data-f><div class="modal-b">' + s.fields.map(function (f) {
                 var v = r[f[0]] == null ? '' : r[f[0]], wide = f[2] === 'textarea' || f[2] === 'file' || f[1].length > 22 ? ' class="wide"' : '';
                 if (f[2] === 'select') return '<label' + wide + '>' + f[1] + '<select name="' + f[0] + '">' + f[3].map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + V.esc(o) + '</option>'; }).join('') + '</select></label>';
@@ -362,6 +406,7 @@ function build(s, el) {
             draw();
         });
     }
+    s._edit = edit;
     draw();
     return draw;
 }

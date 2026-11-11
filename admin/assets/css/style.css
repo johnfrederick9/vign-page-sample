@@ -221,3 +221,13 @@ body.adm { background: var(--bg-soft); font-size: 15px; }
     .dl1 { grid-template-columns: 110px 1fr; }
     .phs { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* LoyalServe way: the name / number is the edit link; the balance box opens the client's invoices */
+.tbl a.lnk { color: var(--blue, #1d4ed8); text-decoration: none; cursor: pointer; }
+.tbl a.lnk:hover b, .tbl a.lnk:focus b { text-decoration: underline; }
+.tbl a.lnk small { color: var(--muted, #64748b); }
+.balbox { display: inline-block; min-width: 84px; text-align: right; padding: 4px 9px; border-radius: 8px; font-weight: 700; text-decoration: none; cursor: pointer; }
+.balbox.due { background: #fde2e2; color: #b91c1c; }
+.balbox.ok { background: #dcfce7; color: #15803d; }
+.balbox:hover { box-shadow: 0 0 0 2px currentColor inset; }
+.modal.wide .modal-box { max-width: 960px; width: calc(100% - 32px); }
