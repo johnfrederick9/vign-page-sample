@@ -157,7 +157,7 @@ V.RUN = {
     },
     review: function (r, s, done) {
         var cls = r.score >= 85 ? 'p-green' : r.score >= 65 ? 'p-amber' : 'p-red';
-        var body = '<div class="rv1"><div class="rv1-score"><span class="pill ' + cls + '">' + r.score + '</span><small>score</small></div><dl class="dl1"><dt>Client</dt><dd>' + V.esc(r.client) + '</dd><dt>Inspector</dt><dd>' + V.esc(r.inspector) + '</dd><dt>Form</dt><dd>' + V.esc(r.form) + '</dd><dt>Sent in</dt><dd>' + V.day(r.sent) + '</dd><dt>Client can see</dt><dd>' + V.pill(r.seen) + '</dd></dl></div>' +
+        var body = '<div class="rv1"><div class="rv1-score"><span class="pill ' + cls + '">' + r.score + '</span><small>score<br>(sample formula)</small></div><dl class="dl1"><dt>Client</dt><dd>' + V.esc(r.client) + '</dd><dt>Inspector</dt><dd>' + V.esc(r.inspector) + '</dd><dt>Form</dt><dd>' + V.esc(r.form) + '</dd><dt>Sent in</dt><dd>' + V.day(r.sent) + '</dd><dt>Client can see</dt><dd>' + V.pill(r.seen) + '</dd></dl></div>' +
             '<h4 class="h4">Problems found by the checks</h4>' + (r.flags.length ? '<ul class="flags1">' + r.flags.map(function (f) { return '<li><i class="fa-solid fa-triangle-exclamation"></i>' + V.esc(f) + '</li>'; }).join('') + '</ul>' : '<p class="ok1"><i class="fa-solid fa-circle-check"></i> Every check passed</p>') +
             '<h4 class="h4">Photos (' + r.photos + ')</h4><div class="phs">' + Array.apply(null, Array(Math.min(r.photos, 8))).map(function (x, i) { return '<span><i class="fa-regular fa-image"></i><small>IMG_' + (3101 + i) + '</small></span>'; }).join('') + '</div>' +
             (r.status === 'Waiting review' ? '<label class="fld1">If you send it back, tell the inspector why<textarea id="why">' + V.esc(r.flags.join('. ')) + '</textarea></label>' : '');
