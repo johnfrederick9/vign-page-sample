@@ -57,4 +57,38 @@ document.addEventListener('DOMContentLoaded', function () {
         reqForm.querySelectorAll("input[name=service]").forEach(function (r) { r.addEventListener("change", applyGroup); });
         applyGroup();
     }
+
+    // BUSINESSES and INDUSTRIES SERVICED: plain <details> box, no script needed. Escape closes it.
+    document.querySelectorAll('.biz-drop').forEach(function (drop) {
+        drop.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape' && drop.open) { drop.open = false; drop.querySelector('summary').focus(); }
+        });
+    });
+
+    // In the field: previous / next buttons for the sliding photo cards
+    document.querySelectorAll('.shop-section').forEach(function (sec) {
+        var track = sec.querySelector('.shop-track');
+        var prev = sec.querySelector('.shop-prev');
+        var next = sec.querySelector('.shop-next');
+        if (!track || !prev || !next) return;
+        var step = function () {
+            var card = track.querySelector('.shop-card');
+            return card ? card.getBoundingClientRect().width + parseFloat(getComputedStyle(track).columnGap || 0) : track.clientWidth;
+        };
+        var update = function () {
+            prev.disabled = track.scrollLeft <= 2;
+            next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 2;
+        };
+        var go = function (dir) {
+            track.scrollBy({ left: dir * step(), behavior: 'smooth' });
+            setTimeout(update, 400);   // also refresh after the slide, in case scroll events are late
+            setTimeout(update, 800);
+        };
+        prev.addEventListener('click', function () { go(-1); });
+        next.addEventListener('click', function () { go(1); });
+        track.addEventListener('scroll', update, { passive: true });
+        track.addEventListener('scrollend', update);
+        window.addEventListener('resize', update);
+        update();
+    });
 });
