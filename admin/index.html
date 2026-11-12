@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="../css/vign.css">
     <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-db.js"></script>
     <script src="assets/js/data.js" defer></script>
     <script src="assets/js/link.js" defer></script>
 </head>
@@ -16,6 +17,14 @@
 <main class="amain" id="app"></main>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
+    if (!VA.gate()) return;
+    if (window.VIGNDB) {
+        VIGNDB.attach(VA.sections);
+        // save after every change (click, typing, form) and when leaving the page
+        var later = function () { setTimeout(VIGNDB.saveAdmin, 80); };
+        ['click', 'change', 'submit'].forEach(function (ev) { document.addEventListener(ev, later, true); });
+        window.addEventListener('pagehide', VIGNDB.saveAdmin);
+    }
     VA.shell('menu');
     VA.menu(document.getElementById('app'));
 });

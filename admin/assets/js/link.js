@@ -21,10 +21,60 @@ V.toast = function (msg) {
     var t = V.$('#toast'); if (!t) { t = document.createElement('div'); t.id = 'toast'; t.className = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
     t.textContent = msg; t.classList.add('on'); clearTimeout(t._h); t._h = setTimeout(function () { t.classList.remove('on'); }, 3000);
 };
-var PILL = { Yes: 'p-green', No: 'p-grey', Active: 'p-green', Published: 'p-green', Paid: 'p-green', Approved: 'p-green', Closed: 'p-grey', Resent: 'p-green', Signed: 'p-green', 'Made into job': 'p-green',
-    New: 'p-blue', Open: 'p-blue', Sent: 'p-blue', Assigned: 'p-blue', Pending: 'p-amber', Waiting: 'p-amber', Draft: 'p-amber', 'Waiting for VIGN': 'p-amber', 'In field': 'p-amber', 'Waiting review': 'p-amber', 'Sent back': 'p-amber',
+var PILL = { Yes: 'p-green', No: 'p-grey', Active: 'p-green', Published: 'p-green', Paid: 'p-green', Approved: 'p-green', Closed: 'p-grey', Resent: 'p-green', Signed: 'p-green', 'Made into job': 'p-green', Accepted: 'p-green',
+    New: 'p-blue', Open: 'p-blue', Sent: 'p-blue', Assigned: 'p-blue', Pending: 'p-amber', Waiting: 'p-amber', Draft: 'p-amber', 'Waiting for VIGN': 'p-amber', 'In field': 'p-amber', 'Waiting review': 'p-amber', 'Sent back': 'p-amber', Offered: 'p-amber',
     Overdue: 'p-red', 'Past due': 'p-red', Declined: 'p-red', Failed: 'p-red', Unassigned: 'p-red', Inactive: 'p-grey', 'Bills next': 'p-grey' };
 V.pill = function (v) { return '<span class="pill ' + (PILL[v] || 'p-grey') + '">' + V.esc(v) + '</span>'; };
+
+/* ---------- R-15 job history: who did what, and when ---------- */
+V.who = function () { return V.me.name + ' (admin)'; };
+V.log = function (r, what, who) {
+    var n = new Date();
+    (r.hist = r.hist || []).push({ d: 0, tm: n.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }), what: what, who: who || V.who() });
+};
+V.histHtml = function (r) {
+    var h = (r.hist || []).slice().reverse();
+    if (!h.length) return '<p class="muted">No history saved for this job yet.</p>';
+    return '<ol class="hist1">' + h.map(function (e) {
+        var sys = /^System/.test(e.who);
+        return '<li><span class="hist1-dot' + (sys ? ' sys' : '') + '"></span><div><b>' + V.esc(e.what) + '</b><small><i class="fa-solid ' + (sys ? 'fa-gear' : 'fa-user') + '"></i> ' + V.esc(e.who) + ' · ' + V.day(e.d) + (e.tm ? ' ' + V.esc(e.tm) : '') + '</small></div></li>';
+    }).join('') + '</ol>';
+};
+V.histPopup = function (r, sub) {
+    V.modal('Job history · ' + V.esc(r.id), '<p class="muted small" style="margin:0 0 10px">' + V.esc(sub || '') + ' Newest first. Every step keeps who did it and when (it cannot be edited).</p>' + V.histHtml(r));
+};
+
+/* ---------- R-13 each client has its own rate: pilot first, then contract; can depend on store count ---------- */
+V.tierRate = function (c) {
+    var n = +c.stores || 0, hit = null;
+    String(c.tiers || '').split(',').forEach(function (t) {
+        var m = t.trim().match(/^(\d+)\s*(?:-\s*(\d+)|\+)\s*:\s*\$?(\d+(?:\.\d+)?)$/); if (!m) return;
+        var lo = +m[1], hi = m[2] ? +m[2] : 1e9;
+        if (n >= lo && n <= hi) hit = { amt: +m[3], label: m[1] + (m[2] ? '–' + m[2] : '+') + ' stores' };
+    });
+    return hit;
+};
+V.rateNow = function (c) {
+    var per = /flat/.test(c.plan || '') ? (/Yearly/.test(c.plan) ? ' / year' : ' / month') : ' / job';
+    var tier = V.tierRate(c), contract = tier ? tier.amt : +c.rate || 0;
+    var cWhy = tier ? 'Contract · ' + tier.label + ' (' + c.stores + ' stores)' : 'Contract rate';
+    if (c.pilot === 'Yes' && c.pilotEnds != null && c.pilotEnds >= 0) return { amt: +c.pilotRate || 0, per: per, pilot: true, why: 'Pilot until ' + V.day(c.pilotEnds) + ', then ' + V.money(contract) + per };
+    return { amt: contract, per: per, pilot: false, why: cWhy + (c.pilot === 'Yes' ? ' · pilot ended ' + V.day(c.pilotEnds) : '') };
+};
+function ratesPopup(c) {
+    var r = V.rateNow(c), tier = V.tierRate(c);
+    var tiers = String(c.tiers || '').split(',').map(function (t) { return t.trim(); }).filter(Boolean);
+    V.modal('Rates · ' + V.esc(c.name),
+        '<div class="rv1"><div class="rv1-score"><span class="pill ' + (r.pilot ? 'p-amber' : 'p-green') + '">' + V.money(r.amt) + '</span><small>' + V.esc(r.per.replace(' / ', 'per ')) + '<br>charged now</small></div>' +
+        '<dl class="dl1"><dt>Billing plan</dt><dd>' + V.esc(c.plan) + '</dd><dt>Why this rate</dt><dd>' + V.esc(r.why) + '</dd>' +
+        (c.pilot === 'Yes' ? '<dt>Pilot Program</dt><dd>' + V.money(c.pilotRate) + r.per + ' until ' + V.day(c.pilotEnds) + '</dd>' : '') +
+        '<dt>Contract rate</dt><dd>' + (tier ? V.money(tier.amt) + r.per + ' (by store count)' : V.money(c.rate) + r.per) + '</dd><dt>Stores</dt><dd>' + (+c.stores || '—') + '</dd></dl></div>' +
+        (tiers.length ? '<h4 class="h4">Rate by number of stores</h4><table class="tbl"><thead><tr><th>Stores</th><th class="r">Rate per job</th></tr></thead><tbody>' + tiers.map(function (t) {
+            var p = t.split(':'), on = tier && tier.amt === +String(p[1]).replace('$', '');
+            return '<tr' + (on ? ' class="hl2"' : '') + '><td>' + V.esc(p[0]) + (on ? ' <span class="pill p-green">this client</span>' : '') + '</td><td class="r">' + V.money(+String(p[1]).replace('$', '')) + '</td></tr>';
+        }).join('') + '</tbody></table>' : '') +
+        '<p class="note1"><i class="fa-solid fa-tags"></i> No fixed price list: the admin sets each client\'s rate. When the pilot ends, new jobs use the contract rate by themselves. Click the client name to change it. (Sample prices.)</p>');
+}
 
 // ---------- pop-up ----------
 V.modal = function (title, body, okLabel, onOk, extra) {
@@ -49,7 +99,7 @@ function prep(s) {
 }
 var NEED = {
     requests: function (r) { return r.status === 'New'; },
-    jobs: function (r) { return !r.inspector; },
+    jobs: function (r) { return !r.inspector && r.status !== 'Offered'; },
     signups: function (r) { return r.status === 'New'; },
     finished: function (r) { return r.status === 'Waiting review'; },
     invoices: function (r) { return r.status === 'Open' || r.status === 'Past due'; },
@@ -60,6 +110,21 @@ function shown() { return V.sections.filter(function (s) { return !s.hidden; });
 function live(s) { return s.rows.filter(function (r) { return !r._del; }); }
 function count(s) { prep(s); return NEED[s.key] ? live(s).filter(NEED[s.key]).length : live(s).length; }
 
+// ---------- admin only ----------
+// Preview: the Admin Menu opens only after the ADMIN sign-in in this tab. Signing in to the Staff Office,
+// Inspector or Client portal replaces it, so those accounts can't open admin pages.
+// Real system: the server checks the admin role on every admin page and request (a browser check is not security).
+V.gate = function () {
+    var role = ''; try { role = sessionStorage.getItem('vign-role') || ''; } catch (e) {}
+    if (role === 'admin') return true;
+    var who = { staff: 'a Staff Office account', inspector: 'an inspector account', client: 'a client account' }[role];
+    document.body.innerHTML = '<div class="alogin"><div class="alogin-box" style="text-align:center"><i class="fa-solid fa-lock" style="font-size:2.4rem;color:#c8102e"></i>' +
+        '<h1 style="font-size:1.5rem;margin:12px 0 6px">Admin only</h1><p class="muted">' + (who ? 'You are signed in with ' + who + '. The Admin Menu is for VIGN administrators only.' : 'Please sign in as a VIGN administrator to open the Admin Menu.') + '</p>' +
+        '<a class="btn btn-primary btn-block" style="margin-top:16px" href="login.html' + (location.hash ? '?to=' + encodeURIComponent(location.hash.slice(1)) : '') + '">Admin sign in</a>' +
+        '<p class="center small" style="margin-top:12px"><a href="../index.html">← Back to website</a></p></div></div>';
+    document.title = 'Admin only | VIGN USA';
+    return false;
+};
 // ---------- top navbar ----------
 V.shell = function (page) {
     var links = [['menu', 'index.html', 'fa-table-cells-large', 'Admin Menu']];
@@ -69,13 +134,14 @@ V.shell = function (page) {
         '<nav class="anav-links" aria-label="Admin menu">' + links.map(function (l) {
             return '<a href="' + l[1] + '"' + (l[0] === page ? ' class="on"' : '') + ' data-nav="' + l[0] + '"><i class="fa-solid ' + l[2] + '"></i>' + l[3] + (l[4] ? '<span class="cnt">' + l[4] + '</span>' : '') + '</a>';
         }).join('') + '</nav>' +
-        '<div class="anav-right"><a class="anav-user" href="login.html" title="Sign out"><span><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></span><span class="av">' + V.me.name.split(' ').map(function (p) { return p[0]; }).join('') + '</span></a></div></div></header>');
+        '<div class="anav-right"><a class="anav-user" href="login.html?out=1" title="Sign out"><span><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></span><span class="av">' + V.me.name.split(' ').map(function (p) { return p[0]; }).join('') + '</span></a></div></div></header>');
     V.$('#burger').addEventListener('click', function () { V.$('#anav').classList.toggle('open'); });
 };
 
 // ---------- Admin Menu ----------
 V.menu = function (app) {
-    var html = '<div class="band"><div><h1><i class="fa-solid fa-table-cells-large"></i>Admin Menu</h1><p>Click a tile to open its list. Everything here is sample data.</p></div></div>';
+    try { var ans = JSON.parse(localStorage.getItem('vign-offer-answers') || '{}'); Object.keys(ans).forEach(function (id) { var j = V.sec('jobs').rows.filter(function (x) { return x.id === id; })[0]; if (j) V.answerOffer(j, 'Maria Lopez', ans[id] === 'accepted'); }); } catch (e) {}
+    var html = '<div class="band"><div><h1><i class="fa-solid fa-table-cells-large"></i>Admin Menu</h1><p>Click a tile to open its list. Sample data. New requests and join requests from the website are saved in this browser: <a href="../database.html" style="color:inherit;text-decoration:underline">preview database</a>.</p></div></div>';
     html += '<div class="need" id="need"></div>';
     html += '<div class="tiles" role="tablist">' + shown().map(function (s) {
         return '<button class="tile" role="tab" data-tile="' + s.key + '" aria-controls="sec-' + s.key + '">' + '<span class="ic ' + s.color + '"><i class="fa-solid ' + s.icon + '"></i></span>' +
@@ -108,7 +174,7 @@ V.refresh = function () {
     var inv = V.sec('invoices'); prep(inv);
     var openAmt = live(inv).filter(NEED.invoices).reduce(function (t, r) { return t + r.bal; }, 0);
     var lateAmt = live(inv).filter(function (r) { return r.status === 'Past due'; }).reduce(function (t, r) { return t + r.bal; }, 0);
-    var items = [['requests', 'fa-inbox', count(V.sec('requests')), 'new requests'], ['jobs', 'fa-user-check', count(V.sec('jobs')), 'jobs need an inspector'],
+    var items = [['requests', 'fa-inbox', count(V.sec('requests')), 'new requests'], ['jobs', 'fa-user-check', count(V.sec('jobs')), 'jobs need an inspector (' + live(V.sec('jobs')).filter(function (r) { return r.status === 'Offered'; }).length + ' offered)'],
         ['signups', 'fa-user-plus', count(V.sec('signups')), 'inspectors to approve'], ['finished', 'fa-list-check', count(V.sec('finished')), 'reports to check'],
         ['invoices', 'fa-file-invoice-dollar', V.money(openAmt), 'open invoices · <b class="late">' + V.money(lateAmt) + ' past due</b>']];
     var el = V.$('#need'); if (!el) return;
@@ -129,43 +195,124 @@ function assignPopup(jobs, done) {
         '<label class="fld1">Note to the inspector (optional)<textarea></textarea></label>',
         '<i class="fa-solid fa-user-check"></i> Assign', function (m) {
             var r = V.$('input[name=ins]:checked', m); if (!r) { V.toast('Pick an inspector first.'); return false; }
-            jobs.forEach(function (j) { j.inspector = r.value; if (j.status === 'Unassigned' || j.status === 'Sent back') j.status = 'Assigned'; });
+            jobs.forEach(function (j) { j.inspector = r.value; if (j.status !== 'In field') j.status = 'Assigned'; if (j.offers) j.offers.forEach(function (o) { if (o.ans === 'Waiting') o.ans = 'Taken'; }); V.log(j, 'Assigned to ' + r.value); });
             V.toast(jobs.length + ' job(s) assigned to ' + r.value + '. They see it in their portal now (preview only).'); done();
         });
 }
+/* ---------- coverage: ZIP codes, counties, or an entire state (Don 2026-11-11) ---------- */
+function covList(i) { return String(i.zips || '').split(',').map(function (x) { return x.trim().toLowerCase(); }).filter(Boolean); }
+V.covers = function (i, job) {
+    var l = covList(i), t = i.covType || 'ZIP codes';
+    if (t === 'Entire state') return l.indexOf(String(job.st || 'NY').toLowerCase()) > -1;
+    if (t === 'Counties') return l.indexOf(String(job.county || '').toLowerCase()) > -1;
+    return l.indexOf(String(job.zip || '')) > -1;
+};
+V.covTxt = function (i) { var t = i.covType || 'ZIP codes'; return t === 'Entire state' ? 'All of ' + V.esc(i.zips) : t === 'Counties' ? V.esc(i.zips) + (covList(i).length > 1 ? ' counties' : ' County') : 'ZIPs ' + V.esc(i.zips); };
+// "available" is not decided by Don yet: for now = active + right role + covers the job
+function inArea(job) { return inspectorsFor(job.service).filter(function (i) { return V.covers(i, job); }); }
+// repeat: next dates the system creates by itself
+V.repeatNext = function (r) { if (!r.repeat || r.repeat === 'None') return []; var step = r.repeat === 'Twice a month' ? 15 : 30, d = r.due == null ? (r.wanted || 0) : r.due; return [d + step, d + 2 * step, d + 3 * step]; };
+function repeatBadge(r) { return r.repeat && r.repeat !== 'None' ? '<span class="rep" title="' + V.esc(r.repeat) + ': next ' + V.repeatNext(r).map(V.day).join(', ') + '"><i class="fa-solid fa-repeat"></i> ' + (r.repeat === 'Twice a month' ? '2× month' : 'Monthly') + '</span>' : ''; }
+// Offer to area: every matching inspector gets it; first to accept wins ("When you snooze, you lose")
+function offerPopup(jobs, done) {
+    var groups = jobs.map(function (j) { return { j: j, list: inArea(j).filter(function (i) { return !(j.offers || []).some(function (o) { return o.name === i.name && o.ans === 'Declined'; }); }) }; });
+    V.modal('Offer to area · ' + jobs.length + ' job' + (jobs.length > 1 ? 's' : ''),
+        groups.map(function (g) {
+            return '<div class="offer1"><p style="margin:0 0 6px"><b>' + V.esc(g.j.id) + '</b> · ' + V.esc(g.j.addr) + ' <small class="muted">(ZIP ' + V.esc(g.j.zip) + ' · ' + V.esc(g.j.county) + ' County)</small></p>' +
+                (g.list.length ? '<ul class="offl">' + g.list.map(function (i) { return '<li><i class="fa-solid fa-user"></i><b>' + V.esc(i.name) + '</b> · ' + V.esc(i.role) + '<small>' + V.covTxt(i) + '</small></li>'; }).join('') + '</ul>'
+                    : '<p class="note1" style="margin:0"><i class="fa-solid fa-triangle-exclamation"></i> No active inspector covers this place. Assign someone by hand, or add coverage in Inspectors List.</p>') + '</div>';
+        }).join('') +
+        '<p class="note1"><i class="fa-solid fa-bolt"></i> Each one sees it under <b>New offers</b> in their portal with Accept / Decline. <b>The first to accept gets the job</b>; the others see "Taken". If everyone declines, it comes back here as "Declined by …".</p>',
+        '<i class="fa-solid fa-paper-plane"></i> Send offer', function () {
+            var sent = 0;
+            groups.forEach(function (g) { if (!g.list.length) return; g.j.offers = (g.j.offers || []).filter(function (o) { return o.ans === 'Declined'; }).concat(g.list.map(function (i) { return { name: i.name, ans: 'Waiting' }; })); g.j.status = 'Offered'; g.j.offeredOn = 0; g.j.inspector = ''; V.log(g.j, 'Offered to ' + g.list.length + ' inspector' + (g.list.length > 1 ? 's' : '') + ' in the area'); sent++; });
+            V.toast(sent ? sent + ' job(s) offered. First to accept gets it (preview only).' : 'Nothing sent: no inspector covers these places.'); done();
+        });
+}
+// the offer's answers; the preview buttons stand in for inspectors answering on their phone
+function offerView(j, done) {
+    var o = j.offers || [];
+    var m = V.modal('Offer · ' + V.esc(j.id), '<p style="margin:0 0 8px">' + V.esc(j.addr) + ' · sent ' + V.day(j.offeredOn || 0) + '</p>' +
+        '<table class="tbl"><thead><tr><th>Inspector</th><th>Answer</th><th>Preview: answer for them</th></tr></thead><tbody>' + o.map(function (x, k) {
+            return '<tr><td><b>' + V.esc(x.name) + '</b></td><td>' + V.pill(x.ans) + '</td><td>' + (x.ans === 'Waiting' ? '<button class="edit-btn grn" data-oa="' + k + '"><i class="fa-solid fa-check"></i> Accepts</button><button class="edit-btn" data-od="' + k + '"><i class="fa-solid fa-xmark"></i> Declines</button>' : '') + '</td></tr>';
+        }).join('') + '</tbody></table><p class="muted small">Inspectors answer in their own portal. Maria Lopez can try it in the <a href="../inspector/command.html">inspector portal</a>.</p>',
+        '', null, '<button type="button" class="btn btn-ghost btn-xs" data-reassign><i class="fa-solid fa-user-check"></i> Assign someone instead</button>');
+    m.addEventListener('click', function (e) {
+        var a = e.target.closest('[data-oa]'), d = e.target.closest('[data-od]');
+        if (a) { V.answerOffer(j, o[+a.dataset.oa].name, true); m.classList.remove('open'); done(); }
+        else if (d) { V.answerOffer(j, o[+d.dataset.od].name, false); m.classList.remove('open'); done(); if (j.status === 'Offered') offerView(j, done); }
+        else if (e.target.closest('[data-reassign]')) { m.classList.remove('open'); assignPopup([j], done); }
+    });
+}
+V.answerOffer = function (j, name, yes) {
+    if (j.status !== 'Offered') return;
+    var me = (j.offers || []).filter(function (o) { return o.name === name; })[0]; if (!me) return;
+    if (yes) {
+        me.ans = 'Accepted'; j.offers.forEach(function (o) { if (o !== me && o.ans === 'Waiting') o.ans = 'Taken'; });
+        j.inspector = name; j.status = 'Assigned'; V.log(j, 'Accepted the offer first', name + ' (inspector)'); V.toast(name + ' accepted ' + j.id + ' first. The others now see "Taken".');
+    } else {
+        me.ans = 'Declined'; V.log(j, 'Declined the offer', name + ' (inspector)');
+        if (!j.offers.some(function (o) { return o.ans === 'Waiting'; })) { j.status = 'Declined'; j.declinedBy = j.offers.filter(function (o) { return o.ans === 'Declined'; }).map(function (o) { return o.name; }).join(', '); V.toast('Everyone declined ' + j.id + '. It is back in Assign Jobs.'); }
+        else V.toast(name + ' declined ' + j.id + '.');
+    }
+};
+// Accept Job (was "Make job"): due date max 10 days, repeat
+function acceptPopup(r, done) {
+    var want = Math.max(1, Math.min(10, r.wanted || 10));
+    V.modal('Accept Job · ' + V.esc(r.id), '<p style="margin:0 0 8px"><b>' + V.esc(r.company) + '</b> · ' + V.esc(r.service) + '<br>' + V.esc(r.addr) + '</p>' +
+        '<label class="fld1">Due date (at most 10 days from today)<input type="date" id="due" min="' + V.date(1).toISOString().slice(0, 10) + '" max="' + V.date(10).toISOString().slice(0, 10) + '" value="' + V.date(want).toISOString().slice(0, 10) + '"></label>' +
+        (r.wanted > 10 ? '<p class="note1"><i class="fa-solid fa-circle-info"></i> The client asked for ' + V.day(r.wanted) + '. The longest allowed is 10 days, so it was set to ' + V.day(10) + '.</p>' : '') +
+        '<label class="fld1">Repeat<select id="rep">' + ['None', 'Once a month', 'Twice a month'].map(function (o) { return '<option' + (o === (r.repeat || 'None') ? ' selected' : '') + '>' + o + '</option>'; }).join('') + '</select></label>' +
+        '<p class="note1"><i class="fa-solid fa-envelope"></i> At day 5 the inspector gets an automatic reminder email (inspector only). You can watch it in Assign Jobs.</p>',
+        '<i class="fa-solid fa-check"></i> Accept Job', function (m) {
+            var v = V.$('#due', m).value, d = Math.round((new Date(v + 'T12:00:00') - V.date(0)) / 864e5);
+            if (!v || d < 1 || d > 10) { V.toast('Pick a due date from 1 to 10 days from today.'); return false; }
+            var id = 'VG-' + (24132 + V.sec('jobs').rows.length), z = (r.addr.match(/\b(\d{5})\b/) || [])[1] || '';
+            var from = r.src || 'Website form';
+            var nj = { id: id, client: r.company, service: r.service, addr: r.addr, zip: z, county: /Huntington|Hauppauge|Islip|Bohemia/.test(r.addr) ? 'Suffolk' : 'Nassau', st: 'NY', acc: 0, due: d, inspector: '', status: 'Unassigned', repeat: V.$('#rep', m).value,
+                by: r.contact || r.company, byHow: from, hist: [{ d: r.date || 0, tm: '', what: 'Request ' + r.id + ' sent in (' + from + ')', who: (r.contact || 'Unknown') + ' (client, ' + r.company + ')' }] };
+            V.log(nj, 'Accepted as a job, due ' + V.day(d)); V.sec('jobs').rows.unshift(nj);
+            r.status = 'Accepted'; r.repeat = V.$('#rep', m).value; r.job = id; V.log(r, 'Accepted as job ' + id);
+            V.toast(r.id + ' accepted as job ' + id + ', due ' + V.day(d) + '. Next: assign it or offer it to the area.'); done(); V.sec('jobs')._draw();
+        });
+}
 V.ACTS = {
-    requests: function (r) { return r.status === 'New' ? btn('job', 'fa-briefcase', 'Make job', 'pri') + btn('decline', 'fa-xmark', 'Decline') : btn('view', 'fa-eye', 'View'); },
-    jobs: function (r) { return btn('assign', 'fa-user-check', r.inspector ? 'Reassign' : 'Assign', r.inspector ? '' : 'pri'); },
+    requests: function (r) { return r.status === 'New' ? btn('job', 'fa-briefcase', 'Accept Job', 'pri') + btn('decline', 'fa-xmark', 'Decline') : btn('view', 'fa-eye', 'View'); },
+    jobs: function (r) { var h = btn('hist', 'fa-clock-rotate-left', 'History'); if (r.status === 'Offered') return btn('offerview', 'fa-hourglass-half', 'See answers', 'pri') + btn('assign', 'fa-user-check', 'Assign') + h; return btn('assign', 'fa-user-check', r.inspector ? 'Reassign' : 'Assign', r.inspector ? '' : 'pri') + (r.inspector ? '' : btn('offer', 'fa-bullhorn', 'Offer to area')) + h; },
+    clients: function (r) { return btn('rates', 'fa-tags', 'Rates'); },
+    inspectors: function (r) { return btn('insjobs', 'fa-briefcase', 'Jobs'); },
     signups: function (r) { return r.status === 'New' ? btn('approve', 'fa-check', 'Approve', 'grn') + btn('decline', 'fa-xmark', 'Decline') : ''; },
-    finished: function (r) { return btn('review', r.status === 'Waiting review' ? 'fa-magnifying-glass' : 'fa-eye', r.status === 'Waiting review' ? 'Check' : 'View', r.status === 'Waiting review' ? 'pri' : ''); },
+    finished: function (r) { return btn('review', r.status === 'Waiting review' ? 'fa-magnifying-glass' : 'fa-eye', r.status === 'Waiting review' ? 'Check' : 'View', r.status === 'Waiting review' ? 'pri' : '') + btn('hist', 'fa-clock-rotate-left', 'History'); },
     invoices: function (r) { return r.billed == null ? '<span class="muted small">Automatic</span>' : (r.bal > 0 ? btn('pay', 'fa-money-check-dollar', 'Record payment') : '') + btn('pdf', 'fa-file-pdf', 'PDF'); },
     statements: function (r) { return r.status === 'Pending' ? btn('paid', 'fa-check', 'Mark paid', 'grn') : ''; },
     documents: function (r) { return btn('viewdoc', 'fa-eye', 'View') + btn('download', 'fa-download', 'Download'); }
 };
 V.RUN = {
-    job: function (r, s, done) {
-        var id = 'VG-' + (24132 + V.sec('jobs').rows.length);
-        V.sec('jobs').rows.unshift({ id: id, client: r.company, service: r.service, addr: r.addr, due: r.wanted, inspector: '', status: 'Unassigned' });
-        r.status = 'Made into job'; V.toast(r.id + ' is now job ' + id + '. Next: assign it in "Assign Jobs".'); done(); V.sec('jobs')._draw();
-    },
-    decline: function (r, s, done) { r.status = 'Declined'; V.toast(r.id + ' declined (preview only).'); done(); },
-    view: function (r) { V.modal(V.esc(r.id) + ' · ' + V.esc(r.company), '<dl class="dl1"><dt>Service</dt><dd>' + V.esc(r.service) + '</dd><dt>Address</dt><dd>' + V.esc(r.addr) + '</dd><dt>Contact</dt><dd>' + V.esc(r.contact) + '</dd><dt>Wanted by</dt><dd>' + V.day(r.wanted) + '</dd><dt>Notes</dt><dd>' + V.esc(r.notes || '—') + '</dd><dt>Status</dt><dd>' + V.pill(r.status) + '</dd></dl>'); },
+    job: function (r, s, done) { acceptPopup(r, done); },
+    offer: function (r, s, done) { offerPopup([r], done); },
+    offerview: function (r, s, done) { offerView(r, done); },
+    insjobs: function (r) { var j = live(V.sec('jobs')).filter(function (x) { return x.inspector === r.name; }); V.modal('Open jobs · ' + V.esc(r.name), j.length ? '<ul class="offl">' + j.map(function (x) { return '<li><b>' + V.esc(x.id) + '</b> · ' + V.esc(x.addr) + '<small>due ' + V.day(x.due) + ' · ' + V.esc(x.status) + '</small></li>'; }).join('') + '</ul>' : '<p class="muted">No open jobs in this list.</p>'); },
+    decline: function (r, s, done) { r.status = 'Declined'; V.log(r, s && s.key === 'signups' ? 'Join request declined' : 'Request declined'); V.toast(r.id + ' declined.'); done(); },
+    hist: function (r, s) { V.histPopup(r, s.key === 'finished' ? r.client + ' · ' + r.form + '.' : r.client + ' · ' + r.addr + '.'); },
+    rates: function (r) { ratesPopup(r); },
+    view: function (r) { V.modal(V.esc(r.id) + ' · ' + V.esc(r.company), '<dl class="dl1"><dt>Service</dt><dd>' + V.esc(r.service) + '</dd><dt>Address</dt><dd>' + V.esc(r.addr) + '</dd><dt>Contact</dt><dd>' + V.esc(r.contact) + '</dd><dt>Wanted by</dt><dd>' + V.day(r.wanted) + '</dd><dt>Notes</dt><dd>' + V.esc(r.notes || '—') + '</dd><dt>Status</dt><dd>' + V.pill(r.status) + '</dd></dl>' + (r.hist && r.hist.length ? '<h4 class="h4">History</h4>' + V.histHtml(r) : '')); },
     assign: function (r, s, done) { assignPopup([r], done); },
     approve: function (r, s, done) {
         r.status = 'Approved';
-        var ins = V.sec('inspectors'); ins.rows.unshift({ id: 'INS-0' + (470 + ins.rows.length), name: r.name, role: r.role, email: r.email, phone: '', area: r.area, zips: '', open: 0, done: 0, score: 0, active: 'Yes' }); if (ins._draw) ins._draw();
+        var ins = V.sec('inspectors'); ins.rows.unshift({ id: 'INS-0' + (470 + ins.rows.length), name: r.name, role: r.role, email: r.email, phone: '', area: r.area, zips: [r.zip, r.coverage].filter(Boolean).join(',').split(/[,;\s]+/).filter(function (z, i, all) { return z && all.indexOf(z) === i; }).join(', '), covType: 'ZIP codes', open: 0, done: 0, score: 0, active: 'Yes' }); if (ins._draw) ins._draw();
         V.toast(r.name + ' approved and added to the network. They can now be assigned jobs (preview only).'); done();
     },
     review: function (r, s, done) {
         var cls = r.score >= 85 ? 'p-green' : r.score >= 65 ? 'p-amber' : 'p-red';
         var body = '<div class="rv1"><div class="rv1-score"><span class="pill ' + cls + '">' + r.score + '</span><small>score<br>(sample formula)</small></div><dl class="dl1"><dt>Client</dt><dd>' + V.esc(r.client) + '</dd><dt>Inspector</dt><dd>' + V.esc(r.inspector) + '</dd><dt>Form</dt><dd>' + V.esc(r.form) + '</dd><dt>Sent in</dt><dd>' + V.day(r.sent) + '</dd><dt>Client can see</dt><dd>' + V.pill(r.seen) + '</dd></dl></div>' +
             '<h4 class="h4">Problems found by the checks</h4>' + (r.flags.length ? '<ul class="flags1">' + r.flags.map(function (f) { return '<li><i class="fa-solid fa-triangle-exclamation"></i>' + V.esc(f) + '</li>'; }).join('') + '</ul>' : '<p class="ok1"><i class="fa-solid fa-circle-check"></i> Every check passed</p>') +
+            '<h4 class="h4">Job history</h4>' + V.histHtml(r) +
             '<h4 class="h4">Photos (' + r.photos + ')</h4><div class="phs">' + Array.apply(null, Array(Math.min(r.photos, 8))).map(function (x, i) { return '<span><i class="fa-regular fa-image"></i><small>IMG_' + (3101 + i) + '</small></span>'; }).join('') + '</div>' +
             (r.status === 'Waiting review' ? '<label class="fld1">If you send it back, tell the inspector why<textarea id="why">' + V.esc(r.flags.join('. ')) + '</textarea></label>' : '');
         var m = V.modal('Check report ' + V.esc(r.id), body, r.status === 'Waiting review' ? '<i class="fa-solid fa-check"></i> Approve &amp; send to client' : '', r.status === 'Waiting review' ? function () {
-            r.status = 'Approved'; r.seen = 'Yes'; V.toast(r.id + ' approved. ' + r.client + ' can see the report now (preview only).'); done();
+            r.status = 'Approved'; r.seen = 'Yes'; r.checkedBy = V.me.name; V.log(r, 'Checked and approved, sent to the client'); V.toast(r.id + ' approved. ' + r.client + ' can see the report now (preview only).'); done();
         } : null, r.status === 'Waiting review' ? '<button type="button" class="btn btn-ghost btn-xs" data-back style="color:var(--r)"><i class="fa-solid fa-rotate-left"></i> Send back</button>' : '');
-        var b = V.$('[data-back]', m); if (b) b.addEventListener('click', function () { r.status = 'Sent back'; m.classList.remove('open'); V.toast(r.id + ' sent back to ' + r.inspector + ' (preview only).'); done(); });
+        var b = V.$('[data-back]', m); if (b) b.addEventListener('click', function () { var why = (V.$('#why', m) || {}).value || ''; r.status = 'Sent back'; r.checkedBy = V.me.name; V.log(r, 'Checked and sent back' + (why ? ': ' + why : '')); m.classList.remove('open'); V.toast(r.id + ' sent back to ' + r.inspector + ' (preview only).'); done(); });
     },
     pay: function (r, s, done) {
         V.modal('Record payment · ' + V.esc(r.id), '<p style="margin:0 0 6px">' + V.esc(r.client) + ' owes <b>' + V.money(r.bal) + '</b> (due ' + V.day(r.due) + ').</p>' +
@@ -192,7 +339,7 @@ function visible(r) {
 
 /* ---------- LoyalServe way: click the name / number to edit; click a balance to see the invoices ---------- */
 // column that is the link in each tile (no separate Edit column, like SMK)
-var LINK = { requests: 'id', jobs: 'id', signups: 'name', finished: 'id', invoices: 'id', statements: 'id', documents: 'name', clients: 'name' };
+var LINK = { requests: 'id', jobs: 'id', signups: 'name', finished: 'id', invoices: 'id', statements: 'id', documents: 'name', clients: 'name', inspectors: 'name', users: 'name' };
 // tiles with no edit form: the link runs their main job instead
 var LINKACT = { jobs: 'assign', finished: 'review' };
 function owed(client) { var inv = V.sec('invoices'); prep(inv); return live(inv).filter(function (r) { return r.client === client && r.billed != null && r.bal > 0; }).reduce(function (t, r) { return t + r.bal; }, 0); }
@@ -225,19 +372,33 @@ V.clientInvoices = function (client) {
 };
 
 /* ---------- table cells ---------- */
+function cellLink(s, r, inner) { return '<a href="#" class="lnk" data-open="' + r._i + '" title="' + (LINKACT[s.key] ? 'Open' : 'Edit') + '">' + inner + '</a>'; }
 function cell(s, c, r) {
     var v = r[c[0]], t = c[2];
-    if (LINK[s.key] === c[0]) {
+    if (LINK[s.key] === c[0] && !(s.key === 'jobs')) {
         var inner = c[0] === 'name' && (r.email || r.contact) ? '<b>' + V.esc(v) + '</b><small>' + V.esc(r.contact ? r.contact + ' · ' + r.email : r.email) + '</small>'
             : s.key === 'documents' ? '<b><i class="fa-regular ' + (r.type === '1099' ? 'fa-file-lines' : 'fa-file-pdf') + '" style="color:var(--r);margin-right:6px"></i>' + V.esc(v) + '</b><small>' + V.esc(r.size || '') + '</small>'
             : '<b>' + V.esc(v) + '</b>';
         return '<a href="#" class="lnk" data-open="' + r._i + '" title="' + (LINKACT[s.key] ? 'Open' : 'Edit') + '">' + inner + '</a>';
     }
     if (s.key === 'clients' && c[0] === 'bal') return balBox(r.name, owed(r.name));
+    if (s.key === 'clients' && c[0] === 'rateNow') { var rn = V.rateNow(r); return '<a href="#" class="lnk" style="white-space:nowrap" data-rates="' + r._i + '"><b>' + V.money(rn.amt) + '</b>' + V.esc(rn.per) + '</a>' + (rn.pilot ? ' <span class="pill p-amber">Pilot</span>' : '') + '<small>' + V.esc(rn.why) + '</small>'; }
+    if ((s.key === 'jobs' && c[0] === 'by')) return v ? '<b>' + V.esc(v) + '</b><small>' + V.esc(r.byHow || '') + '</small>' : '<span class="muted small">—</span>';
+    if (s.key === 'finished' && c[0] === 'checkedBy') return v ? V.esc(v) : '<span class="muted small">Not checked yet</span>';
+    if (s.key === 'users' && c[0] === 'role') return '<span class="pill ' + (v === 'Admin' ? 'p-red' : 'p-blue') + '">' + V.esc(v) + '</span>';
+    if (s.key === 'users' && r.role === 'Admin' && ['billing', 'pay', 'rates', 'docs'].indexOf(c[0]) > -1) return '<span class="muted small">All (admin)</span>';
     if (s.key === 'invoices' && c[0] === 'bal' && r.billed != null) return balBox(r.client, r.bal);
     if (c[0] === 'margin') return V.money((r.price || 0) - (r.pay || 0));
     if (s.key === 'invoices' && c[0] === 'billed' && v == null) return '<span class="muted">Bills ' + V.day(r.next) + '</span><small>automatic</small>';
-    if (s.key === 'jobs' && c[0] === 'inspector') return v ? V.esc(v) : '<b class="late">Unassigned</b>';
+    if (s.key === 'jobs' && c[0] === 'inspector') { if (v) return V.esc(v); if (r.status === 'Offered') return '<span class="soon">Offered to ' + (r.offers || []).filter(function (o) { return o.ans === 'Waiting'; }).length + '</span><small>first to accept gets it</small>'; return '<b class="late">' + (r.status === 'Declined' ? 'Pick someone else' : 'Unassigned') + '</b>'; }
+    if (s.key === 'jobs' && c[0] === 'status' && v === 'Declined') return V.pill('Declined') + '<small>by ' + V.esc(r.declinedBy || '') + '</small>';
+    if (s.key === 'jobs' && c[0] === 'id') return cellLink(s, r, '<b>' + V.esc(v) + '</b>') + repeatBadge(r);
+    if (s.key === 'requests' && c[0] === 'repeat') return v && v !== 'None' ? repeatBadge(r) : '<span class="muted small">—</span>';
+    if (s.key === 'inspectors' && c[0] === 'cov') return '<span class="muted small">' + V.esc(r.covType || 'ZIP codes') + '</span><small>' + V.covTxt(r) + '</small>';
+    if (s.key === 'jobs' && c[0] === 'due' && v != null && r.acc != null) {
+        var rem = r.acc + 5, open1 = !(r.status === 'Approved'), base1 = V.day(v) + '<small class="' + (v < 0 ? 'late' : v <= 3 ? 'soon' : '') + '">' + (v < 0 ? (-v) + ' day' + (v === -1 ? '' : 's') + ' late' : v === 0 ? 'Due today' : 'In ' + v + ' day' + (v === 1 ? '' : 's')) + '</small>';
+        return base1 + (open1 && r.inspector && rem < v ? '<small class="muted"><i class="fa-regular fa-envelope"></i> ' + (rem <= 0 ? 'Reminder sent ' + V.day(rem) : 'Reminder ' + V.day(rem)) + '</small>' : '');
+    }
     if (s.key === 'documents' && c[0] === 'name') return '<b><i class="fa-regular ' + (r.type === '1099' ? 'fa-file-lines' : 'fa-file-pdf') + '" style="color:var(--r);margin-right:6px"></i>' + V.esc(v) + '</b><small>' + V.esc(r.size || '') + '</small>';
     if (s.key === 'documents' && c[0] === 'visible') return visible(r);
     if (t === 'money') return V.money(v);
@@ -259,11 +420,12 @@ var VIEWF = {
     documents: { Agreement: function (r) { return r.type === 'Agreement'; }, Instructions: function (r) { return r.type === 'Instructions'; }, '1099': function (r) { return r.type === '1099'; }, unsigned: function (r) { return r.signed === 'Waiting'; } }
 };
 
+function isYN(o) { return o && o.length === 2 && o.indexOf('Yes') > -1 && o.indexOf('No') > -1; }
 function build(s, el) {
     var st = { q: '', sort: s.key === 'invoices' ? 'due' : null, dir: 1, page: 0, show: 10, showDel: false, view: s.views ? s.views[0][0] : 'all' };
     var acts = V.ACTS[s.key];
     var bulk = ['<option value="">Select Bulk Option</option>'];
-    if (s.assign) bulk.push('<option value="assign">Assign Selected</option>');
+    if (s.assign) bulk.push('<option value="assign">Assign Selected</option>', '<option value="offer">Offer Selected to Area</option>');
     if (s.approve) bulk.push('<option value="approve">Approve Selected</option>', '<option value="decline">Decline Selected</option>');
     if (s.markpaid) bulk.push('<option value="paid">Mark Selected Paid</option>');
     if (!s.readonly && !s.assign && s.key !== 'finished') bulk.push('<option value="delete">Delete Selected</option>', '<option value="restore">Restore Selected</option>');
@@ -298,6 +460,7 @@ function build(s, el) {
     tb.addEventListener('click', function (e) {
         var b = e.target.closest('[data-act]'); if (b) { var r = s.rows[+b.closest('tr').dataset.i]; V.RUN[b.dataset.act](r, s, draw); return; }
         var bal = e.target.closest('[data-bal]'); if (bal) { e.preventDefault(); V.clientInvoices(bal.dataset.bal); return; }
+        var rt = e.target.closest('[data-rates]'); if (rt) { e.preventDefault(); ratesPopup(s.rows[+rt.dataset.rates]); return; }
         var op = e.target.closest('[data-open]');
         if (op) { e.preventDefault(); var row = s.rows[+op.dataset.open]; if (LINKACT[s.key]) V.RUN[LINKACT[s.key]](row, s, draw); else edit(row); }
     });
@@ -307,6 +470,7 @@ function build(s, el) {
         var p = picked();
         if (!p.length) { V.toast('Tick at least one row first.'); return; }
         if (what === 'assign') { assignPopup(p, draw); return; }
+        if (what === 'offer') { offerPopup(p.filter(function (r) { return !r.inspector; }), draw); return; }
         if (what === 'approve' && s.key === 'signups') { p.filter(function (r) { return r.status === 'New'; }).forEach(function (r) { V.RUN.approve(r, s, function () {}); }); draw(); return; }
         p.forEach(function (r) {
             if (what === 'delete') r._del = true;
@@ -376,6 +540,11 @@ function build(s, el) {
         m.innerHTML = '<div class="modal-box"><div class="modal-h"><h3>' + (isNew ? V.esc(s.add) : s.key === 'invoices' ? 'Edit invoice ' + V.esc(r.id) + ' · ' + V.esc(r.client) : 'Edit: ' + V.esc(r.name || r.title || r.subject || r.client || r.inspector || r.id)) + '</h3><button class="modal-x" data-x aria-label="Close"><i class="fa-solid fa-xmark"></i></button></div>' +
             '<form data-f><div class="modal-b">' + s.fields.map(function (f) {
                 var v = r[f[0]] == null ? '' : r[f[0]], wide = f[2] === 'textarea' || f[2] === 'file' || f[1].length > 22 ? ' class="wide"' : '';
+                // Yes / No = on/off switch; Admin / Staff = two radio cards; other lists stay a dropdown
+                if (f[2] === 'select' && isYN(f[3])) return '<label class="sw-row wide"><input type="checkbox" class="sw" role="switch" name="' + f[0] + '" value="Yes"' + (v === 'Yes' || (v === '' && f[3][0] === 'Yes') ? ' checked' : '') + '><span class="sw-ui" aria-hidden="true"></span><span class="sw-t">' + f[1] + '</span></label>';
+                if (f[2] === 'select' && f[0] === 'role' && s.key === 'users') return '<fieldset class="rad wide"><legend>' + f[1] + '</legend>' + f[3].map(function (o) {
+                    return '<label><input type="radio" name="role" value="' + V.esc(o) + '"' + ((v || f[3][0]) === o ? ' checked' : '') + '><span><b>' + V.esc(o) + '</b><small>' + (o === 'Admin' ? 'Sees everything, can add other admins' : 'Only sees the areas switched on below') + '</small></span></label>';
+                }).join('') + '</fieldset>';
                 if (f[2] === 'select') return '<label' + wide + '>' + f[1] + '<select name="' + f[0] + '">' + f[3].map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + V.esc(o) + '</option>'; }).join('') + '</select></label>';
                 if (f[2] === 'textarea') return '<label class="wide">' + f[1] + '<textarea name="' + f[0] + '">' + V.esc(v) + '</textarea></label>';
                 if (f[2] === 'file') return '<label class="wide">' + f[1] + '<input type="file" name="' + f[0] + '" accept=".pdf,.doc,.docx">' + (r.name ? '<small class="muted">Now: ' + V.esc(r.name) + '</small>' : '') + '</label>';
@@ -383,14 +552,33 @@ function build(s, el) {
                 return '<label' + wide + '>' + f[1] + '<input type="' + (f[2] === 'number' ? 'number' : 'text') + '" name="' + f[0] + '" value="' + V.esc(v) + '"></label>';
             }).join('') + (s.key === 'clients' ? '<p class="wide note1"><i class="fa-solid fa-credit-card"></i> The card is charged automatically <b>only when the agreement is signed</b>. Only the last 4 digits are ever shown.</p>' : '') +
             (s.key === 'documents' ? '<p class="wide note1"><i class="fa-solid fa-lock"></i> Clients and inspectors only see their own files. 1099s are private: admin + that inspector only.</p>' : '') +
+            (s.key === 'clients' ? '<p class="wide note1"><i class="fa-solid fa-tags"></i> <b>Rates:</b> while the Pilot Program runs, jobs use the pilot rate. After the end date they use the contract rate. If you fill in "Rate by number of stores", the client\'s store count picks the contract rate.</p>' : '') +
+            (s.key === 'users' ? '<p class="wide note1"><i class="fa-solid fa-user-shield"></i> <b>Admin</b> = sees everything and can add other admins (all switches on). <b>Staff</b> = only the areas switched on. 1099s are never shown to staff. Real system: the server checks this on every page and request.</p>' : '') +
             '</div><div class="modal-f"><button type="button" class="btn btn-ghost btn-xs" data-x>Close</button><button type="submit" class="btn btn-primary btn-xs"><i class="fa-solid fa-floppy-disk"></i> Save</button></div></form></div>';
         m.classList.add('open');
         V.$$('[data-x]', m).forEach(function (b) { b.addEventListener('click', function () { m.classList.remove('open'); }); });
+        // switches that depend on each other
+        var form = V.$('[data-f]', m);
+        var sync = function () {
+            var role = V.$('input[name=role]:checked', form);
+            if (role) ['billing', 'pay', 'rates', 'docs'].forEach(function (k) {
+                var c = V.$('[name=' + k + ']', form); if (!c) return;
+                if (role.value === 'Admin') { if (!c.disabled) c.dataset.was = c.checked ? '1' : '0'; c.checked = true; c.disabled = true; }
+                else if (c.disabled) { c.disabled = false; c.checked = c.dataset.was === '1'; }
+                c.closest('label').title = c.disabled ? 'Admins always see everything' : '';
+            });
+            var ag = V.$('[name=agree]', form), au = V.$('[name=auto]', form);
+            if (ag && au) { au.disabled = !ag.checked; if (!ag.checked) au.checked = false; au.closest('label').title = ag.checked ? '' : 'Switch on "Agreement signed" first'; }
+            var pi = V.$('[name=pilot]', form);
+            if (pi) ['pilotRate', 'pilotEnds'].forEach(function (k) { var x = V.$('[name=' + k + ']', form); if (x) x.closest('label').classList.toggle('dim', !pi.checked); });
+        };
+        form.addEventListener('change', sync); sync();
         V.$('[data-f]', m).addEventListener('submit', function (e) {
             e.preventDefault();
             var fd = new FormData(e.target), target = row || {}, msg = '';
             s.fields.forEach(function (f) {
                 var v = fd.get(f[0]);
+                if (f[2] === 'select' && isYN(f[3])) v = v ? 'Yes' : 'No'; // switch: ticked = Yes
                 if (f[2] === 'file') { if (v && v.name) target.name = v.name; else if (!target.name) target.name = 'New document.pdf'; return; }
                 if (f[2] === 'number') v = +v || 0;
                 if (f[2] === 'date') { var d = new Date(v + 'T12:00:00'); v = Math.round((d - V.date(0)) / 864e5); }
@@ -398,11 +586,18 @@ function build(s, el) {
             });
             if (s.key === 'clients' && target.auto === 'Yes' && target.agree !== 'Yes') { target.auto = 'No'; msg = ' Auto-charge stays OFF until the agreement is signed.'; }
             if (s.key === 'clients' && target.auto === 'Yes' && !target.card) { target.auto = 'No'; msg = ' Auto-charge stays OFF: no card on file.'; }
+            if (s.key === 'users') {
+                if (!row && (!String(target.name || '').trim() || !/@/.test(target.email || ''))) { V.toast('Type a name and an email.'); return; }
+                if (target.role === 'Admin') { ['billing', 'pay', 'rates', 'docs'].forEach(function (k) { target[k] = 'Yes'; }); }
+                var admins = s.rows.concat(row ? [] : [target]).filter(function (u) { return !u._del && u.role === 'Admin' && u.active === 'Yes'; });
+                if (!admins.length) { target.role = 'Admin'; target.active = 'Yes'; msg = ' There must be at least one active admin, so this person stays Admin.'; }
+                if (!row) { target.id = 'U-' + (s.rows.length + 1); target.last = null; msg += target.role === 'Admin' ? ' New admin added: they see everything.' : ' New staff member: they only see the areas switched on.'; }
+            }
             if (s.key === 'documents' && isNew) { target.up = 0; target.size = '—'; target.signed = target.needsign === 'Yes' ? 'Waiting' : '—'; }
             if (s.key === 'invoices' && isNew) target.paid = 0;
-            if (!row) { target.id = target.id || 'NEW-' + (s.rows.length + 1); s.rows.unshift(target); }
+            if (!row) { target.id = target.id || 'NEW-' + (s.rows.length + 1); if (s.key === 'jobs' || s.key === 'requests') { target.by = V.me.name; target.byHow = 'Admin · typed in'; V.log(target, 'Typed in by hand'); } s.rows.unshift(target); }
             m.classList.remove('open');
-            V.toast((row ? 'Saved' : 'Added') + ' (preview only, not stored).' + msg);
+            V.toast((row ? 'Saved' : 'Added') + (window.VIGNDB && VIGNDB.TABLES[s.key] ? ' (saved in this browser).' : ' (preview only, not stored).') + msg);
             draw();
         });
     }

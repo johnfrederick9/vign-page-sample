@@ -29,7 +29,13 @@
     </div>
 </div>
 <script>
-document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); location.href = 'index.html'; });
+var qs = new URLSearchParams(location.search);
+if (qs.get('out')) { try { sessionStorage.removeItem('vign-role'); } catch (e) {} }
+document.getElementById('f').addEventListener('submit', function (e) {
+    e.preventDefault(); try { sessionStorage.setItem('vign-role', 'admin'); } catch (er) {}
+    var to = (qs.get('to') || '').replace(/[^a-z0-9-]/gi, '');
+    location.href = 'index.html' + (to ? '#' + to : '');
+});
 </script>
 </body>
 </html>

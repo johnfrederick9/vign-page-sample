@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview Database | VIGN USA Admin</title>
+<link rel="icon" href="images/vign-logo.png" type="image/png">
+<link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
+<link rel="stylesheet" href="css/vign.css">
+<script src="js/vign-db.js"></script>
+<style>
+body { background: #f5f7fb; }
+.dbw { max-width: 1180px; margin: 0 auto; padding: 28px 16px 60px; }
+.dbh { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; }
+.dbh h1 { font-size: 1.7rem; margin: 0; }
+.dbh p { margin: 4px 0 0; color: var(--ink-3); }
+.dbacts { display: flex; gap: 8px; flex-wrap: wrap; }
+.dbnote { margin: 18px 0; padding: 12px 16px; border-radius: 12px; background: #eef2fe; border: 1px solid #d5ddf7; font-size: .93rem; }
+.dbstats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(200px, 100%), 1fr)); gap: 12px; margin: 18px 0; }
+.dbstat { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+.dbstat b { display: block; font-size: 1.6rem; }
+.dbstat small { color: var(--ink-3); }
+.dbt { background: #fff; border: 1px solid var(--line); border-radius: 12px; margin-top: 18px; overflow: hidden; }
+.dbt h2 { font-size: 1.1rem; margin: 0; padding: 14px 16px; border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.dbt h2 small { font-weight: 500; color: var(--ink-3); font-size: .85rem; }
+.dbscroll { overflow-x: auto; }
+.dbt table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+.dbt th, .dbt td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; white-space: nowrap; }
+.dbt td.wrap { white-space: normal; min-width: 220px; }
+.dbt th { font-size: .72rem; text-transform: uppercase; letter-spacing: .04em; color: var(--ink-3); background: #f8fafc; }
+.dbt tr.new td { background: #f0fdf4; }
+.tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: .72rem; font-weight: 700; background: #dcfce7; color: #166534; }
+.tag.wait { background: #fef3c7; color: #92400e; }
+.empty { padding: 16px; color: var(--ink-3); margin: 0; }
+.lock { max-width: 420px; margin: 80px auto; background: #fff; border: 1px solid var(--line); border-radius: 16px; padding: 28px; text-align: center; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script>
+(function () {
+    var app = document.getElementById('app');
+    var role = ''; try { role = sessionStorage.getItem('vign-role') || ''; } catch (e) {}
+    if (role !== 'admin') {
+        app.innerHTML = '<div class="lock"><i class="fa-solid fa-lock" style="font-size:2.2rem;color:#c8102e"></i><h1 style="font-size:1.4rem;margin:12px 0 6px">Admin only</h1><p class="muted">The preview database is for VIGN administrators. Please sign in as admin.</p><a class="btn btn-primary btn-block" href="admin/login.html">Admin sign in</a><p class="small" style="margin-top:12px"><a href="index.html">← Back to website</a></p></div>';
+        return;
+    }
+    var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); };
+    var day = function (n) { if (typeof n !== 'number') return esc(n); var d = new Date(); d.setDate(d.getDate() + n); return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + (n === 0 ? ' (today)' : ''); };
+    var COLS = {
+        requests: [['id', 'Request #'], ['date', 'Received', 'day'], ['src', 'From'], ['company', 'Client'], ['contact', 'Contact'], ['email', 'Email'], ['service', 'Service'], ['addr', 'Address', 'wrap'], ['wanted', 'Wanted by', 'day'], ['notes', 'Notes', 'wrap'], ['status', 'Status']],
+        signups: [['id', 'Join #'], ['date', 'Signed up', 'day'], ['src', 'From'], ['name', 'Name'], ['email', 'Email'], ['role', 'Wants to be'], ['work', 'Type of work', 'wrap'], ['area', 'Area'], ['zip', 'ZIP'], ['coverage', 'Coverage', 'wrap'], ['status', 'Status']],
+        jobs: [['id', 'Job #'], ['client', 'Client'], ['service', 'Service'], ['addr', 'Address', 'wrap'], ['due', 'Due', 'day'], ['inspector', 'Inspector'], ['repeat', 'Repeat'], ['status', 'Status']],
+        inspectors: [['id', 'ID'], ['name', 'Name'], ['role', 'Role'], ['area', 'Area'], ['covType', 'Covers by'], ['zips', 'ZIPs / counties', 'wrap'], ['active', 'Active']],
+        finished: [['id', 'Job #'], ['client', 'Client'], ['inspector', 'Inspector'], ['score', 'Score'], ['checkedBy', 'Checked by'], ['status', 'Status']],
+        clients: [['id', 'ID'], ['name', 'Client'], ['plan', 'Plan'], ['pilot', 'Pilot'], ['pilotRate', 'Pilot rate'], ['pilotEnds', 'Pilot ends', 'day'], ['rate', 'Contract rate'], ['stores', 'Stores'], ['tiers', 'Rate by stores', 'wrap']],
+        users: [['name', 'Name'], ['email', 'Email'], ['role', 'Role'], ['billing', 'Billing'], ['pay', 'Inspector pay'], ['rates', 'Clients & rates'], ['docs', 'Documents'], ['active', 'Active']]
+    };
+    function draw() {
+        var d = VIGNDB.dump(), T = Object.keys(VIGNDB.TABLES);
+        var waiting = (d.inbox.requests || []).length + (d.inbox.signups || []).length;
+        var fromForms = 0;
+        var html = '<div class="dbw"><div class="dbh"><div><h1><i class="fa-solid fa-database" style="color:var(--blue)"></i> Preview database</h1><p>What the preview has saved in <b>this browser</b>. Admin only.</p></div>' +
+            '<div class="dbacts"><a class="btn btn-ghost btn-sm" href="admin/index.html"><i class="fa-solid fa-table-cells-large"></i> Admin Menu</a><button class="btn btn-ghost btn-sm" id="exp"><i class="fa-solid fa-file-arrow-down"></i> Export (JSON)</button><button class="btn btn-ghost btn-sm" id="rst" style="color:#c8102e"><i class="fa-solid fa-rotate-left"></i> Reset to sample data</button></div></div>';
+        html += '<p class="dbnote"><i class="fa-solid fa-circle-info"></i> <b>How it works:</b> the website <b>Request Inspection</b> and <b>Join</b> forms, and the client portal\'s <b>Request an inspection</b>, add rows here. The <b>Admin Menu</b> reads these tables and saves your changes (accept, decline, approve, assign, edit). Green rows came from a form. It lives only in this browser on this computer; the real system saves to the server database.</p>';
+        var body = T.map(function (t) {
+            var rows = (d.tables[t] || []).filter(function (r) { return !r._del; });
+            var inbox = (d.inbox[t] || []).map(function (r) { var o = {}; for (var k in r) o[k] = r[k]; o._wait = true; return o; });
+            var all = inbox.concat(rows);
+            var nf = all.filter(function (r) { return r.src; }).length; fromForms += nf;
+            var cols = COLS[t];
+            var tbl = !d.tables[t] && !inbox.length ? '<p class="empty">Not saved yet. Open the Admin Menu once and the sample rows are saved here.</p>' :
+                '<div class="dbscroll"><table><thead><tr>' + cols.map(function (c) { return '<th>' + c[1] + '</th>'; }).join('') + '</tr></thead><tbody>' + all.map(function (r) {
+                    return '<tr' + (r.src ? ' class="new"' : '') + '>' + cols.map(function (c) {
+                        var v = r[c[0]];
+                        if (c[0] === 'date' && r._wait) v = 'just now';
+                        else if (c[2] === 'day') v = day(v); else v = esc(v);
+                        if (c[0] === 'status' && r._wait) v += ' <span class="tag wait">Admin hasn\'t opened it yet</span>';
+                        if (c[0] === 'src' && r.src) v = '<span class="tag">' + v + '</span>';
+                        return '<td' + (c[2] === 'wrap' ? ' class="wrap"' : '') + '>' + (v === '' ? '<span class="muted">—</span>' : v) + '</td>';
+                    }).join('') + '</tr>';
+                }).join('') + '</tbody></table></div>';
+            return '<div class="dbt"><h2>' + esc(VIGNDB.NAMES[t]) + ' <small>' + all.length + ' rows' + (nf ? ' · ' + nf + ' from forms' : '') + '</small></h2>' + tbl + '</div>';
+        }).join('');
+        html += '<div class="dbstats"><div class="dbstat"><b>' + fromForms + '</b><small>rows added from the forms</small></div><div class="dbstat"><b>' + waiting + '</b><small>waiting for the Admin Menu to open</small></div><div class="dbstat"><b>' + (d.day || '—') + '</b><small>last saved (day)</small></div></div>';
+        app.innerHTML = html + body + '</div>';
+        document.getElementById('exp').addEventListener('click', function () {
+            var blob = new Blob([JSON.stringify(VIGNDB.dump(), null, 2)], { type: 'application/json' }), a = document.createElement('a');
+            a.href = URL.createObjectURL(blob); a.download = 'vign-preview-database.json'; document.body.appendChild(a); a.click(); a.remove();
+        });
+        document.getElementById('rst').addEventListener('click', function () {
+            var b = this;
+            if (b.dataset.sure) { VIGNDB.reset(); draw(); return; }
+            b.dataset.sure = '1'; b.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Click again to delete everything saved';
+        });
+    }
+    if (!VIGNDB.ok()) { app.innerHTML = '<div class="lock"><h1 style="font-size:1.3rem">Saving is blocked</h1><p class="muted">This browser does not allow the preview to save (private window or blocked site data).</p></div>'; return; }
+    draw();
+})();
+</script>
+</body>
+</html>

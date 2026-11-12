@@ -13,36 +13,40 @@ var VA = window.VA = window.VA || {};
 
 VA.me = { name: 'Don Balducci', role: 'Administrator' };
 
+// R-15 job history: one line per step. d = day (0 = today), tm = time, what happened, who did it
+VA.H = function (d, tm, what, who) { return { d: d, tm: tm, what: what, who: who }; };
+var H = VA.H;
+
 // col: [key, label, type]   type: r | money | date | due | yesno | status | score
 // field: [key, label, type, opts]   type: text | select | date | number | textarea | file
 VA.sections = [
     { key: 'requests', title: 'New Inspection Requests', icon: 'fa-inbox', color: 'blue',
-      desc: 'Orders sent in by clients (website "Request Inspection" form, client portal, or file import). Make each one a job, then assign it.',
+      desc: 'Orders sent in by clients (website "Request Inspection" form, client portal, or file import). Accept each one as a job (due date max 10 days), then assign or offer it.',
       add: 'Add Request', toggle: false,
-      cols: [['date', 'Received', 'date'], ['id', 'Request #'], ['company', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['wanted', 'Wanted By', 'date'], ['status', 'Status', 'status']],
-      fields: [['company', 'Client', 'text'], ['contact', 'Contact name', 'text'], ['service', 'Service', 'select', ['Mystery Shoppers', 'Loan Servicing', 'Property & Field Inspections', 'Loan Servicing & Collateral Inspections', 'Mystery Shopping & Customer Experience']], ['addr', 'Address / location', 'text'], ['wanted', 'Wanted by', 'date'], ['notes', 'Notes from the client', 'textarea']],
+      cols: [['date', 'Received', 'date'], ['id', 'Request #'], ['company', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['wanted', 'Wanted By', 'date'], ['repeat', 'Repeat'], ['status', 'Status', 'status']],
+      fields: [['company', 'Client', 'text'], ['contact', 'Contact name', 'text'], ['service', 'Service', 'select', ['Mystery Shoppers', 'Loan Servicing', 'Property & Field Inspections', 'Loan Servicing & Collateral Inspections', 'Mystery Shopping & Customer Experience']], ['addr', 'Address / location', 'text'], ['wanted', 'Wanted by', 'date'], ['notes', 'Notes from the client', 'textarea'], ['repeat', 'Repeat', 'select', ['None', 'Once a month', 'Twice a month']]],
       rows: [
         { id: 'RQ-1048', date: 0, company: 'Lakeshore Loan Servicing', contact: 'M. Chen', service: 'Loan Servicing', addr: '88 Birchwood Ct, Huntington, NY 11743', wanted: 4, notes: 'Vacant. Check winterization.', status: 'New' },
-        { id: 'RQ-1047', date: 0, company: 'Bright Brew Coffee Co.', contact: 'K. Olsen', service: 'Mystery Shoppers', addr: 'Bright Brew #14, 2210 Hempstead Tpke, East Meadow, NY', wanted: 7, notes: 'Weekend visit, afternoon.', status: 'New' },
+        { id: 'RQ-1047', date: 0, company: 'Bright Brew Coffee Co.', contact: 'K. Olsen', service: 'Mystery Shoppers', addr: 'Bright Brew #14, 2210 Hempstead Tpke, East Meadow, NY', wanted: 7, notes: 'Weekend visit, afternoon. Every store, twice a month.', repeat: 'Twice a month', status: 'New' },
         { id: 'RQ-1046', date: -1, company: 'Keystone Insurance Group', contact: 'D. Wright', service: 'Property & Field Inspections', addr: '415 Jericho Tpke, Syosset, NY 11791', wanted: 3, notes: 'Roof claim. Exterior photos.', status: 'New' },
         { id: 'RQ-1045', date: -1, company: 'Hometown Realty (new)', contact: 'P. Grant', service: 'Property & Field Inspections', addr: '9 Oakview Ave, Massapequa, NY 11758', wanted: 5, notes: 'First order from the website.', status: 'New' },
-        { id: 'RQ-1041', date: -3, company: 'First Harbor Mortgage', contact: 'A. Reyes', service: 'Loan Servicing', addr: '1220 Maple Ridge Dr, Garden City, NY 11530', wanted: 1, notes: '', status: 'Made into job' },
+        { id: 'RQ-1041', date: -3, company: 'First Harbor Mortgage', contact: 'A. Reyes', service: 'Loan Servicing', addr: '1220 Maple Ridge Dr, Garden City, NY 11530', wanted: 1, notes: '', status: 'Accepted' },
         { id: 'RQ-1039', date: -4, company: 'Unknown sender', contact: '', service: 'Mystery Shoppers', addr: 'No address given', wanted: 0, notes: 'Test message', status: 'Declined' }
       ] },
 
     { key: 'jobs', title: 'Assign Jobs', icon: 'fa-user-check', color: 'amber',
-      desc: 'Open jobs and who is doing them. Red = no inspector yet. Tick several jobs to assign them together.',
+      desc: 'Open jobs and who is doing them. Red = no inspector yet. Assign one person, or Offer to area: every active inspector who covers the job gets it, first to accept wins. Due date max 10 days after the job is accepted; the inspector gets a reminder email at day 5.',
       add: '', toggle: false, assign: true,
-      cols: [['id', 'Job #'], ['client', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['due', 'Due', 'due'], ['inspector', 'Inspector'], ['status', 'Status', 'status']],
+      cols: [['id', 'Job #'], ['client', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['due', 'Due', 'due'], ['inspector', 'Inspector'], ['by', 'Entered By'], ['status', 'Status', 'status']], offer: true,
       fields: [],
       rows: [
-        { id: 'VG-24131', client: 'First Harbor Mortgage', service: 'Loan Servicing', addr: '1220 Maple Ridge Dr, Garden City, NY', due: 1, inspector: '', status: 'Unassigned' },
-        { id: 'VG-24130', client: 'Midway Auto & Home Credit', service: 'Loan Servicing & Collateral Inspections', addr: '4896 Sunrise Hwy, Bohemia, NY', due: 2, inspector: '', status: 'Unassigned' },
-        { id: 'VG-24129', client: 'Northgate Savings Bank', service: 'Mystery Shopping & Customer Experience', addr: 'Northgate Branch #04, Old Country Rd, Westbury', due: 5, inspector: '', status: 'Unassigned' },
-        { id: 'VG-24127', client: 'Lakeshore Loan Servicing', service: 'Loan Servicing', addr: '7153 Merrick Rd, Merrick, NY', due: -1, inspector: 'Derek Hall', status: 'Assigned' },
-        { id: 'VG-24125', client: 'Keystone Insurance Group', service: 'Property & Field Inspections', addr: '1808 Veterans Hwy, Hauppauge, NY', due: 0, inspector: 'Angela Ruiz', status: 'In field' },
-        { id: 'VG-24122', client: 'Bright Brew Coffee Co.', service: 'Mystery Shoppers', addr: 'Bright Brew #19, 3128 Northern Blvd, Manhasset', due: 3, inspector: 'Priya Nair', status: 'Assigned' },
-        { id: 'VG-24120', client: 'First Harbor Mortgage', service: 'Property & Field Inspections', addr: '18 Elm St, Freeport, NY', due: -2, inspector: 'Maria Lopez', status: 'Sent back' }
+        { id: 'VG-24131', client: 'First Harbor Mortgage', service: 'Loan Servicing', addr: '1220 Maple Ridge Dr, Garden City, NY', zip: '11530', county: 'Nassau', st: 'NY', acc: -3, due: 1, inspector: '', status: 'Offered', offers: [{ name: 'Maria Lopez', ans: 'Waiting' }, { name: 'Derek Hall', ans: 'Waiting' }], offeredOn: 0, by: 'A. Reyes', byHow: 'Client portal', hist: [H(-3, '9:12 AM', 'Request RQ-1041 sent in', 'A. Reyes (client, First Harbor)'), H(-3, '10:05 AM', 'Accepted as a job, due date set', 'Jenny Park (staff)'), H(0, '8:30 AM', 'Offered to 2 inspectors in the area', 'Don Balducci (admin)')] },
+        { id: 'VG-24130', client: 'Midway Auto & Home Credit', service: 'Loan Servicing & Collateral Inspections', addr: '4896 Sunrise Hwy, Bohemia, NY', zip: '11716', county: 'Suffolk', st: 'NY', acc: -2, due: 2, inspector: '', status: 'Declined', offers: [{ name: 'Angela Ruiz', ans: 'Declined' }], declinedBy: 'Angela Ruiz', by: 'Jenny Park', byHow: 'Staff · typed in', hist: [H(-2, '11:40 AM', 'Job typed in by hand', 'Jenny Park (staff)'), H(-2, '11:44 AM', 'Offered to 1 inspector in the area', 'Jenny Park (staff)'), H(-1, '4:18 PM', 'Declined the offer', 'Angela Ruiz (inspector)')] },
+        { id: 'VG-24129', client: 'Northgate Savings Bank', service: 'Mystery Shopping & Customer Experience', addr: 'Northgate Branch #04, Old Country Rd, Westbury', zip: '11590', county: 'Nassau', st: 'NY', acc: -1, due: 5, inspector: '', status: 'Unassigned', by: 'Mike Russo', byHow: 'Staff · file import', hist: [H(-1, '2:02 PM', 'Imported from the client file (12 rows)', 'Mike Russo (staff)')] },
+        { id: 'VG-24127', client: 'Lakeshore Loan Servicing', service: 'Loan Servicing', addr: '7153 Merrick Rd, Merrick, NY', zip: '11566', county: 'Nassau', st: 'NY', acc: -9, due: -1, inspector: 'Derek Hall', status: 'Assigned', by: 'M. Chen', byHow: 'Website form', hist: [H(-9, '8:51 AM', 'Request sent in from the website', 'M. Chen (client, Lakeshore)'), H(-9, '9:30 AM', 'Accepted as a job, due date set', 'Don Balducci (admin)'), H(-9, '9:31 AM', 'Assigned to Derek Hall', 'Mike Russo (staff)'), H(-4, '7:00 AM', 'Day-5 reminder email sent to Derek Hall', 'System (automatic)')] },
+        { id: 'VG-24125', client: 'Keystone Insurance Group', service: 'Property & Field Inspections', addr: '1808 Veterans Hwy, Hauppauge, NY', zip: '11788', county: 'Suffolk', st: 'NY', acc: -8, due: 0, inspector: 'Angela Ruiz', status: 'In field', by: 'Don Balducci', byHow: 'Admin · typed in', hist: [H(-8, '3:15 PM', 'Job typed in by hand', 'Don Balducci (admin)'), H(-8, '3:16 PM', 'Assigned to Angela Ruiz', 'Don Balducci (admin)'), H(-3, '7:00 AM', 'Day-5 reminder email sent to Angela Ruiz', 'System (automatic)'), H(0, '10:22 AM', 'Checked in at the property (phone)', 'Angela Ruiz (inspector)')] },
+        { id: 'VG-24122', client: 'Bright Brew Coffee Co.', service: 'Mystery Shoppers', addr: 'Bright Brew #19, 3128 Northern Blvd, Manhasset', zip: '11030', county: 'Nassau', st: 'NY', acc: -4, due: 3, inspector: 'Priya Nair', status: 'Assigned', repeat: 'Once a month', by: 'System', byHow: 'Repeat · once a month', hist: [H(-4, '6:00 AM', 'Created by the monthly repeat', 'System (automatic)'), H(-4, '9:10 AM', 'Assigned to Priya Nair', 'Jenny Park (staff)')] },
+        { id: 'VG-24120', client: 'First Harbor Mortgage', service: 'Property & Field Inspections', addr: '18 Elm St, Freeport, NY', zip: '11520', county: 'Nassau', st: 'NY', acc: -8, due: -2, inspector: 'Maria Lopez', status: 'Sent back', by: 'A. Reyes', byHow: 'Client portal', hist: [H(-8, '1:20 PM', 'Request sent in', 'A. Reyes (client, First Harbor)'), H(-8, '2:00 PM', 'Accepted as a job, due date set', 'Jenny Park (staff)'), H(-8, '2:01 PM', 'Assigned to Maria Lopez', 'Jenny Park (staff)'), H(-3, '7:00 AM', 'Day-5 reminder email sent to Maria Lopez', 'System (automatic)'), H(-2, '5:47 PM', 'Report sent in', 'Maria Lopez (inspector)'), H(-1, '10:12 AM', 'Checked and sent back: photo of the meter missing', 'Don Balducci (admin)')] }
       ] },
 
     { key: 'signups', title: 'Approve New Inspectors', icon: 'fa-user-plus', color: 'green',
@@ -61,15 +65,15 @@ VA.sections = [
     { key: 'finished', title: 'Check Finished Inspections', icon: 'fa-list-check', color: 'navy',
       desc: 'Reports sent in by inspectors. The client does not see a report until you approve it. Open one to see the score, photos and problem items. The Mystery Shop form and the score formula are SAMPLES until the customer sends his.',
       add: '', toggle: false,
-      cols: [['sent', 'Sent In', 'date'], ['id', 'Job #'], ['client', 'Client'], ['inspector', 'Inspector'], ['form', 'Form'], ['score', 'Score (sample)', 'score'], ['photos', 'Photos', 'r'], ['seen', 'Client Can See', 'yesno'], ['status', 'Status', 'status']],
+      cols: [['sent', 'Sent In', 'date'], ['id', 'Job #'], ['client', 'Client'], ['inspector', 'Inspector'], ['form', 'Form'], ['score', 'Score (sample)', 'score'], ['photos', 'Photos', 'r'], ['seen', 'Client Can See', 'yesno'], ['checkedBy', 'Checked By'], ['status', 'Status', 'status']],
       fields: [],
       rows: [
-        { id: 'VG-24116', sent: 0, client: 'Bright Brew Coffee Co.', inspector: 'Priya Nair', form: 'Mystery Shop Visit (sample form)', score: 72, photos: 3, flags: ['Item 4 rated 4 (urgent): checkout counter blocked'], seen: 'No', status: 'Waiting review' },
-        { id: 'VG-24117', sent: -1, client: 'First Harbor Mortgage', inspector: 'Maria Lopez', form: 'Residential Property Inspection', score: 74, photos: 9, flags: ['Item 2 rated 4 (urgent): foundation crack', 'Item 13 rated 4 (urgent): water stain, ceiling'], seen: 'No', status: 'Waiting review' },
-        { id: 'VG-24118', sent: -1, client: 'Midway Auto & Home Credit', inspector: 'Derek Hall', form: 'Vacant Property / Preservation', score: 82, photos: 7, flags: ['Item 1 rated 3, but no photo'], seen: 'No', status: 'Waiting review' },
-        { id: 'VG-24119', sent: -2, client: 'First Harbor Mortgage', inspector: 'Angela Ruiz', form: 'Residential Property Inspection', score: 64, photos: 8, flags: ['Photos taken 0.4 miles from the address'], seen: 'No', status: 'Waiting review' },
-        { id: 'VG-24110', sent: -3, client: 'Keystone Insurance Group', inspector: 'Derek Hall', form: 'Commercial Property Inspection', score: 91, photos: 12, flags: [], seen: 'Yes', status: 'Approved' },
-        { id: 'VG-24108', sent: -4, client: 'Northgate Savings Bank', inspector: 'Priya Nair', form: 'Mystery Shop Visit (sample form)', score: 88, photos: 2, flags: [], seen: 'Yes', status: 'Approved' }
+        { id: 'VG-24116', sent: 0, client: 'Bright Brew Coffee Co.', inspector: 'Priya Nair', form: 'Mystery Shop Visit (sample form)', score: 72, photos: 3, flags: ['Item 4 rated 4 (urgent): checkout counter blocked'], seen: 'No', status: 'Waiting review', checkedBy: '', hist: [H(-6, '9:02 AM', 'Request sent in', 'K. Olsen (client, Bright Brew)'), H(-6, '9:40 AM', 'Accepted as a job, due date set', 'Jenny Park (staff)'), H(-6, '9:41 AM', 'Assigned to Priya Nair', 'Mike Russo (staff)'), H(0, '1:15 PM', 'Report sent in', 'Priya Nair (shopper)')] },
+        { id: 'VG-24117', sent: -1, client: 'First Harbor Mortgage', inspector: 'Maria Lopez', form: 'Residential Property Inspection', score: 74, photos: 9, flags: ['Item 2 rated 4 (urgent): foundation crack', 'Item 13 rated 4 (urgent): water stain, ceiling'], seen: 'No', status: 'Waiting review', checkedBy: '', hist: [H(-7, '10:00 AM', 'Request sent in', 'A. Reyes (client, First Harbor)'), H(-7, '10:30 AM', 'Accepted as a job, due date set', 'Don Balducci (admin)'), H(-7, '10:31 AM', 'Offered to 3 inspectors in the area', 'Don Balducci (admin)'), H(-7, '11:02 AM', 'Accepted the offer first', 'Maria Lopez (inspector)'), H(-1, '4:40 PM', 'Report sent in', 'Maria Lopez (inspector)')] },
+        { id: 'VG-24118', sent: -1, client: 'Midway Auto & Home Credit', inspector: 'Derek Hall', form: 'Vacant Property / Preservation', score: 82, photos: 7, flags: ['Item 1 rated 3, but no photo'], seen: 'No', status: 'Waiting review', checkedBy: '', hist: [H(-6, '8:15 AM', 'Job typed in by hand', 'Jenny Park (staff)'), H(-6, '8:16 AM', 'Assigned to Derek Hall', 'Jenny Park (staff)'), H(-1, '3:05 PM', 'Report sent in', 'Derek Hall (inspector)')] },
+        { id: 'VG-24119', sent: -2, client: 'First Harbor Mortgage', inspector: 'Angela Ruiz', form: 'Residential Property Inspection', score: 64, photos: 8, flags: ['Photos taken 0.4 miles from the address'], seen: 'No', status: 'Waiting review', checkedBy: '', hist: [H(-5, '2:30 PM', 'Imported from the client file', 'Mike Russo (staff)'), H(-5, '2:35 PM', 'Assigned to Angela Ruiz', 'Mike Russo (staff)'), H(-2, '11:58 AM', 'Report sent in', 'Angela Ruiz (inspector)')] },
+        { id: 'VG-24110', sent: -3, client: 'Keystone Insurance Group', inspector: 'Derek Hall', form: 'Commercial Property Inspection', score: 91, photos: 12, flags: [], seen: 'Yes', status: 'Approved', checkedBy: 'Jenny Park', hist: [H(-10, '9:00 AM', 'Request sent in from the website', 'D. Wright (client, Keystone)'), H(-10, '9:20 AM', 'Accepted as a job, due date set', 'Don Balducci (admin)'), H(-10, '9:21 AM', 'Assigned to Derek Hall', 'Don Balducci (admin)'), H(-3, '5:10 PM', 'Report sent in', 'Derek Hall (inspector)'), H(-2, '9:35 AM', 'Checked and approved, sent to the client', 'Jenny Park (staff)')] },
+        { id: 'VG-24108', sent: -4, client: 'Northgate Savings Bank', inspector: 'Priya Nair', form: 'Mystery Shop Visit (sample form)', score: 88, photos: 2, flags: [], seen: 'Yes', status: 'Approved', checkedBy: 'Don Balducci', hist: [H(-9, '6:00 AM', 'Created by the twice-a-month repeat', 'System (automatic)'), H(-9, '8:45 AM', 'Assigned to Priya Nair', 'Jenny Park (staff)'), H(-4, '12:30 PM', 'Report sent in', 'Priya Nair (shopper)'), H(-4, '3:00 PM', 'Checked and approved, sent to the client', 'Don Balducci (admin)')] }
       ] },
 
     { key: 'invoices', title: 'Client Invoices', icon: 'fa-file-invoice-dollar', color: 'red',
@@ -81,7 +85,7 @@ VA.sections = [
       rows: [
         { id: 'INV-2611', client: 'Lakeshore Loan Servicing', plan: 'Monthly (flat fee)', period: 'October 2026 · flat fee', billed: -10, due: 20, amount: 2500, paid: 0 },
         { id: 'INV-2610', client: 'First Harbor Mortgage', plan: 'Monthly (per job)', period: 'October 2026 · 17 jobs × $65', billed: -10, due: 20, amount: 1105, paid: 500 },
-        { id: 'INV-2612', client: 'Bright Brew Coffee Co.', plan: 'Per job', period: 'VG-24108', billed: -4, due: 4, amount: 55, paid: 0 },
+        { id: 'INV-2612', client: 'Bright Brew Coffee Co.', plan: 'Per job', period: 'VG-24108 · pilot rate', billed: -4, due: 4, amount: 50, paid: 0 },
         { id: 'INV-2606', client: 'Northgate Savings Bank', plan: 'Per job', period: 'VG-24099', billed: -12, due: 3, amount: 70, paid: 0 },
         { id: 'INV-2598', client: 'Bright Brew Coffee Co.', plan: 'Per job', period: '9 shops', billed: -32, due: -17, amount: 450, paid: 0 },
         { id: 'INV-2589', client: 'Midway Auto & Home Credit', plan: 'Monthly (per job)', period: 'September 2026 · 11 jobs × $30', billed: -41, due: -11, amount: 330, paid: 0 },
@@ -127,38 +131,42 @@ VA.sections = [
         { id: 'D-11', name: '1099-NEC 2025 - Derek Hall.pdf', type: '1099', who: 'Derek Hall', up: -200, signed: '—', size: '85 KB' }
       ] },
 
-    { key: 'clients', title: 'Clients & Billing Plans', icon: 'fa-address-card', color: 'red',
-      desc: 'Companies that order inspections. Each has a billing plan: per job, monthly per job (jobs added up once a month), monthly flat fee, or yearly flat fee. Plans and prices are SAMPLES, not decided yet. A card is charged automatically only when the client has a signed agreement.',
+    { key: 'clients', title: 'Clients, Rates & Billing', icon: 'fa-address-card', color: 'red',
+      desc: 'Companies that order inspections. Every client has its OWN rate (no fixed price list): a Pilot Program intro rate first, then the contract rate, and the rate can depend on how many stores the client has. Billing plan: per job, monthly per job, monthly flat fee, or yearly flat fee. All prices are SAMPLES. A card is charged automatically only when the client has a signed agreement.',
       add: 'Add Client', toggle: true,
-      cols: [['id', 'ID'], ['name', 'Name'], ['plan', 'Plan'], ['agree', 'Agreement Signed', 'yesno'], ['card', 'Card On File'], ['auto', 'Auto-Charge Card', 'yesno'], ['jobsThis', 'Jobs This Month', 'r'], ['bal', 'Balance', 'money'], ['active', 'Active', 'yesno']],
-      fields: [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Property manager', 'Retail / restaurant', 'Bank', 'Other']], ['contact', 'Main contact', 'text'], ['email', 'Contact email', 'text'], ['plan', 'Billing plan', 'select', ['Per job', 'Monthly (per job)', 'Monthly (flat fee)', 'Yearly (flat fee)']], ['agree', 'Agreement signed', 'select', ['No', 'Yes']], ['card', 'Card on file (last 4 only)', 'text'], ['auto', 'Charge the card automatically', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
+      cols: [['id', 'ID'], ['name', 'Name'], ['plan', 'Plan'], ['rateNow', 'Rate Now'], ['agree', 'Agreement Signed', 'yesno'], ['card', 'Card On File'], ['auto', 'Auto-Charge Card', 'yesno'], ['jobsThis', 'Jobs This Month', 'r'], ['bal', 'Balance', 'money'], ['active', 'Active', 'yesno']],
+      fields: [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Property manager', 'Retail / restaurant', 'Bank', 'Other']], ['contact', 'Main contact', 'text'], ['email', 'Contact email', 'text'], ['plan', 'Billing plan', 'select', ['Per job', 'Monthly (per job)', 'Monthly (flat fee)', 'Yearly (flat fee)']], ['pilot', 'Pilot Program (lower intro rate first)', 'select', ['No', 'Yes']], ['pilotRate', 'Pilot rate ($ per job)', 'number'], ['pilotEnds', 'Pilot ends on (then the contract rate starts)', 'date'], ['rate', 'Contract rate ($ per job, or the flat fee)', 'number'], ['stores', 'Stores / locations in the franchise', 'number'], ['tiers', 'Rate by number of stores (optional), like 1-10:60, 11-50:55, 51+:50', 'text'], ['agree', 'Agreement signed', 'select', ['No', 'Yes']], ['card', 'Card on file (last 4 only)', 'text'], ['auto', 'Charge the card automatically', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
       rows: [
-        { id: 1001, name: 'First Harbor Mortgage', type: 'Mortgage lender', contact: 'A. Reyes', email: 'ops@firstharbor.example', plan: 'Monthly (per job)', agree: 'Yes', card: '', auto: 'No', jobsThis: 31, bal: 605, active: 'Yes' },
-        { id: 1002, name: 'Lakeshore Loan Servicing', type: 'Loan servicer', contact: 'M. Chen', email: 'field@lakeshore.example', plan: 'Monthly (flat fee)', agree: 'Yes', card: 'Visa •••• 4417', auto: 'Yes', jobsThis: 40, bal: 2500, active: 'Yes' },
-        { id: 1003, name: 'Bright Brew Coffee Co.', type: 'Retail / restaurant', contact: 'K. Olsen', email: 'cx@brightbrew.example', plan: 'Per job', agree: 'No', card: 'MC •••• 2290', auto: 'No', jobsThis: 18, bal: 505, active: 'Yes' },
-        { id: 1004, name: 'Keystone Insurance Group', type: 'Insurance', contact: 'D. Wright', email: 'claims@keystone.example', plan: 'Yearly (flat fee)', agree: 'Yes', card: '', auto: 'No', jobsThis: 9, bal: 0, active: 'Yes' },
-        { id: 1005, name: 'Midway Auto & Home Credit', type: 'Bank', contact: 'S. Patel', email: 'collateral@midway.example', plan: 'Monthly (per job)', agree: 'Yes', card: 'Amex •••• 1008', auto: 'Yes', jobsThis: 11, bal: 330, active: 'Yes' },
-        { id: 1006, name: 'Northgate Savings Bank', type: 'Bank', contact: 'L. Brooks', email: 'branches@northgate.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 4, bal: 70, active: 'Yes' },
-        { id: 1007, name: 'Summit Property Partners', type: 'Property manager', contact: 'J. Kim', email: 'pm@summit.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 0, bal: 0, active: 'No' }
+        { id: 1001, name: 'First Harbor Mortgage', type: 'Mortgage lender', contact: 'A. Reyes', email: 'ops@firstharbor.example', plan: 'Monthly (per job)', agree: 'Yes', card: '', auto: 'No', jobsThis: 31, bal: 605, active: 'Yes', pilot: 'No', rate: 65, stores: 0, tiers: '' },
+        { id: 1002, name: 'Lakeshore Loan Servicing', type: 'Loan servicer', contact: 'M. Chen', email: 'field@lakeshore.example', plan: 'Monthly (flat fee)', agree: 'Yes', card: 'Visa •••• 4417', auto: 'Yes', jobsThis: 40, bal: 2500, active: 'Yes', pilot: 'No', rate: 2500, stores: 0, tiers: '' },
+        { id: 1003, name: 'Bright Brew Coffee Co.', type: 'Retail / restaurant', contact: 'K. Olsen', email: 'cx@brightbrew.example', plan: 'Per job', agree: 'No', card: 'MC •••• 2290', auto: 'No', jobsThis: 18, bal: 505, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: 20, rate: 60, stores: 42, tiers: '1-10:60, 11-50:55, 51+:50' },
+        { id: 1004, name: 'Keystone Insurance Group', type: 'Insurance', contact: 'D. Wright', email: 'claims@keystone.example', plan: 'Yearly (flat fee)', agree: 'Yes', card: '', auto: 'No', jobsThis: 9, bal: 0, active: 'Yes', pilot: 'No', rate: 9600, stores: 0, tiers: '' },
+        { id: 1005, name: 'Midway Auto & Home Credit', type: 'Bank', contact: 'S. Patel', email: 'collateral@midway.example', plan: 'Monthly (per job)', agree: 'Yes', card: 'Amex •••• 1008', auto: 'Yes', jobsThis: 11, bal: 330, active: 'Yes', pilot: 'No', rate: 30, stores: 0, tiers: '' },
+        { id: 1006, name: 'Northgate Savings Bank', type: 'Bank', contact: 'L. Brooks', email: 'branches@northgate.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 4, bal: 70, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: -5, rate: 70, stores: 9, tiers: '' },
+        { id: 1007, name: 'Summit Property Partners', type: 'Property manager', contact: 'J. Kim', email: 'pm@summit.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 0, bal: 0, active: 'No', pilot: 'Yes', pilotRate: 70, pilotEnds: 30, rate: 85, stores: 0, tiers: '' }
       ] },
 
-    { key: 'inspectors', hidden: true, title: 'Inspectors & Shoppers', icon: 'fa-user-shield', color: 'green',
-      desc: 'Field inspectors and mystery shoppers in the network. Turn someone off to stop new jobs going to them.',
+    { key: 'inspectors', title: 'Inspectors List', icon: 'fa-user-shield', color: 'green',
+      desc: 'Field inspectors and mystery shoppers in the network. Coverage = where they take jobs: ZIP codes, counties, or a whole state. "Offer to area" uses it. Turn someone off to stop new jobs going to them.',
       add: 'Add Inspector', toggle: true,
-      cols: [['id', 'ID'], ['name', 'Name'], ['role', 'Role'], ['area', 'Area'], ['zips', 'ZIP Coverage'], ['open', 'Open Jobs', 'r'], ['done', 'Done (90d)', 'r'], ['score', 'Avg Score', 'r'], ['active', 'Active', 'yesno']],
-      fields: [['name', 'Full name', 'text'], ['role', 'Role', 'select', ['Inspector', 'Mystery Shopper', 'Both']], ['email', 'Email', 'text'], ['phone', 'Phone', 'text'], ['area', 'Area (city, state)', 'text'], ['zips', 'ZIP codes covered', 'text'], ['active', 'Active', 'select', ['Yes', 'No']]],
+      cols: [['id', 'ID'], ['name', 'Name'], ['role', 'Role'], ['area', 'Home Area'], ['cov', 'Coverage'], ['open', 'Open Jobs', 'r'], ['done', 'Done (90d)', 'r'], ['score', 'Avg Score', 'r'], ['active', 'Active', 'yesno']],
+      fields: [['name', 'Full name', 'text'], ['role', 'Role', 'select', ['Inspector', 'Mystery Shopper', 'Both']], ['email', 'Email', 'text'], ['phone', 'Phone', 'text'], ['area', 'Home area (city, state)', 'text'], ['covType', 'Coverage type', 'select', ['ZIP codes', 'Counties', 'Entire state']], ['zips', 'Coverage list (ZIPs, counties, or state)', 'text'], ['active', 'Active', 'select', ['Yes', 'No']]],
       rows: [
-        { id: 'INS-0417', name: 'Maria Lopez', role: 'Both', email: 'maria@example.com', phone: '(516) 555-0110', area: 'Hempstead, NY', zips: '11550, 11530, 11743', open: 6, done: 41, score: 86, active: 'Yes' },
-        { id: 'INS-0388', name: 'Derek Hall', role: 'Inspector', email: 'derek@example.com', phone: '(516) 555-0133', area: 'Garden City, NY', zips: '11530, 11501, 11590', open: 4, done: 57, score: 81, active: 'Yes' },
-        { id: 'INS-0452', name: 'Priya Nair', role: 'Mystery Shopper', email: 'priya@example.com', phone: '(516) 555-0158', area: 'Massapequa, NY', zips: '11758, 11762', open: 2, done: 23, score: 90, active: 'Yes' },
-        { id: 'INS-0301', name: 'Tom Becker', role: 'Inspector', email: 'tom@example.com', phone: '(631) 555-0191', area: 'Hauppauge, NY', zips: '11788, 11749', open: 0, done: 12, score: 68, active: 'No' },
-        { id: 'INS-0466', name: 'Angela Ruiz', role: 'Both', email: 'angela@example.com', phone: '(631) 555-0104', area: 'Islip, NY', zips: '11751, 11706', open: 3, done: 8, score: 88, active: 'Yes' }
+        { id: 'INS-0417', name: 'Maria Lopez', role: 'Both', email: 'maria@example.com', phone: '(516) 555-0110', area: 'Hempstead, NY', covType: 'ZIP codes', zips: '11550, 11530, 11743', open: 6, done: 41, score: 86, active: 'Yes' },
+        { id: 'INS-0388', name: 'Derek Hall', role: 'Inspector', email: 'derek@example.com', phone: '(516) 555-0133', area: 'Garden City, NY', covType: 'ZIP codes', zips: '11530, 11501, 11590, 11566', open: 4, done: 57, score: 81, active: 'Yes' },
+        { id: 'INS-0452', name: 'Priya Nair', role: 'Mystery Shopper', email: 'priya@example.com', phone: '(516) 555-0158', area: 'Massapequa, NY', covType: 'Counties', zips: 'Nassau', open: 2, done: 23, score: 90, active: 'Yes' },
+        { id: 'INS-0301', name: 'Tom Becker', role: 'Inspector', email: 'tom@example.com', phone: '(631) 555-0191', area: 'Hauppauge, NY', covType: 'Entire state', zips: 'NY', open: 0, done: 12, score: 68, active: 'No' },
+        { id: 'INS-0466', name: 'Angela Ruiz', role: 'Both', email: 'angela@example.com', phone: '(631) 555-0104', area: 'Islip, NY', covType: 'Counties', zips: 'Suffolk', open: 3, done: 8, score: 88, active: 'Yes' }
+      ] },
+
+    { key: 'users', title: 'Admins & Staff', icon: 'fa-users-gear', color: 'navy',
+      desc: 'Who can sign in to the VIGN office side. Admins see everything and can add another admin. Staff only see the areas an admin turns on for them: billing, inspector pay, clients & rates, documents. 1099s are never shown to staff. Preview: the Staff Office (Jenny Park) follows these switches. Real system: the server blocks the areas that are off.',
+      add: 'Add Admin or Staff', toggle: true,
+      cols: [['name', 'Name'], ['role', 'Role'], ['billing', 'Billing', 'yesno'], ['pay', 'Inspector Pay', 'yesno'], ['rates', 'Clients & Rates', 'yesno'], ['docs', 'Documents', 'yesno'], ['last', 'Last Sign In', 'date'], ['active', 'Active', 'yesno']],
+      fields: [['name', 'Full name', 'text'], ['email', 'Email (they sign in with it)', 'text'], ['role', 'Role', 'select', ['Staff', 'Admin']], ['billing', 'Billing: invoices, payments, aging', 'select', ['No', 'Yes']], ['pay', 'Inspector pay', 'select', ['No', 'Yes']], ['rates', 'Clients & rates', 'select', ['No', 'Yes']], ['docs', 'Documents (agreements, instructions)', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
+      rows: [
+        { id: 'U-1', name: 'Don Balducci', email: 'don@vign.example', role: 'Admin', billing: 'Yes', pay: 'Yes', rates: 'Yes', docs: 'Yes', last: 0, active: 'Yes' },
+        { id: 'U-2', name: 'Jenny Park', email: 'jenny@vign.example', role: 'Staff', billing: 'No', pay: 'No', rates: 'Yes', docs: 'No', last: 0, active: 'Yes' },
+        { id: 'U-3', name: 'Mike Russo', email: 'mike@vign.example', role: 'Staff', billing: 'Yes', pay: 'No', rates: 'Yes', docs: 'Yes', last: -1, active: 'Yes' }
       ] }
-
-
-
-
-
-
-
 ];
