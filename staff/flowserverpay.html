@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inspector Pay | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="serverpay" data-perm="pay">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowserverpay.php: what each server (VIGN: inspector) is owed for approved work.
+   Tick inspectors and create pay statements; the inspector sees them in the portal under Payments. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, paidOut = {};
+    function owedJobs(i) { return V.jobs.filter(function (j) { return j.ins === i.id && ['approved', 'invoiced', 'paid'].indexOf(j.status) > -1 && !paidOut[j.id]; }); }
+    function waitJobs(i) { return V.jobs.filter(function (j) { return j.ins === i.id && (j.status === 'submitted' || j.status === 'returned'); }); }
+    function rows() { return V.inspectors.map(function (i) { var o = owedJobs(i), w = waitJobs(i); return { id: i.id, i: i, n: o.length, owed: V.sum(o, 'pay'), wait: V.sum(w, 'pay'), nw: w.length }; }); }
+    var sel = [];
+    var html = V.band('fa-sack-dollar', 'Inspector Pay', 'Pay is owed once a report is approved. Reports still in review are shown but not paid yet.');
+    html += '<div class="stats" id="st"></div><div class="card2" style="margin-top:16px"><div class="bulkbar" id="bulk"><b id="bn"></b> · <button class="btn btn-primary btn-sm" id="mk"><i class="fa-solid fa-file-invoice"></i> Create pay statements</button></div><div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    function stats() { var r = rows(); V.$('#st').innerHTML = V.stat('green', 'fa-sack-dollar', V.money(r.reduce(function (t, x) { return t + x.owed; }, 0)), 'Owed now (approved)') + V.stat('amber', 'fa-hourglass-half', V.money(r.reduce(function (t, x) { return t + x.wait; }, 0)), 'Waiting on review', 'flowreview.html') + V.stat('blue', 'fa-user-shield', r.filter(function (x) { return x.owed; }).length, 'Inspectors to pay'); }
+    stats();
+    var t = V.table(V.$('#tbl'), {
+        select: true, info: 'inspectors', sortKey: 'owed', sortDir: -1, rows: rows, search: function (r) { return r.i.name + ' ' + r.id; },
+        onSelect: function (ids) { sel = ids; V.$('#bulk').classList.toggle('on', ids.length > 0); V.$('#bn').textContent = ids.length + ' selected'; },
+        cols: [
+            { k: 'id', label: 'Inspector', sortVal: function (r) { return r.i.name; }, render: function (r) { return '<b>' + V.esc(r.i.name) + '</b><small class="muted" style="display:block">' + r.id + ' · ' + V.esc(r.i.role) + '</small>'; } },
+            { k: 'n', label: 'Approved jobs', cls: 'r', render: function (r) { return r.n; } },
+            { k: 'owed', label: 'Owed now', cls: 'r', render: function (r) { return '<b>' + V.money(r.owed) + '</b>'; } },
+            { k: 'nw', label: 'In review', cls: 'r', render: function (r) { return r.nw + ' · ' + V.money(r.wait); } },
+            { k: 'x', label: '', sort: false, render: function (r) { return r.n ? '<button class="btn btn-ghost btn-sm" data-see="' + r.id + '">See jobs</button>' : ''; } }
+        ],
+        foot: function (r) { return '<tr><td></td><td><b>Total</b></td><td class="r">' + r.reduce(function (t, x) { return t + x.n; }, 0) + '</td><td class="r"><b>' + V.money(r.reduce(function (t, x) { return t + x.owed; }, 0)) + '</b></td><td></td><td></td></tr>'; }
+    });
+    V.$('#app').addEventListener('click', function (e) {
+        var s = e.target.closest('[data-see]');
+        if (s) { var i = V.ins(s.dataset.see), o = owedJobs(i); V.modal(V.esc(i.name) + ': approved jobs', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Address</th><th>Approved</th><th class="r">Pay</th></tr></thead><tbody>' + o.map(function (j) { return '<tr><td><a href="flowjob.html?job=' + j.id + '">' + j.id + '</a></td><td>' + V.esc(j.addr) + '</td><td>' + V.day(j.reviewed) + '</td><td class="r">' + V.money(j.pay) + '</td></tr>'; }).join('') + '</tbody></table></div>'); return; }
+        if (e.target.closest('#mk')) {
+            var r = rows().filter(function (x) { return sel.indexOf(x.id) > -1 && x.owed; });
+            if (!r.length) { V.toast('The ticked inspectors have nothing owed.'); return; }
+            V.modal('Create ' + r.length + ' pay statement(s)', r.map(function (x) { return '<div style="display:flex;justify-content:space-between"><span>' + V.esc(x.i.name) + ' · ' + x.n + ' jobs</span><b>' + V.money(x.owed) + '</b></div>'; }).join('') + '<label class="fld">Pay date<input type="date" value="' + V.iso(2) + '"></label><label class="fld">Method<select><option>ACH</option><option>Check</option></select></label>',
+                '<button class="btn btn-primary btn-sm" data-ok>Create statements</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { r.forEach(function (x) { owedJobs(x.i).forEach(function (j) { paidOut[j.id] = 1; }); }); close(); stats(); t.redraw(); V.toast(r.length + ' pay statement(s) created (preview only).'); }); });
+        }
+    });
+};
+</script>
+</body>
+</html>

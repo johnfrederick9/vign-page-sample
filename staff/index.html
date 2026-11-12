@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Staff Sign In | VIGN USA</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="ps">
+<!-- SMK login.php (staff door): sign in, then Home (command.php) -->
+<div class="login">
+    <aside class="login-side">
+        <a href="../index.html" class="brand brand-light">
+            <img src="../images/vign-logo.png" alt="VIGN USA logo" width="84" height="73">
+            <span class="brand-text"><small>Verity Insight Group Network</small></span>
+        </a>
+        <div>
+            <h2>Staff Office</h2>
+            <ul>
+                <li><i class="fa-solid fa-file-import"></i> Take in client orders, one by one or from a file</li>
+                <li><i class="fa-solid fa-user-check"></i> Send each job to the right inspector</li>
+                <li><i class="fa-solid fa-list-check"></i> Check every report before the client sees it</li>
+                <li><i class="fa-solid fa-dollar-sign"></i> Bill clients and pay inspectors</li>
+            </ul>
+        </div>
+        <p class="small" style="color:rgba(255,255,255,.55);margin:0">© VIGN USA · Verity Insight Group Network</p>
+    </aside>
+    <main class="login-main">
+        <div class="login-box">
+            <h1>Staff Sign In</h1>
+            <p class="muted">For VIGN office staff.</p>
+            <form class="form" id="f" style="margin-top:18px" autocomplete="off">
+                <label>Email <input type="text" name="u" maxlength="150"></label>
+                <label>Password <input type="password" name="p" maxlength="200"></label>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+            <p class="alert" style="margin-top:16px">Preview: no password needed. Click <b>Sign In</b> to open the sample Staff Office.</p>
+            <p class="muted small center" style="margin-top:16px"><a href="../login.html">← Back to sign in</a></p>
+        </div>
+    </main>
+</div>
+<script>document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); try { sessionStorage.setItem('vign-role', 'staff'); } catch (er) {} location.href = 'command.html'; });</script>
+</body>
+</html>

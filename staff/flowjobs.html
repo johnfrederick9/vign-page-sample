@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jobs | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="jobs">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowjobs.php: one filtered jobs list, filters readable in the URL
+   (view, dtype = created|due|sent, min, max, archive, q). Tab strip like includes/smui_jobtabs.
+   Tick jobs to Assign, change the due date, or export. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, P = new URLSearchParams(location.search);
+    var VIEWS = [
+        ['all', 'Job List', function (j) { return true; }],
+        ['unassigned', 'Needs an inspector', function (j) { return V.open(j) && !j.ins; }],
+        ['late', 'Overdue', V.late],
+        ['field', 'In the field', function (j) { return j.status === 'assigned' || j.status === 'in_field' || j.status === 'returned'; }],
+        ['review', 'Waiting review', function (j) { return j.status === 'submitted'; }],
+        ['delivered', 'Delivered', function (j) { return j.status === 'approved' || j.status === 'invoiced' || j.status === 'paid'; }]
+    ];
+    var view = P.get('view') || 'all', dtype = P.get('dtype') || 'created', archive = P.get('archive') || 'active';
+    var min = V.fromIso(P.get('min')), max = V.fromIso(P.get('max'));
+    var f = VIEWS.filter(function (v) { return v[0] === view; })[0] || VIEWS[0];
+    var dkey = { created: 'created', due: 'due', sent: 'sent' }[dtype] || 'created';
+    function rows() {
+        return V.jobs.filter(function (j) {
+            if (!f[2](j)) return false;
+            if (archive === 'active' && j.status === 'paid') return false;
+            var d = j[dkey]; if (min != null && (d == null || d < min)) return false; if (max != null && (d == null || d > max)) return false;
+            return true;
+        });
+    }
+    var html = V.band('fa-clipboard-list', 'Jobs', 'Every inspection and mystery shop. Filters stay in the address bar, so a list can be shared.',
+        '<a class="bbtn" href="flowimport.html"><i class="fa-solid fa-file-import"></i> Import</a><a class="bbtn solid" href="flowaddjob.html"><i class="fa-solid fa-plus"></i> New job</a>');
+    html += '<nav class="jtabs" aria-label="Job views">' + VIEWS.map(function (v) {
+        var q = new URLSearchParams(location.search); q.set('view', v[0]);
+        return '<a href="?' + q + '"' + (v[0] === view ? ' class="on"' : '') + '>' + v[1] + ' <span class="n">' + V.jobs.filter(v[2]).length + '</span></a>';
+    }).join('') + '</nav>';
+    html += '<div class="card2" style="margin-top:16px"><form class="filters" id="flt">' +
+        '<label>Date <select class="tb-select" name="dtype"><option value="created">Created</option><option value="due">Due</option><option value="sent">Report sent</option></select></label>' +
+        '<label>From <input type="date" name="min" value="' + (P.get('min') || '') + '"></label><label>To <input type="date" name="max" value="' + (P.get('max') || '') + '"></label>' +
+        '<label>Show <select class="tb-select" name="archive"><option value="active">Active (not paid)</option><option value="all">All, including paid</option></select></label>' +
+        '<input type="hidden" name="view" value="' + view + '"><button class="btn btn-primary btn-sm">Apply</button> <a class="btn btn-ghost btn-sm" href="flowjobs.html?view=' + view + '">Clear</a></form>' +
+        '<div class="bulkbar" id="bulk"><b id="bulkN"></b> selected · <button class="btn btn-primary btn-sm" data-b="assign"><i class="fa-solid fa-user-check"></i> Assign inspector</button>' +
+        '<button class="btn btn-ghost btn-sm" data-b="due"><i class="fa-regular fa-calendar"></i> Change due date</button><button class="btn btn-ghost btn-sm" data-b="csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button class="btn btn-ghost btn-sm" data-b="print"><i class="fa-solid fa-print"></i> Print work orders</button></div>' +
+        '<div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    V.$('[name=dtype]').value = dtype; V.$('[name=archive]').value = archive;
+
+    var sel = [];
+    var t = V.table(V.$('#tbl'), {
+        select: true, info: 'jobs', sortKey: 'created', sortDir: -1, show: 25,
+        onSelect: function (ids) { sel = ids; V.$('#bulk').classList.toggle('on', ids.length > 0); V.$('#bulkN').textContent = ids.length + ' job' + (ids.length > 1 ? 's' : ''); },
+        rows: rows,
+        search: function (j) { return j.id + ' ' + j.addr + ' ' + j.city + ' ' + V.client(j.client).name + ' ' + j.ref + ' ' + ((V.ins(j.ins) || {}).name || 'unassigned') + ' ' + V.STATUS[j.status][0]; },
+        cols: [
+            { k: 'id', label: 'Job #', render: function (j) { return '<a href="flowjob.html?job=' + j.id + '"><b>' + j.id + '</b></a><small class="muted" style="display:block">' + V.esc(j.ref) + '</small>'; } },
+            { k: 'client', label: 'Client', sortVal: function (j) { return V.client(j.client).name; }, render: function (j) { return V.esc(V.client(j.client).name) + '<small class="muted" style="display:block">' + V.esc(V.services[j.svc][0]) + '</small>'; } },
+            { k: 'addr', label: 'Address', render: function (j) { return V.esc(j.addr) + '<small class="muted" style="display:block">' + V.esc(j.city) + '</small>'; } },
+            { k: 'ins', label: 'Inspector', sortVal: function (j) { return (V.ins(j.ins) || {}).name || ''; }, render: V.insName },
+            { k: 'status', label: 'Status', sortVal: function (j) { return Object.keys(V.STATUS).indexOf(j.status); }, render: V.stPill },
+            { k: 'prio', label: 'Priority', render: function (j) { return V.pill(j.prio, 'prio-' + j.prio); } },
+            { k: 'due', label: 'Due', render: V.dueTxt },
+            { k: 'visits', label: 'Visits', cls: 'r', render: function (j) { return j.visits; } },
+            { k: 'price', label: 'Price <span class=\"samp\">sample</span>', cls: 'r', render: function (j) { return V.money(j.price); } }
+        ],
+        foot: function (r) { return '<tr><td colspan="9"><b>' + r.length + ' jobs</b></td><td class="r"><b>' + V.money(V.sum(r)) + '</b></td></tr>'; }
+    });
+    if (P.get('q')) { var qi = V.$('#tbl [data-q]'); qi.value = P.get('q'); qi.dispatchEvent(new Event('input')); }
+
+    V.$('#bulk').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-b]'); if (!b) return;
+        if (b.dataset.b === 'assign') V.assign(sel, t.redraw);
+        if (b.dataset.b === 'due') V.modal('Change due date', '<label class="fld" style="margin:0">New due date for ' + sel.length + ' job(s)<input type="date" id="nd" value="' + V.iso(3) + '"></label>',
+            '<button class="btn btn-primary btn-sm" data-ok>Save</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { var d = V.fromIso(V.$('#nd', m).value); sel.forEach(function (id) { V.job(id).due = d; }); close(); t.redraw(); V.toast('Due date changed (preview only).'); }); });
+        if (b.dataset.b === 'csv') {
+            var csv = 'Job,Client,Service,Address,City,Inspector,Status,Due,Price\n' + sel.map(V.job).map(function (j) { return [j.id, V.client(j.client).name, V.services[j.svc][0], j.addr, j.city, (V.ins(j.ins) || {}).name || '', V.STATUS[j.status][0], V.day(j.due), j.price].map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+            var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = 'vign-jobs.csv'; a.click();
+        }
+        if (b.dataset.b === 'print') V.toast('Work orders would print here (preview only).');
+    });
+};
+</script>
+</body>
+</html>

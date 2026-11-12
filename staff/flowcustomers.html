@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Clients | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="clients">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowcustomers.php (includes/flow_customers_v2.php): "who sends you work".
+   One row per client with open work and money owed; the name opens that client's jobs. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS;
+    var of = function (c, f) { return V.jobs.filter(function (j) { return j.client === c.id && f(j); }); };
+    function calc() { V.clients.forEach(function (c) {
+        c.open = of(c, V.open).length; c.late = of(c, V.late).length;
+        c.done30 = of(c, function (j) { return j.reviewed != null && j.reviewed >= -29; }).length;
+        c.owed = V.owedBy(c.id);
+        c.billed = V.invoices.filter(function (i) { return i.client === c.id; }).reduce(function (t, i) { return t + i.amount; }, 0);
+    }); }
+    calc();
+    var html = V.band('fa-building', 'Clients', 'Lenders, servicers, insurers and businesses that order inspections and mystery shops.',
+        '<a class="bbtn solid" href="#" id="newC"><i class="fa-solid fa-plus"></i> New client</a>');
+    html += '<div class="stats">' + V.stat('blue', 'fa-building', V.clients.length, 'Clients') +
+        V.stat('amber', 'fa-briefcase', V.clients.reduce(function (t, c) { return t + c.open; }, 0), 'Open jobs', 'flowjobs.html') +
+        V.stat('red', 'fa-triangle-exclamation', V.clients.reduce(function (t, c) { return t + c.late; }, 0), 'Overdue', 'flowjobs.html?view=late') +
+        (V.can('billing') ? V.stat('green', 'fa-hand-holding-dollar', V.money(V.clients.reduce(function (t, c) { return t + c.owed; }, 0)), 'Owed to VIGN', 'flowinvoices.html?mode=bycustomer') : '') + '</div>';
+    html += '<div class="card2" style="margin-top:16px"><div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    var t = V.table(V.$('#tbl'), {
+        info: 'clients', sortKey: 'name', rows: function () { return V.clients; },
+        search: function (c) { return c.name + ' ' + c.type + ' ' + c.contact + ' ' + c.email; },
+        cols: [
+            { k: 'name', label: 'Client', render: function (c) { return '<a href="#" data-edit="' + c.id + '" title="Edit"><b>' + V.esc(c.name) + '</b></a><small class="muted" style="display:block">' + V.esc(c.type) + '</small>'; } },
+            { k: 'contact', label: 'Contact', render: function (c) { return V.esc(c.contact) + '<small class="muted" style="display:block">' + V.esc(c.phone) + ' · ' + V.esc(c.email) + '</small>'; } },
+            { k: 'svc', label: 'Services', sort: false, render: function (c) { return c.svc.map(function (s) { return V.esc(V.services[s][0]); }).join('<br>'); } },
+            { k: 'open', label: 'Open', cls: 'r', render: function (c) { return c.open; } },
+            { k: 'late', label: 'Overdue', cls: 'r', render: function (c) { return c.late ? '<b class="unassigned">' + c.late + '</b>' : 0; } },
+            { k: 'done30', label: 'Delivered 30d', cls: 'r', render: function (c) { return c.done30; } },
+            { k: 'terms', label: 'Terms', cls: 'r', render: function (c) { return 'Net ' + c.terms; } },
+            { k: 'rate', label: 'Rate (set by admin)', cls: 'r', hide: !V.can('rates'), render: function (c) { var r = V.rates[c.name]; return r ? '<b>' + V.money(r[0]) + '</b>' + V.esc(r[1]) + (r[2] ? '<small class="muted" style="display:block">' + V.esc(r[2]) + '</small>' : '') : '<span class="muted">—</span>'; } },
+            { k: 'owed', label: 'Owed', cls: 'r', hide: !V.can('billing'), render: function (c) { return V.balBox(c.owed, 'data-bal="' + c.id + '" title="See the invoices"'); } }
+        ].filter(function (c) { return !c.hide; }),
+        foot: function (r) { return '<tr><td colspan="3"><b>' + r.length + ' clients</b></td><td class="r"><b>' + r.reduce(function (t, c) { return t + c.open; }, 0) + '</b></td><td></td><td></td><td></td>' + (V.can('rates') ? '<td></td>' : '') + (V.can('billing') ? '<td class="r"><b>' + V.money(r.reduce(function (t, c) { return t + c.owed; }, 0)) + '</b></td>' : '') + '</tr>'; }
+    });
+    // LoyalServe way: the name opens Edit, the balance opens the client's invoices
+    // staff can add a client; the billing plan, card and agreement are set by the admin
+    V.$('#newC').addEventListener('click', function (e) {
+        e.preventDefault();
+        var c = { id: Math.max.apply(null, V.clients.map(function (x) { return x.id; })) + 1, name: '', type: 'Mortgage lender', contact: '', phone: '', email: '', svc: [], terms: 30 };
+        V.editPopup('New client', c, [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Retail / restaurant', 'Bank', 'Property manager', 'Other']], ['contact', 'Main contact', 'text'], ['phone', 'Phone', 'text'], ['email', 'Email', 'text'], ['terms', 'Pay within (days)', 'number']],
+            function () { if (!c.name.trim()) { V.toast('Type the company name.'); return; } V.clients.unshift(c); calc(); t.redraw(); },
+            '<p class="muted small" style="margin:0"><i class="fa-solid fa-lock"></i> The billing plan, card and signed agreement are set by the VIGN admin.</p>');
+    });
+    V.$('#tbl').addEventListener('click', function (e) {
+        var ed = e.target.closest('[data-edit]');
+        if (ed) { e.preventDefault(); var c = V.client(+ed.dataset.edit);
+            V.editPopup('Edit: ' + V.esc(c.name), c, [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Retail / restaurant', 'Bank', 'Property manager', 'Other']], ['contact', 'Main contact', 'text'], ['phone', 'Phone', 'text'], ['email', 'Email', 'text'], ['terms', 'Pay within (days)', 'number']], t.redraw,
+                '<p class="muted small" style="margin:0"><a href="flowjobs.html?q=' + encodeURIComponent(c.name) + '">See this client&#39;s jobs</a> · billing plan and card are set by the VIGN admin</p>'); return; }
+        var b = e.target.closest('[data-bal]');
+        if (b && V.can('billing')) { e.preventDefault(); V.clientInvoices(+b.dataset.bal, function () { calc(); t.redraw(); }); }
+    });
+};
+</script>
+</body>
+</html>

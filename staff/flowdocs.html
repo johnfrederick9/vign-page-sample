@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Documents | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="docs" data-perm="docs">
+<main class="content" id="app"></main>
+<script>
+/* R-14: staff see Documents only when an admin turns it on (Admin Menu > Admins & Staff).
+   Agreements and instructions only: 1099 / tax forms are NEVER shown to staff. Uploading is admin only.
+   Sample file names, the same as the Admin Menu Documents tile. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS;
+    var docs = [
+        ['Client Service Agreement - First Harbor Mortgage.pdf', 'Agreement', 'First Harbor Mortgage', -40, 'Signed'],
+        ['Client Service Agreement - Lakeshore Loan Servicing.pdf', 'Agreement', 'Lakeshore Loan Servicing', -35, 'Signed'],
+        ['Client Service Agreement - Bright Brew Coffee Co.pdf', 'Agreement', 'Bright Brew Coffee Co.', -6, 'Waiting'],
+        ['Card Auto-Pay Authorization - Midway Auto & Home Credit.pdf', 'Agreement', 'Midway Auto & Home Credit', -20, 'Signed'],
+        ['Independent Inspector Agreement - Maria Lopez.pdf', 'Agreement', 'Maria Lopez', -90, 'Signed'],
+        ['Independent Inspector Agreement - Angela Ruiz.pdf', 'Agreement', 'Angela Ruiz', -8, 'Waiting'],
+        ['Inspector Field Instructions v1.pdf', 'Instructions', 'All inspectors', -30, '—'],
+        ['Mystery Shopper Instructions.pdf', 'Instructions', 'All inspectors', -30, '—'],
+        ['How to Order an Inspection.pdf', 'Instructions', 'All clients', -25, '—']
+    ].map(function (d, i) { return { id: i + 1, name: d[0], type: d[1], who: d[2], up: d[3], signed: d[4] }; });
+    var html = V.band('fa-folder-open', 'Documents', 'Agreements and instructions. View only: uploading is done by the admin. 1099 / tax forms are private and never shown here.');
+    html += '<div class="card2" style="margin-top:16px"><div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    V.table(V.$('#tbl'), {
+        info: 'documents', sortKey: 'up', sortDir: -1, rows: function () { return docs; }, search: function (d) { return d.name + ' ' + d.who + ' ' + d.type; },
+        cols: [
+            { k: 'name', label: 'File', render: function (d) { return '<b><i class="fa-regular fa-file-pdf" style="color:var(--r);margin-right:6px"></i>' + V.esc(d.name) + '</b>'; } },
+            { k: 'type', label: 'Type', render: function (d) { return V.esc(d.type); } },
+            { k: 'who', label: 'For', render: function (d) { return V.esc(d.who); } },
+            { k: 'up', label: 'Uploaded', render: function (d) { return V.day(d.up); } },
+            { k: 'signed', label: 'Signed', render: function (d) { return d.signed === '—' ? '—' : V.pill(d.signed, d.signed === 'Signed' ? 'st-paid' : 'st-invoiced'); } }
+        ]
+    });
+};
+</script>
+</body>
+</html>

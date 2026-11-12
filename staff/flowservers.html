@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inspectors | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="inspectors">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowservers.php (includes/flow_servers_v2.php): "your team in the field".
+   VIGN calls process servers "inspectors and shoppers". One row each: area, workload, quality, pay owed. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS;
+    var of = function (i, f) { return V.jobs.filter(function (j) { return j.ins === i.id && f(j); }); };
+    V.inspectors.forEach(function (i) {
+        i.open = of(i, V.open).length; i.late = of(i, V.late).length; i.review = of(i, function (j) { return j.status === 'submitted'; }).length;
+        i.back = of(i, function (j) { return j.status === 'returned'; }).length;
+        i.owed = V.sum(of(i, function (j) { return j.status === 'approved' || j.status === 'invoiced'; }), 'pay');
+    });
+    var act = V.inspectors.filter(function (i) { return i.active; });
+    var html = V.band('fa-user-shield', 'Inspectors', 'Field inspectors and mystery shoppers in the network.',
+        '<a class="bbtn solid" href="#" id="newI"><i class="fa-solid fa-plus"></i> New inspector</a>');
+    html += '<div class="stats">' + V.stat('blue', 'fa-user-shield', act.length, 'Active inspectors') +
+        V.stat('amber', 'fa-briefcase', act.reduce(function (t, i) { return t + i.open; }, 0), 'Jobs in the field', 'flowjobs.html?view=field') +
+        V.stat('orange', 'fa-rotate-left', V.inspectors.reduce(function (t, i) { return t + i.back; }, 0), 'Sent back to fix') +
+        V.stat('green', 'fa-sack-dollar', V.money(V.inspectors.reduce(function (t, i) { return t + i.owed; }, 0)), 'Pay owed', 'flowserverpay.html') + '</div>';
+    html += '<div class="card2" style="margin-top:16px"><div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    var t = V.table(V.$('#tbl'), {
+        info: 'inspectors', sortKey: 'name', rows: function () { return V.inspectors; },
+        search: function (i) { return i.id + ' ' + i.name + ' ' + i.role + ' ' + i.area + ' ' + i.zips; },
+        cols: [
+            { k: 'name', label: 'Inspector', render: function (i) { return '<a href="#" data-edit="' + i.id + '" title="Edit"><b>' + V.esc(i.name) + '</b></a><small class="muted" style="display:block">' + i.id + ' · ' + V.esc(i.role) + '</small>'; } },
+            { k: 'area', label: 'Area', render: function (i) { return V.esc(i.area) + '<small class="muted" style="display:block">ZIPs ' + V.esc(i.zips) + '</small>'; } },
+            { k: 'active', label: 'Status', render: function (i) { return i.active ? V.pill('Active', 'st-approved') : V.pill('Inactive', 'st-returned'); } },
+            { k: 'open', label: 'Open', cls: 'r', render: function (i) { return i.open; } },
+            { k: 'late', label: 'Overdue', cls: 'r', render: function (i) { return i.late ? '<b class="unassigned">' + i.late + '</b>' : 0; } },
+            { k: 'review', label: 'In review', cls: 'r', render: function (i) { return i.review; } },
+            { k: 'score', label: 'Avg score', cls: 'r', render: function (i) { return '<span class="score rate ' + V.scoreCls(i.score) + '">' + i.score + '</span>'; } },
+            { k: 'ontime', label: 'On time', cls: 'r', render: function (i) { return i.ontime + '%'; } },
+            { k: 'owed', label: 'Pay owed', cls: 'r', render: function (i) { return i.owed ? '<a class="balbox due" href="flowserverpay.html" title="Pay this inspector">' + V.money(i.owed) + '</a>' : '<span class="balbox ok">' + V.money(0) + '</span>'; } },
+            { k: 'phone', label: '', sort: false, render: function (i) { return '<a class="btn btn-ghost btn-sm" href="tel:' + i.phone.replace(/\D/g, '') + '" title="Call ' + V.esc(i.name) + '"><i class="fa-solid fa-phone"></i></a>'; } }
+        ]
+    });
+    // LoyalServe way: the name opens Edit
+    // staff can add an inspector; the admin approves them before they get jobs
+    V.$('#newI').addEventListener('click', function (e) {
+        e.preventDefault();
+        var n = { id: 'INS-0' + (500 + V.inspectors.length), name: '', role: 'Inspector', area: '', zips: '', phone: '', score: 0, ontime: 0, active: false, open: 0, late: 0, review: 0, back: 0, owed: 0 };
+        V.editPopup('New inspector', n, [['name', 'Full name', 'text'], ['role', 'Role', 'select', ['Inspector', 'Mystery Shopper', 'Both']], ['area', 'Area (city, state)', 'text'], ['zips', 'ZIP codes covered', 'text'], ['phone', 'Phone', 'text']],
+            function () { if (!n.name.trim()) { V.toast('Type the full name.'); return; } V.inspectors.unshift(n); t.redraw(); V.toast(n.name + ' added. Not active until the VIGN admin approves (preview only).'); },
+            '<p class="muted small" style="margin:0"><i class="fa-solid fa-lock"></i> New inspectors stay <b>not active</b> until the VIGN admin approves them. Join requests from the website are also approved by the admin.</p>');
+    });
+    V.$('#tbl').addEventListener('click', function (e) {
+        var ed = e.target.closest('[data-edit]'); if (!ed) return; e.preventDefault();
+        var i = V.ins(ed.dataset.edit);
+        V.editPopup('Edit: ' + V.esc(i.name), i, [['name', 'Full name', 'text'], ['role', 'Role', 'select', ['Inspector', 'Mystery Shopper', 'Both']], ['area', 'Area (city, state)', 'text'], ['zips', 'ZIP codes covered', 'text'], ['phone', 'Phone', 'text'], ['active', 'Active', 'select', [['true', 'Yes'], ['false', 'No']], 'bool']], t.redraw,
+            '<p class="muted small" style="margin:0"><a href="flowjobs.html?q=' + encodeURIComponent(i.name) + '">See this inspector&#39;s jobs</a></p>');
+    });
+};
+</script>
+</body>
+</html>

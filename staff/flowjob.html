@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="jobdetail">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowjob.php: the single-job screen. Status is a band under the title.
+   Left = Client / Inspector / Visits / Report / Receivable / Inspector pay / Photos / Notes / Activity.
+   Right = Property / Instructions / Contacts / Reference. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, j = V.job(V.param('job')) || V.jobs[0];
+    document.title = j.id + ' | VIGN Staff Office';
+    var c = V.client(j.client), ins = V.ins(j.ins), form = V.forms[j.form];
+    var notes = [[j.created, 'Staff', 'Order received from ' + c.name + '.']];
+    if (j.returnNote) notes.push([j.sent + 1, 'VIGN QA', 'Sent back: ' + j.returnNote]);
+
+    function draw() {
+        var steps = [['new', 'Received', 'fa-inbox'], ['assigned', 'Assigned', 'fa-user-check'], ['in_field', 'In field', 'fa-person-walking'], ['submitted', 'Report in', 'fa-paper-plane'], ['approved', 'Delivered', 'fa-circle-check'], ['invoiced', 'Invoiced', 'fa-file-invoice-dollar'], ['paid', 'Paid', 'fa-money-bill-wave']];
+        var order = steps.map(function (s) { return s[0]; }), cur = order.indexOf(j.status === 'returned' ? 'in_field' : j.status);
+        var acts = '';
+        if (V.open(j)) acts += '<button class="bbtn" data-a="assign"><i class="fa-solid fa-user-check"></i> ' + (ins ? 'Reassign' : 'Assign') + '</button>';
+        if (['assigned', 'in_field', 'returned'].indexOf(j.status) > -1) acts += '<a class="bbtn" href="flowfillform.html?job=' + j.id + '"><i class="fa-solid fa-pen-to-square"></i> Fill in form by hand</a>';
+        if (j.status === 'submitted') acts += '<a class="bbtn solid" href="flowreview.html?job=' + j.id + '"><i class="fa-solid fa-list-check"></i> Review report</a>';
+        if (j.answers) acts += '<button class="bbtn" data-a="pdf"><i class="fa-solid fa-file-pdf"></i> Report PDF</button>';
+        acts += '<button class="bbtn" data-a="note"><i class="fa-regular fa-note-sticky"></i> Add note</button>';
+
+        var html = V.band(V.services[j.svc][1], 'Job ' + j.id, V.esc(j.addr) + ', ' + V.esc(j.city) + ' · ' + V.esc(c.name), acts);
+        html += '<div class="stband">' + steps.map(function (s, i) {
+            return '<span class="' + (i < cur ? 'done' : i === cur ? 'cur' : '') + '"><i class="fa-solid ' + (i < cur ? 'fa-check' : s[2]) + '"></i>' + (i === cur && j.status === 'returned' ? 'Sent back' : s[1]) + '</span>';
+        }).join('') + '</div>';
+        if (j.returnNote && j.status === 'returned') html += '<p class="note red" style="margin-top:14px"><b>Sent back to the inspector:</b> ' + V.esc(j.returnNote) + '</p>';
+
+        var L = '', R = '';
+        L += V.card('Client', '<a href="flowcustomers.html">' + V.esc(c.type) + '</a>', '<dl class="dl"><dt>Client</dt><dd>' + V.esc(c.name) + '</dd><dt>Contact</dt><dd>' + V.esc(c.contact) + ' · ' + V.esc(c.phone) + '</dd><dt>Reference</dt><dd>' + V.esc(j.ref) + '</dd><dt>Service</dt><dd>' + V.esc(V.services[j.svc][0]) + '</dd><dt>Form</dt><dd>' + V.esc(form[0]) + '</dd></dl>');
+        L += V.card('Inspector', ins ? 'Score ' + ins.score + ' · on time ' + ins.ontime + '%' : '', ins ? '<dl class="dl"><dt>Name</dt><dd>' + V.esc(ins.name) + ' (' + ins.id + ')</dd><dt>Role</dt><dd>' + V.esc(ins.role) + '</dd><dt>Area</dt><dd>' + V.esc(ins.area) + '</dd><dt>Phone</dt><dd>' + V.esc(ins.phone) + '</dd></dl>' : '<p class="unassigned" style="margin:0">No inspector yet.</p><button class="btn btn-primary btn-sm" data-a="assign" style="margin-top:10px">Assign inspector</button>');
+
+        var visits = '<tr><td colspan="4" class="empty">No visits yet</td></tr>';
+        if (j.visits) visits = '<tr><td>' + V.day(j.sent != null ? j.sent : 0) + '</td><td>' + (ins ? V.esc(ins.name) : '') + '</td><td>' + (j.sent != null ? 'Report sent in' : 'Started, not sent yet') + '</td><td>' + (j.gps != null ? j.gps + ' m from address' : '–') + '</td></tr>';
+        L += V.card('Visits', j.visits + ' visit(s)', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>By</th><th>Result</th><th>GPS</th></tr></thead><tbody>' + visits + '</tbody></table></div>', true);
+
+        if (j.answers) {
+            L += V.card('Report', 'Score <span class="samp">sample formula</span> ' + V.scorePill(j), '<ul class="items">' + form[1].map(function (it, i) {
+                var a = j.answers[i], r = V.ratings[a];
+                return '<li><span class="rate ' + r[1] + '" style="display:grid;place-items:center;border-radius:6px">' + (a === 'NO' || a === 'NA' ? r[0] : a) + '</span><span>' + V.esc(it) + (j.findings[i] ? '<small>' + V.esc(j.findings[i]) + '</small>' : '') + '</span>' +
+                    (j.photo[i] ? '<span class="cam"><i class="fa-solid fa-camera"></i> photo</span>' : (a === '3' || a === '4') ? '<span class="cam miss"><i class="fa-solid fa-camera"></i> missing</span>' : '') + '</li>';
+            }).join('') + '</ul>');
+            L += V.card('Photos', j.photos + ' photos', '<div class="photos">' + Array.apply(null, Array(Math.min(j.photos, 8))).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>IMG_' + (2201 + i) + '</small></div>'; }).join('') + '</div>');
+        }
+
+        var iv = j.inv && V.inv(j.inv), inv = iv ? '<tr><td>' + iv.id + '<small class="muted" style="display:block">' + V.esc(iv.period) + '</small></td><td>' + V.day(iv.billed) + '</td><td class="r">' + V.money(iv.amount) + '<small class="muted" style="display:block">this job ' + V.money(j.price) + '</small></td><td class="r">' + V.money(V.invBal(iv)) + '</td></tr>' : '<tr><td colspan="4" class="empty">Not invoiced yet · price ' + V.money(j.price) + '</td></tr>';
+        if (V.can('billing')) L += V.card('Receivable', j.status === 'paid' ? 'Paid ' + V.day(j.payDate) + ' · ' + j.payHow : '', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Invoice #</th><th>Date</th><th class="r">Amount</th><th class="r">Balance</th></tr></thead><tbody>' + inv + '</tbody></table></div>', true);
+        if (V.can('pay')) L += V.card('Inspector pay', '', '<dl class="dl"><dt>Pay for this job</dt><dd>' + V.money(j.pay) + '</dd><dt>Status</dt><dd>' + (['approved', 'invoiced', 'paid'].indexOf(j.status) > -1 ? 'Owed, goes on the next pay statement' : 'Not owed until the report is approved') + '</dd></dl>');
+        L += V.card('Notes', notes.length, '<ul class="alerts">' + notes.map(function (n) { return '<li><span><b>' + V.esc(n[1]) + '</b> · ' + V.day(n[0]) + '<small>' + V.esc(n[2]) + '</small></span></li>'; }).join('') + '</ul>', true);
+
+        // R-15: who entered the job, who assigned it, who checked it (sample names, same every time)
+        var n = parseInt(String(j.id).replace(/\D/g, ''), 10) || 0, staff = ['Jenny Park (staff)', 'Mike Russo (staff)', 'Don Balducci (admin)'];
+        var entered = n % 4 === 0 ? [(c.contact || 'Client') + ' (client portal)', 'Request sent in'] : n % 4 === 1 ? [staff[1], 'Imported from the client file'] : [staff[n % 3], 'Job typed in by hand'];
+        var ev = [[j.created, entered[1], entered[0]]];
+        if (ins) ev.push([j.created, 'Assigned to ' + ins.name, staff[(n + 1) % 3]]);
+        if (j.sent != null) ev.push([j.sent, 'Report sent in', ins ? ins.name + ' (inspector)' : '']);
+        if (j.returnNote) ev.push([j.sent + 1, 'Checked and sent back to the inspector', staff[n % 2]]);
+        if (j.reviewed != null) ev.push([j.reviewed, 'Checked and approved, sent to the client', staff[(n + 2) % 3]]);
+        if (j.inv && V.can('billing')) ev.push([j.invDate, 'Invoice ' + j.inv + ' sent', 'System (automatic billing)']);
+        if (j.payDate != null && V.can('billing')) ev.push([j.payDate, 'Payment received (' + j.payHow + ')', 'Don Balducci (admin)']);
+        L += V.card('Job history', 'who did what · ' + ev.length + ' steps', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>What happened</th><th>By</th></tr></thead><tbody>' + ev.map(function (e) { return '<tr><td>' + V.day(e[0]) + '</td><td>' + V.esc(e[1]) + '</td><td>' + V.esc(e[2]) + '</td></tr>'; }).join('') + '</tbody></table></div>', true);
+
+        R += V.card('Property', '', '<dl class="dl"><dt>Address</dt><dd>' + V.esc(j.addr) + '<br>' + V.esc(j.city) + '</dd><dt>County</dt><dd>' + V.esc(j.county) + '</dd><dt>Access</dt><dd>' + V.esc(j.access) + '</dd></dl><a class="btn btn-ghost btn-sm" style="margin-top:12px" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(j.addr + ', ' + j.city) + '"><i class="fa-solid fa-map-location-dot"></i> Map</a>');
+        R += V.card('Instructions', '', '<p style="margin:0">' + V.esc(j.notes) + '</p>');
+        R += V.card('Dates', '', '<dl class="dl"><dt>Received</dt><dd>' + V.day(j.created) + '</dd><dt>Due</dt><dd>' + V.dueTxt(j) + '</dd><dt>Priority</dt><dd>' + V.pill(j.prio, 'prio-' + j.prio) + '</dd>' + (j.sent != null ? '<dt>Report in</dt><dd>' + V.day(j.sent) + '</dd>' : '') + '</dl>');
+        R += V.card('Contacts', '', '<dl class="dl"><dt>Client contact</dt><dd>' + V.esc(c.contact) + '</dd><dt>Email</dt><dd>' + V.esc(c.email) + '</dd><dt>Phone</dt><dd>' + V.esc(c.phone) + '</dd></dl>');
+        html += '<div class="grid2"><div>' + L + '</div><div>' + R + '</div></div>';
+        V.$('#app').innerHTML = html;
+    }
+    draw();
+    V.$('#app').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-a]'); if (!b) return;
+        if (b.dataset.a === 'assign') V.assign([j.id], function () { ins = V.ins(j.ins); draw(); });
+        if (b.dataset.a === 'pdf') V.toast('The report PDF for the client would open here (preview only).');
+        if (b.dataset.a === 'note') V.modal('Add note to ' + j.id, '<label class="fld" style="margin:0">Note<textarea id="nt" placeholder="Called the client, new access code..."></textarea></label>', '<button class="btn btn-primary btn-sm" data-ok>Save note</button>', function (m, close) {
+            V.$('[data-ok]', m).addEventListener('click', function () { var t = V.$('#nt', m).value.trim(); if (!t) return; notes.push([0, V.me.name, t]); close(); draw(); V.toast('Note added (preview only).'); });
+        });
+    });
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="home">
+<main class="content" id="app"></main>
+<script>
+/* SMK command.php + index_flow.php (Flow "Overview"): Today strip, Activity last 30 days, Due pipeline,
+   Money, Receivables by age. Every number and every bar opens the matching Jobs / Accounting list. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, J = V.jobs, h = new Date().getHours();
+    var on = function (k, d) { return J.filter(function (j) { return j[k] === d; }).length; };
+    var dueNow = J.filter(function (j) { return V.open(j) && j.due <= 0; }).length;
+    var trend = function (t, y) { return t > y ? '<em class="up">▲ ' + (t - y) + ' vs yesterday</em>' : t < y ? '<em class="down">▼ ' + (y - t) + ' vs yesterday</em>' : '<em class="flat">same as yesterday</em>'; };
+
+    var html = V.band('fa-house', 'Home', 'Good ' + (h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening') + ', ' + V.esc(V.me.name.split(' ')[0]) + '. Every number opens its list.',
+        '<a class="bbtn" href="flowimport.html"><i class="fa-solid fa-file-import"></i> Import jobs</a><a class="bbtn solid" href="flowreview.html"><i class="fa-solid fa-list-check"></i> Review reports</a>');
+
+    html += '<div class="today">' +
+        '<a href="flowjobs.html?dtype=created&min=' + V.iso(0) + '&max=' + V.iso(0) + '"><span>Jobs created today</span><b>' + on('created', 0) + '</b>' + trend(on('created', 0), on('created', -1)) + '</a>' +
+        '<a href="flowreview.html"><span>Reports sent in today</span><b>' + on('sent', 0) + '</b>' + trend(on('sent', 0), on('sent', -1)) + '</a>' +
+        '<a href="flowjobs.html?view=delivered"><span>Delivered to clients today</span><b>' + on('reviewed', 0) + '</b>' + trend(on('reviewed', 0), on('reviewed', -1)) + '</a>' +
+        '<a href="flowjobs.html?view=late"><span>Due today + overdue</span><b style="color:var(--r)">' + dueNow + '</b><em class="flat">' + J.filter(V.late).length + ' overdue</em></a></div>';
+
+    // Activity, last 30 days: created + delivered (bars), reports sent in (line)
+    var days = []; for (var d = -29; d <= 0; d++) days.push(d);
+    var c1 = days.map(function (d) { return on('created', d); }), c2 = days.map(function (d) { return on('reviewed', d); }), c3 = days.map(function (d) { return on('sent', d); });
+    var max = Math.max(3, Math.max.apply(null, c1.concat(c2, c3)));
+    var W = 720, H = 200, L = 26, B = 22, bw = (W - L) / 30, y = function (v) { return H - B - (v / max) * (H - B - 10); };
+    var svg = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Activity, last 30 days">';
+    for (var g = 0; g <= max; g += Math.ceil(max / 4)) svg += '<line class="grid" x1="' + L + '" x2="' + W + '" y1="' + y(g) + '" y2="' + y(g) + '"/><text x="' + (L - 6) + '" y="' + (y(g) + 3) + '" text-anchor="end">' + g + '</text>';
+    days.forEach(function (d, i) {
+        var x = L + i * bw;
+        svg += '<a href="flowjobs.html?dtype=created&min=' + V.iso(d) + '&max=' + V.iso(d) + '"><rect class="bar1" x="' + (x + 2) + '" y="' + y(c1[i]) + '" width="' + (bw / 2 - 2) + '" height="' + (H - B - y(c1[i])) + '"><title>' + V.dayShort(d) + ': ' + c1[i] + ' created</title></rect></a>';
+        svg += '<rect class="bar2" x="' + (x + bw / 2) + '" y="' + y(c2[i]) + '" width="' + (bw / 2 - 2) + '" height="' + (H - B - y(c2[i])) + '"><title>' + V.dayShort(d) + ': ' + c2[i] + ' delivered</title></rect>';
+        if (i % 5 === 4 || i === 29) svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + V.dayShort(d) + '</text>';
+    });
+    svg += '<polyline class="line" points="' + c3.map(function (v, i) { return (L + i * bw + bw / 2) + ',' + y(v); }).join(' ') + '"/></svg>';
+
+    // Due pipeline
+    var openJ = J.filter(V.open), cnt = function (f) { return openJ.filter(f).length; };
+    var pipe = '<div class="pipe">' +
+        '<a class="late" href="flowjobs.html?view=late"><b>' + cnt(function (j) { return j.due < 0; }) + '</b><span>Overdue</span></a>' +
+        '<a class="now" href="flowjobs.html?dtype=due&min=' + V.iso(0) + '&max=' + V.iso(0) + '"><b>' + cnt(function (j) { return j.due === 0; }) + '</b><span>Due today</span></a>' +
+        '<a href="flowjobs.html?dtype=due&min=' + V.iso(1) + '&max=' + V.iso(1) + '"><b>' + cnt(function (j) { return j.due === 1; }) + '</b><span>Tomorrow</span></a>' +
+        '<a href="flowjobs.html?dtype=due&min=' + V.iso(2) + '&max=' + V.iso(7) + '"><b>' + cnt(function (j) { return j.due >= 2 && j.due <= 7; }) + '</b><span>Next 7 days</span></a>' +
+        '<a href="flowjobs.html?dtype=due&min=' + V.iso(8) + '"><b>' + cnt(function (j) { return j.due > 7; }) + '</b><span>Later</span></a></div>' +
+        '<p class="muted small" style="margin:12px 0 0"><b class="unassigned">' + cnt(function (j) { return !j.ins; }) + ' open jobs have no inspector yet.</b> <a href="flowjobs.html?view=unassigned">Assign them</a></p>';
+
+    // Receivables by age (invoiced, not paid)
+    var owed = V.invoices.filter(function (i) { return V.invBal(i) > 0; }), bsum = function (a) { return a.reduce(function (t, i) { return t + V.invBal(i); }, 0); };
+    var buckets = [['0–30 days', 0, 30, 'var(--g)'], ['31–60 days', 31, 60, 'var(--a)'], ['61–90 days', 61, 90, 'var(--o)'], ['Over 90', 91, 9999, 'var(--r)']];
+    var tot = bsum(owed) || 1;
+    var aging = '<div class="aging">' + buckets.map(function (b) {
+        var v = bsum(owed.filter(function (i) { var a = -i.billed; return a >= b[1] && a <= b[2]; }));
+        return '<a href="flowinvoices.html?mode=balance"><span>' + b[0] + '</span><span class="barbg"><i style="width:' + Math.round(v / tot * 100) + '%;background:' + b[3] + '"></i></span><span class="r">' + V.money(v) + '</span></a>';
+    }).join('') + '</div><p class="muted small" style="margin:12px 0 0">Total owed by clients: <b>' + V.money(bsum(owed)) + '</b> · <a href="flowinvoices.html?mode=bycustomer">Aging by client</a></p>';
+
+    // Periods table (SMK keeps the numbers as a table under the charts)
+    var per = [['Today', 0, 0], ['Yesterday', -1, -1], ['Last 7 days', -6, 0], ['Last 30 days', -29, 0]];
+    var inR = function (k, a, b) { return J.filter(function (j) { return j[k] != null && j[k] >= a && j[k] <= b; }); };
+    var ptab = '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Period</th><th class="r">Created</th><th class="r">Reports in</th><th class="r">Delivered</th><th class="r">Invoiced</th><th class="r">Paid</th></tr></thead><tbody>' +
+        per.map(function (p) { return '<tr><td><b>' + p[0] + '</b></td><td class="r">' + inR('created', p[1], p[2]).length + '</td><td class="r">' + inR('sent', p[1], p[2]).length + '</td><td class="r">' + inR('reviewed', p[1], p[2]).length + '</td><td class="r">' + V.money(V.sum(inR('invDate', p[1], p[2]))) + '</td><td class="r">' + V.money(V.sum(inR('payDate', p[1], p[2]))) + '</td></tr>'; }).join('') +
+        '</tbody></table></div>';
+
+    html += '<div class="grid2"><div>' +
+        V.card('Activity, last 30 days', '<a href="flowjobs.html">All jobs</a>', svg, false) +
+        V.card('Periods', 'Same numbers as a table', ptab, true) +
+        '</div><div>' +
+        V.card('Due pipeline', 'Open jobs by due date', pipe) +
+        (V.can('billing') ? V.card('Receivables by age', 'Invoiced, not paid', aging) : '') +
+        V.card('Alerts', V.alerts.length + ' new', '<ul class="alerts">' + V.alerts.map(function (a) {
+            var href = a[3] === 'chase' ? 'flowjobs.html?view=late' : a[3] === 'review' ? 'flowreview.html' : 'flowimport.html';
+            return '<li><span class="ic ' + a[0] + '" style="display:grid;place-items:center"><i class="fa-solid ' + a[1] + '"></i></span><span><a href="' + href + '">' + V.esc(a[2]) + '</a></span></li>';
+        }).join('') + '</ul>', true) +
+        '</div></div>';
+    V.$('#app').innerHTML = html;
+    // legend for the chart
+    V.$('.chart').insertAdjacentHTML('afterend', '<div class="keyrow" style="padding:10px 0 0"><span><i style="background:#b7c8ff"></i>Created</span><span><i style="background:var(--blue)"></i>Delivered</span><span><i style="background:var(--red);height:3px"></i>Reports sent in</span></div>');
+};
+</script>
+</body>
+</html>

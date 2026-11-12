@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Import Jobs | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="import">
+<main class="content" id="app"></main>
+<script>
+/* SMK header "New job > Import": many jobs from a client's order file.
+   1 Upload (CSV), 2 Match the columns, 3 Check the rows and import. The file is read in the browser only. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, step = 1, head = [], data = [], map = {};
+    var FIELDS = [['ref', 'Client reference', false], ['addr', 'Street address', true], ['city', 'City', true], ['state', 'State', true], ['zip', 'ZIP', true], ['due', 'Due date', false], ['notes', 'Instructions', false]];
+    var SAMPLE = 'Loan Number,Property Address,City,State,Zip,Due Date,Comments\n4471,1220 Maple Ridge Dr,Garden City,NY,11530,' + V.iso(5) + ',Exterior only\n4472,88 Birchwood Ct,Huntington,NY,11743,' + V.iso(6) + ',Vacant. Check for winterization\n4473,415 Jericho Tpke,Syosset,NY,,' + V.iso(6) + ',\n4474,9 Oakview Ave,Massapequa,NY,11758,' + V.iso(7) + ',Gate code 4410\n4475,,Hauppauge,NY,11788,' + V.iso(7) + ',Address missing on order';
+    function parse(t) {
+        var rows = t.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); }).map(function (l) { var out = [], cur = '', q = false; for (var i = 0; i < l.length; i++) { var ch = l[i]; if (ch === '"') q = !q; else if (ch === ',' && !q) { out.push(cur); cur = ''; } else cur += ch; } out.push(cur); return out.map(function (s) { return s.trim(); }); });
+        head = rows.shift() || []; data = rows; map = {};
+        FIELDS.forEach(function (f) { var words = { ref: /loan|ref|number|location/i, addr: /address|street/i, city: /city/i, state: /state/i, zip: /zip|postal/i, due: /due/i, notes: /comment|note|instruction/i }[f[0]]; head.forEach(function (h, i) { if (map[f[0]] == null && words.test(h)) map[f[0]] = i; }); });
+    }
+    function bad(r) { return FIELDS.filter(function (f) { return f[2] && !(map[f[0]] != null && r[map[f[0]]]); }).map(function (f) { return f[1]; }); }
+    function draw() {
+        var html = V.band('fa-file-import', 'Import jobs', 'Bring in a client\'s order file. The columns can be in any order; you match them once.');
+        html += '<div class="steps-h">' + ['Upload the file', 'Match the columns', 'Check and import'].map(function (s, i) { return '<span class="' + (i + 1 === step ? 'on' : i + 1 < step ? 'done' : '') + '"><b>' + (i + 1 < step ? '✓' : i + 1) + '</b>' + s + '</span>'; }).join('') + '</div>';
+        var body = '';
+        if (step === 1) {
+            body = V.card('1. Client and file', '', '<label class="fld" style="margin-top:0">Client<select id="cl">' + V.clients.map(function (c) { return '<option value="' + c.id + '">' + V.esc(c.name) + '</option>'; }).join('') + '</select></label>' +
+                '<label class="fld">Service<select id="sv">' + Object.keys(V.services).map(function (k) { return '<option value="' + k + '">' + V.esc(V.services[k][0]) + '</option>'; }).join('') + '</select></label>' +
+                '<label class="drop2" style="margin-top:14px"><i class="fa-solid fa-cloud-arrow-up"></i><b>Choose a CSV file</b><br><small>Excel: File › Save As › CSV. The file stays on this computer.</small><input type="file" id="fi" accept=".csv,text/csv"></label>' +
+                '<p class="center" style="margin:14px 0 0"><button class="btn btn-ghost btn-sm" id="smp"><i class="fa-solid fa-flask"></i> Use a sample order file</button></p>');
+        } else if (step === 2) {
+            body = V.card('2. Match the columns', data.length + ' rows found', '<div class="map-grid">' + FIELDS.map(function (f) {
+                return '<label class="fld" style="margin-top:0">' + f[1] + (f[2] ? ' <span class="req">*</span>' : '') + '<select data-m="' + f[0] + '"><option value="">(not in the file)</option>' + head.map(function (h, i) { return '<option value="' + i + '"' + (map[f[0]] === i ? ' selected' : '') + '>' + V.esc(h) + '</option>'; }).join('') + '</select></label>';
+            }).join('') + '</div><div style="display:flex;justify-content:space-between;margin-top:18px"><button class="btn btn-ghost btn-sm" data-go="1">Back</button><button class="btn btn-primary btn-sm" data-go="3">Next: check the rows</button></div>');
+        } else {
+            var nb = data.filter(function (r) { return bad(r).length; }).length;
+            body = V.card('3. Check and import', (data.length - nb) + ' ready · ' + nb + ' with problems',
+                '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th>' + FIELDS.map(function (f) { return '<th>' + f[1] + '</th>'; }).join('') + '<th>Problem</th></tr></thead><tbody>' +
+                data.map(function (r, n) { var b = bad(r); return '<tr' + (b.length ? ' class="row-bad"' : '') + '><td>' + (n + 1) + '</td>' + FIELDS.map(function (f) { return '<td>' + V.esc(map[f[0]] != null ? r[map[f[0]]] : '') + '</td>'; }).join('') + '<td>' + (b.length ? '<b class="unassigned">Missing ' + b.join(', ') + '</b>' : V.pill('OK', 'st-approved')) + '</td></tr>'; }).join('') +
+                '</tbody></table></div><div class="card2-b" style="display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line)"><button class="btn btn-ghost btn-sm" data-go="2">Back</button><span class="muted small" style="align-self:center">Rows with problems are skipped. Fix the file and import them later.</span><button class="btn btn-primary btn-sm" id="imp"' + (data.length - nb ? '' : ' disabled') + '><i class="fa-solid fa-file-import"></i> Import ' + (data.length - nb) + ' jobs</button></div>', true);
+        }
+        V.$('#app').innerHTML = html + '<div style="margin-top:16px;max-width:' + (step === 3 ? 'none' : '760px') + '">' + body + '</div>';
+    }
+    draw();
+    V.$('#app').addEventListener('change', function (e) {
+        if (e.target.id === 'fi' && e.target.files[0]) { var r = new FileReader(); r.onload = function () { parse(r.result); if (!data.length) { V.toast('That file has no rows.'); return; } step = 2; draw(); }; r.readAsText(e.target.files[0]); }
+        if (e.target.dataset.m) map[e.target.dataset.m] = e.target.value === '' ? null : +e.target.value;
+    });
+    V.$('#app').addEventListener('click', function (e) {
+        if (e.target.closest('#smp')) { parse(SAMPLE); step = 2; draw(); }
+        var g = e.target.closest('[data-go]'); if (g) { step = +g.dataset.go; draw(); }
+        if (e.target.closest('#imp')) { var n = data.filter(function (r) { return !bad(r).length; }).length; V.toast(n + ' jobs imported (preview only). They wait under Jobs › Needs an inspector.'); setTimeout(function () { location.href = 'flowjobs.html?view=unassigned'; }, 1800); }
+    });
+};
+</script>
+</body>
+</html>

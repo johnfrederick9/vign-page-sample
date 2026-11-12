@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New Job | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="addjob">
+<main class="content" id="app"></main>
+<script>
+/* SMK header "New job > Type it in": one job entered by hand.
+   Picking a service picks the form and the price; the inspector list only shows people who fit. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS;
+    var opt = function (o) { return Object.keys(o).map(function (k) { return '<option value="' + k + '">' + V.esc(o[k][0] || o[k]) + '</option>'; }).join(''); };
+    var html = V.band('fa-plus', 'New job', 'Type in one order. For many at once use <a href="flowimport.html" style="color:#fff;text-decoration:underline">Import</a>.');
+    html += '<form id="f" class="grid2"><div>' +
+        V.card('Client and service', '', '<label class="fld" style="margin-top:0">Client<select name="client" required>' + V.clients.map(function (c) { return '<option value="' + c.id + '">' + V.esc(c.name) + '</option>'; }).join('') + '</select></label>' +
+            '<label class="fld">Service<select name="svc">' + opt(V.services) + '</select></label>' +
+            '<label class="fld">Form<select name="form">' + Object.keys(V.forms).map(function (k) { return '<option value="' + k + '">' + V.esc(V.forms[k][0]) + '</option>'; }).join('') + '</select></label>' +
+            '<label class="fld">Client reference (loan #, location #)<input type="text" name="ref" placeholder="Loan #4471"></label>') +
+        V.card('Property or location', '', '<label class="fld" style="margin-top:0">Street address<input type="text" name="addr" required placeholder="1234 Maple Ridge Dr"></label>' +
+            '<div style="display:grid;grid-template-columns:2fr 1fr;gap:12px"><label class="fld">City, State ZIP<input type="text" name="city" required placeholder="Hempstead, NY 11550"></label><label class="fld">County<input type="text" name="county" placeholder="Franklin"></label></div>' +
+            '<label class="fld">Access<select name="access"><option>Exterior only</option><option>Interior authorized</option><option>Customer visit</option></select></label>' +
+            '<label class="fld">Instructions for the inspector<textarea name="notes" placeholder="Call the occupant 30 minutes before arrival."></textarea></label>') +
+        '</div><div>' +
+        V.card('Dates and priority', '', '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="fld" style="margin-top:0">Due date<input type="date" name="due" value="' + V.iso(5) + '"></label><label class="fld" style="margin-top:0">Priority<select name="prio"><option>Routine</option><option>High</option><option>Rush</option></select></label></div>') +
+        V.card('Price and pay', '', '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="fld" style="margin-top:0">Client price ($)<input type="text" name="price"></label><label class="fld" style="margin-top:0">Inspector pay ($)<input type="text" name="pay"></label></div><p class="muted small" style="margin:10px 0 0">Filled from Services &amp; Pricing in the Admin Menu. Change it for this job if needed.</p>') +
+        V.card('Inspector', '', '<label class="fld" style="margin-top:0">Assign now (optional)<select name="ins"><option value="">Leave unassigned</option></select></label>') +
+        '<div style="display:flex;gap:8px;justify-content:flex-end"><a class="btn btn-ghost" href="flowjobs.html">Cancel</a><button class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save job</button></div>' +
+        '</div></form>';
+    V.$('#app').innerHTML = html;
+    var f = V.$('#f');
+    function sync() {
+        var s = f.svc.value; f.form.value = V.formFor[s]; f.price.value = V.price[s][0]; f.pay.value = V.price[s][1];
+        var shop = s === 'mystery' || s === 'cx';
+        f.ins.innerHTML = '<option value="">Leave unassigned</option>' + V.inspectors.filter(function (i) { return i.active && (shop ? i.role !== 'Inspector' : i.role !== 'Mystery Shopper'); }).map(function (i) { return '<option value="' + i.id + '">' + V.esc(i.name) + ' · ' + V.esc(i.area) + '</option>'; }).join('');
+        f.access.value = shop ? 'Customer visit' : 'Exterior only';
+    }
+    f.client.addEventListener('change', function () { var c = V.client(+f.client.value); f.svc.value = c.svc[0]; sync(); });
+    f.svc.addEventListener('change', sync); f.client.dispatchEvent(new Event('change'));
+    f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var id = 'VG-' + (24100 + V.jobs.length + 1);
+        V.toast('Job ' + id + ' saved (preview only, nothing is stored).');
+        setTimeout(function () { location.href = 'flowjobs.html'; }, 1600);
+    });
+};
+</script>
+</body>
+</html>

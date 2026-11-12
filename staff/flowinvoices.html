@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Accounting | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-logo.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="acct" data-perm="billing">
+<main class="content" id="app"></main>
+<script>
+/* SMK flowinvoices.php: one page, several modes.
+   mode = bycustomer (Aging: who owes you) | issued (invoices sent) | paid (payments received) | balance (open invoices)
+   Apply Payment opens from Aging and from an open invoice. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, mode = V.param('mode') || 'bycustomer';
+    var MODES = [['bycustomer', 'Aging', 'fa-hand-holding-dollar'], ['issued', 'Invoices', 'fa-file-invoice-dollar'], ['balance', 'Open balance', 'fa-scale-unbalanced'], ['paid', 'Payments', 'fa-money-check-dollar']];
+    // invoices are the same list as the Admin Menu (V.invoices); past due = after the due date
+    var bal = V.invBal, bsum = function (a) { return a.reduce(function (t, i) { return t + bal(i); }, 0); };
+    var bucket = function (i) { var p = V.invLate(i); return !p ? 'cur' : p <= 30 ? 'b30' : p <= 60 ? 'b60' : 'b90'; };
+    var cname = function (i) { return V.client(i.client).name; };
+
+    function draw() {
+        var I = V.invoices, open = I.filter(function (i) { return bal(i) > 0; });
+        var html = V.band('fa-dollar-sign', 'Accounting', 'Client invoices and payments, the same as the Admin Menu. Inspector pay is under <a href="flowserverpay.html" style="color:#fff;text-decoration:underline">Inspector Pay</a>.',
+            '<button class="bbtn solid" data-pay=""><i class="fa-solid fa-money-check-dollar"></i> Apply payment</button>');
+        html += '<div class="stats">' + V.stat('blue', 'fa-file-invoice-dollar', V.money(I.reduce(function (t, i) { return t + i.amount; }, 0)), 'Total billed', '?mode=issued') +
+            V.stat('green', 'fa-money-bill-wave', V.money(V.payments.reduce(function (t, p) { return t + p.amount; }, 0)), 'Paid', '?mode=paid') +
+            V.stat('amber', 'fa-scale-unbalanced', V.money(bsum(open)), 'Balance owed', '?mode=balance') +
+            V.stat('red', 'fa-clock', V.money(bsum(open.filter(function (i) { return bucket(i) !== 'cur'; }))), 'Past due', '?mode=bycustomer') + '</div>';
+        html += '<nav class="jtabs">' + MODES.map(function (m) { return '<a href="?mode=' + m[0] + '"' + (m[0] === mode ? ' class="on"' : '') + '><i class="fa-solid ' + m[2] + '"></i> ' + m[1] + '</a>'; }).join('') + '</nav>';
+        html += '<div class="card2" style="margin-top:16px"><div id="tbl"></div></div>';
+        if (mode === 'issued' && V.nextBills.length) html += '<div style="margin-top:16px">' + V.card('<i class="fa-solid fa-calendar-day"></i> Next bills (automatic, not sent yet)', '', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Client</th><th>For</th><th>Goes out</th><th class="r">Amount</th></tr></thead><tbody>' + V.nextBills.map(function (n) { return '<tr><td>' + V.esc(cname(n)) + '</td><td class="small">' + V.esc(n.period) + '</td><td>' + V.day(n.next) + '</td><td class="r">' + V.money(n.amount) + '</td></tr>'; }).join('') + '</tbody></table></div>', true) + '</div>';
+        V.$('#app').innerHTML = html;
+        var el = V.$('#tbl');
+
+        if (mode === 'bycustomer') {
+            var rows = V.clients.map(function (c) {
+                var o = open.filter(function (i) { return i.client === c.id; }), b = function (k) { return bsum(o.filter(function (i) { return bucket(i) === k; })); };
+                return { id: c.id, name: c.name, terms: c.terms, cur: b('cur'), b30: b('b30'), b60: b('b60'), b90: b('b90'), bal: bsum(o), n: o.length, oldest: o.length ? Math.max.apply(null, o.map(function (i) { return -i.billed; })) : null };
+            });
+            V.table(el, { info: 'clients', sortKey: 'bal', sortDir: -1, rows: function () { return rows; }, search: function (r) { return r.name; },
+                cols: [
+                    { k: 'name', label: 'Client', render: function (r) { return '<b>' + V.esc(r.name) + '</b><small class="muted" style="display:block">Net ' + r.terms + ' · ' + r.n + ' open invoice(s)</small>'; } },
+                    { k: 'cur', label: 'Not yet due', cls: 'r', render: function (r) { return V.money(r.cur); } },
+                    { k: 'b30', label: '1–30 past', cls: 'r', render: function (r) { return V.money(r.b30); } },
+                    { k: 'b60', label: '31–60 past', cls: 'r', render: function (r) { return V.money(r.b60); } },
+                    { k: 'b90', label: 'Over 60', cls: 'r', render: function (r) { return r.b90 ? '<b class="unassigned">' + V.money(r.b90) + '</b>' : V.money(0); } },
+                    { k: 'oldest', label: 'Oldest', cls: 'r', render: function (r) { return r.oldest == null ? '–' : r.oldest + ' days'; } },
+                    { k: 'bal', label: 'Balance', cls: 'r', render: function (r) { return V.balBox(r.bal, 'data-bal="' + r.id + '" title="See the invoices"'); } },
+                    { k: 'id', label: '', sort: false, render: function (r) { return r.bal ? '<button class="btn btn-ghost btn-sm" data-pay="' + r.id + '">Apply payment</button>' : ''; } }
+                ],
+                foot: function (r) { var s = function (k) { return V.money(r.reduce(function (t, x) { return t + x[k]; }, 0)); }; return '<tr><td><b>Total</b></td><td class="r">' + s('cur') + '</td><td class="r">' + s('b30') + '</td><td class="r">' + s('b60') + '</td><td class="r">' + s('b90') + '</td><td></td><td class="r"><b>' + s('bal') + '</b></td><td></td></tr>'; } });
+        } else if (mode === 'paid') {
+            V.table(el, { info: 'payments', sortKey: 'on', sortDir: -1, rows: function () { return V.payments; }, search: function (p) { return p.inv + ' ' + V.client(p.client).name + ' ' + p.how + ' ' + p.ref; },
+                cols: [
+                    { k: 'on', label: 'Date', render: function (p) { return V.day(p.on); } },
+                    { k: 'client', label: 'Client', sortVal: function (p) { return V.client(p.client).name; }, render: function (p) { return V.esc(V.client(p.client).name); } },
+                    { k: 'inv', label: 'Invoice', render: function (p) { return '<b>' + p.inv + '</b>'; } },
+                    { k: 'how', label: 'Method', render: function (p) { return V.esc(p.how); } },
+                    { k: 'ref', label: 'Check # / reference', render: function (p) { return V.esc(p.ref || '–'); } },
+                    { k: 'amount', label: 'Amount', cls: 'r', render: function (p) { return V.money(p.amount); } }
+                ],
+                foot: function (r) { return '<tr><td colspan="5"><b>' + r.length + ' payments</b></td><td class="r"><b>' + V.money(r.reduce(function (t, p) { return t + p.amount; }, 0)) + '</b></td></tr>'; } });
+        } else {
+            var R = mode === 'balance' ? open : I;
+            V.table(el, { info: 'invoices', sortKey: 'billed', sortDir: -1, rows: function () { return R; }, search: function (i) { return i.id + ' ' + i.period + ' ' + cname(i) + ' ' + i.plan; },
+                cols: [
+                    { k: 'id', label: 'Invoice', render: function (i) { return '<b>' + i.id + '</b><small class="muted" style="display:block">' + V.esc(i.period) + '</small>'; } },
+                    { k: 'client', label: 'Billed to', sortVal: cname, render: function (i) { return V.esc(cname(i)) + '<small class="muted" style="display:block">' + V.esc(i.plan) + '</small>'; } },
+                    { k: 'billed', label: 'Date sent', render: function (i) { return V.day(i.billed); } },
+                    { k: 'due', label: 'Due', render: function (i) { return V.day(i.due); } },
+                    { k: 'status', label: 'Status', sortVal: function (i) { return bal(i) ? 1 + V.invLate(i) : 0; }, render: V.invPill },
+                    { k: 'amount', label: 'Amount', cls: 'r', render: function (i) { return V.money(i.amount); } },
+                    { k: 'bal', label: 'Balance', cls: 'r', sortVal: bal, render: function (i) { return bal(i) ? '<b>' + V.money(bal(i)) + '</b>' : V.money(0); } }
+                ],
+                foot: function (r) { return '<tr><td colspan="5"><b>' + r.length + ' invoices</b></td><td class="r"><b>' + V.money(r.reduce(function (t, i) { return t + i.amount; }, 0)) + '</b></td><td class="r"><b>' + V.money(bsum(r)) + '</b></td></tr>'; } });
+        }
+    }
+    draw();
+    V.$('#app').addEventListener('click', function (e) {
+        var bb = e.target.closest('[data-bal]'); if (bb) { e.preventDefault(); V.clientInvoices(+bb.dataset.bal, draw); return; }
+        var b = e.target.closest('[data-pay]'); if (!b) return;
+        var cid = +b.dataset.pay || null;
+        V.modal('Apply payment', '<label class="fld" style="margin:0">Client<select id="pc">' + V.clients.map(function (c) { return '<option value="' + c.id + '"' + (c.id === cid ? ' selected' : '') + '>' + V.esc(c.name) + ' (owes ' + V.money(V.owedBy(c.id)) + ')</option>'; }).join('') + '</select></label>' +
+            '<div class="fld-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><label class="fld">How paid<select id="ph"><option>Check</option><option>ACH</option><option>Credit Card</option><option>Cash</option><option>Other</option></select></label><label class="fld">Check # / reference<input type="text" id="pr"></label></div>' +
+            '<div id="pinv"></div>', '<button class="btn btn-primary btn-sm" data-ok>Save payment</button>', function (m, close) {
+                function list() { var c = +V.$('#pc', m).value, o = V.invoices.filter(function (i) { return i.client === c && bal(i) > 0; });
+                    V.$('#pinv', m).innerHTML = o.length ? '<p class="small muted" style="margin:6px 0">Tick the invoices this payment covers (the full balance of each):</p>' + o.map(function (i) { return '<label style="display:flex;gap:8px;padding:6px 0;font-size:.9rem"><input type="checkbox" checked value="' + i.id + '"> ' + i.id + ' · ' + V.esc(i.period) + ' <b style="margin-left:auto">' + V.money(bal(i)) + '</b></label>'; }).join('') : '<p class="muted">No open invoices for this client.</p>'; }
+                if (!cid) { var first = V.clients.filter(function (c) { return V.owedBy(c.id) > 0; })[0]; if (first) V.$('#pc', m).value = first.id; }
+                list(); V.$('#pc', m).addEventListener('change', list);
+                V.$('[data-ok]', m).addEventListener('click', function () {
+                    var ids = V.$$('#pinv input:checked', m).map(function (x) { return x.value; }); if (!ids.length) { V.toast('Tick at least one invoice.'); return; }
+                    var t = 0; ids.forEach(function (id) { var i = V.inv(id); t += V.payInv(i, bal(i), V.$('#ph', m).value, V.$('#pr', m).value); });
+                    close(); draw(); V.toast(V.money(t) + ' saved on ' + ids.length + ' invoice(s) (preview only).');
+                });
+            });
+    });
+};
+</script>
+</body>
+</html>
