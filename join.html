@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="css/vign.css">
     <script src="js/vign.js" defer></script>
+    <script src="js/vign-db.js"></script>
 </head>
 <body class="">
 <header class="site-header">
@@ -55,146 +56,92 @@
     </div>
 </header>
 <main>
-    <section class="page-hero">
-        <div class="container">
-            <span class="eyebrow mono">Come sign up · For inspectors &amp; shoppers</span>
-            <h1>Join our national inspector network.</h1>
-            <p class="lead">Become the eyes and ears of corporate America. <strong class="hl">Membership is free.</strong></p>
+    <section class="jn-hero">
+        <div class="container jn-hero-grid">
+            <div>
+                <span class="eyebrow mono">Come sign up · For inspectors &amp; shoppers</span>
+                <h1>Join our national inspector network.</h1>
+                <p class="lead">Become the eyes and ears of corporate America. <strong class="hl">Membership is free.</strong></p>
+                <ul class="jn-chips">
+                    <li><i class="fa-solid fa-dollar-sign" aria-hidden="true"></i> Free to join</li>
+                    <li><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Jobs in your area</li>
+                    <li><i class="fa-solid fa-mobile-screen" aria-hidden="true"></i> Forms on your phone</li>
+                </ul>
+                <a href="#join-form" class="btn btn-red jn-cta">Sign up in 3 steps <i class="fa-solid fa-arrow-down" aria-hidden="true"></i></a>
+            </div>
+            <figure class="jn-photo"><img src="images/field/occupancy-three-steps.jpg" alt="A VIGN occupancy visit in three steps: verify the address, confirm occupancy at the door, photograph the outside" width="1600" height="533">
+                <figcaption>A typical visit: check the address, talk to the occupant, take the photos.</figcaption></figure>
         </div>
     </section>
 
-    <section class="section">
-        <div class="container join-grid">
-            <aside class="join-aside">
-                <h2>Why join VIGN?</h2>
-                <ul class="check-list">
-                    <li>Free membership, no fees to join</li>
-                    <li>Assignments in your own area</li>
-                    <li>Simple forms you complete on your phone</li>
-                    <li>Mystery shopping, loan servicing, property and collateral work</li>
-                </ul>
+    <section class="section jn-main">
+        <div class="container jn-grid">
+            <form class="card form jn-form" id="join-form" method="post" action="#" novalidate>
+                <ol class="jn-steps" aria-label="Sign up steps">
+                    <li class="on" data-go="0"><span>1</span>You</li>
+                    <li data-go="1"><span>2</span>Your area</li>
+                    <li data-go="2"><span>3</span>Your work</li>
+                </ol>
+                <div class="jn-bar" aria-hidden="true"><i></i></div>
+
+                <fieldset class="jn-step" data-step="0">
+                    <legend>Your details</legend>
+                    <div class="form-row two">
+                        <label>First name *<input type="text" name="first_name" maxlength="60" required autocomplete="given-name"></label>
+                        <label>Last name *<input type="text" name="last_name" maxlength="60" required autocomplete="family-name"></label>
+                    </div>
+                    <div class="form-row two">
+                        <label>Email *<input type="email" name="email" maxlength="150" required autocomplete="email"></label>
+                        <label>Mobile phone<input type="tel" name="phone" maxlength="30" autocomplete="tel"></label>
+                    </div>
+                </fieldset>
+
+                <fieldset class="jn-step" data-step="1">
+                    <legend>Where you can work</legend>
+                    <div class="form-row three">
+                        <label>City *<input type="text" name="city" maxlength="80" required autocomplete="address-level2"></label>
+                        <label>State *<select name="state" required><option value="">Select…</option><option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option><option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option><option value="CT">CT</option><option value="DE">DE</option><option value="DC">DC</option><option value="FL">FL</option><option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option><option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option><option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option><option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option><option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option><option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option><option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option><option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option><option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option><option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option><option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option><option value="TX">TX</option><option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option><option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option><option value="WY">WY</option></select></label>
+                        <label>ZIP *<input type="text" name="zip" maxlength="10" inputmode="numeric" required pattern="\d{5}(-\d{4})?" title="5-digit ZIP, for example 11550" autocomplete="postal-code"></label>
+                    </div>
+                    <label><span>Coverage area <span class="muted">(ZIP codes, counties or cities you can cover)</span></span>
+                        <textarea name="coverage" rows="2" maxlength="1000" placeholder="e.g. 11550, 11530 or Nassau County"></textarea></label>
+                </fieldset>
+
+                <fieldset class="jn-step" data-step="2">
+                    <legend>Type of work * <span class="muted">(pick one or more)</span></legend>
+                    <div class="jn-work">
+                        <label class="jn-pick"><input type="checkbox" name="roles[]" value="mystery"><i class="fa-solid fa-user-secret" aria-hidden="true"></i><span><b>Mystery Shoppers</b><small>Visit stores as a customer</small></span></label>
+                        <label class="jn-pick"><input type="checkbox" name="roles[]" value="loan"><i class="fa-solid fa-house-circle-check" aria-hidden="true"></i><span><b>Loan Servicing</b><small>Occupancy and condition checks</small></span></label>
+                        <label class="jn-pick"><input type="checkbox" name="roles[]" value="property"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><span><b>Property &amp; Field Inspections</b><small>Checklist with photos</small></span></label>
+                        <label class="jn-pick"><input type="checkbox" name="roles[]" value="collateral"><i class="fa-solid fa-car" aria-hidden="true"></i><span><b>Loan Servicing &amp; Collateral</b><small>Verify vehicles and equipment</small></span></label>
+                        <label class="jn-pick"><input type="checkbox" name="roles[]" value="cx"><i class="fa-solid fa-star" aria-hidden="true"></i><span><b>Customer Experience</b><small>Grade service and cleanliness</small></span></label>
+                    </div>
+                    <p class="jn-err" id="roleErr" hidden>Pick at least one type of work.</p>
+                    <label><span>Experience <span class="muted">(optional)</span></span>
+                        <textarea name="experience" rows="2" maxlength="2000" placeholder="Prior inspection, mystery shopping or field work…"></textarea></label>
+                    <label class="checkbox"><input type="checkbox" name="agree" value="1" required> I agree to the terms and to be contacted by VIGN about assignments. *</label>
+                </fieldset>
+
+                <div class="jn-nav">
+                    <button type="button" class="btn btn-ghost" id="jnBack" hidden><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back</button>
+                    <button type="button" class="btn btn-primary" id="jnNext">Next <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                    <button type="submit" class="btn btn-red" id="jnSend">Sign Up Free</button>
+                </div>
+                <p class="form-note">Demo form. Applications are not saved yet.</p>
+            </form>
+
+            <aside class="jn-side">
                 <div class="card mini">
                     <h3>How it works</h3>
-                    <ol class="mini-steps">
-                        <li>Sign up with your coverage area</li>
-                        <li>VIGN reviews your application</li>
-                        <li>Get assignments near you</li>
-                        <li>Complete the form on site and submit</li>
+                    <ol class="jn-how">
+                        <li><i class="fa-solid fa-user-plus" aria-hidden="true"></i><span><b>Sign up</b> with your coverage area</span></li>
+                        <li><i class="fa-solid fa-user-check" aria-hidden="true"></i><span><b>VIGN reviews</b> your application</span></li>
+                        <li><i class="fa-solid fa-bullhorn" aria-hidden="true"></i><span><b>Get job offers</b> near you. First to accept gets it</span></li>
+                        <li><i class="fa-solid fa-camera" aria-hidden="true"></i><span><b>Do the visit</b>, fill the form on your phone, get paid</span></li>
                     </ol>
                 </div>
                 <p class="muted small">Questions? Call <a href="tel:+15169240087">516 924-0087</a></p>
             </aside>
-
-            <form class="card form" method="post" action="#" novalidate>
-                                                
-                <h3 class="form-section">Your details</h3>
-                <div class="form-row two">
-                    <label>First name *<input type="text" name="first_name" value="" maxlength="60" required autocomplete="given-name"></label>
-                    <label>Last name *<input type="text" name="last_name" value="" maxlength="60" required autocomplete="family-name"></label>
-                </div>
-                <div class="form-row two">
-                    <label>Email *<input type="email" name="email" value="" maxlength="150" required autocomplete="email"></label>
-                    <label>Mobile phone<input type="tel" name="phone" value="" maxlength="30" autocomplete="tel"></label>
-                </div>
-
-                <h3 class="form-section">Where you can work</h3>
-                <div class="form-row three">
-                    <label>City<input type="text" name="city" value="" maxlength="80" autocomplete="address-level2"></label>
-                    <label>State *
-                        <select name="state" required>
-                            <option value="">Select…</option>
-                                                            <option value="AL" >AL</option>
-                                                            <option value="AK" >AK</option>
-                                                            <option value="AZ" >AZ</option>
-                                                            <option value="AR" >AR</option>
-                                                            <option value="CA" >CA</option>
-                                                            <option value="CO" >CO</option>
-                                                            <option value="CT" >CT</option>
-                                                            <option value="DE" >DE</option>
-                                                            <option value="DC" >DC</option>
-                                                            <option value="FL" >FL</option>
-                                                            <option value="GA" >GA</option>
-                                                            <option value="HI" >HI</option>
-                                                            <option value="ID" >ID</option>
-                                                            <option value="IL" >IL</option>
-                                                            <option value="IN" >IN</option>
-                                                            <option value="IA" >IA</option>
-                                                            <option value="KS" >KS</option>
-                                                            <option value="KY" >KY</option>
-                                                            <option value="LA" >LA</option>
-                                                            <option value="ME" >ME</option>
-                                                            <option value="MD" >MD</option>
-                                                            <option value="MA" >MA</option>
-                                                            <option value="MI" >MI</option>
-                                                            <option value="MN" >MN</option>
-                                                            <option value="MS" >MS</option>
-                                                            <option value="MO" >MO</option>
-                                                            <option value="MT" >MT</option>
-                                                            <option value="NE" >NE</option>
-                                                            <option value="NV" >NV</option>
-                                                            <option value="NH" >NH</option>
-                                                            <option value="NJ" >NJ</option>
-                                                            <option value="NM" >NM</option>
-                                                            <option value="NY" >NY</option>
-                                                            <option value="NC" >NC</option>
-                                                            <option value="ND" >ND</option>
-                                                            <option value="OH" >OH</option>
-                                                            <option value="OK" >OK</option>
-                                                            <option value="OR" >OR</option>
-                                                            <option value="PA" >PA</option>
-                                                            <option value="RI" >RI</option>
-                                                            <option value="SC" >SC</option>
-                                                            <option value="SD" >SD</option>
-                                                            <option value="TN" >TN</option>
-                                                            <option value="TX" >TX</option>
-                                                            <option value="UT" >UT</option>
-                                                            <option value="VT" >VT</option>
-                                                            <option value="VA" >VA</option>
-                                                            <option value="WA" >WA</option>
-                                                            <option value="WV" >WV</option>
-                                                            <option value="WI" >WI</option>
-                                                            <option value="WY" >WY</option>
-                                                    </select>
-                    </label>
-                    <label>ZIP<input type="text" name="zip" value="" maxlength="10" inputmode="numeric" autocomplete="postal-code"></label>
-                </div>
-                <label><span>Coverage area <span class="muted">(ZIP codes, counties or cities you can cover)</span></span>
-                    <textarea name="coverage" rows="2" maxlength="1000"></textarea>
-                </label>
-
-                <h3 class="form-section">Type of work *</h3>
-                <div class="role-picks">
-                                            <label class="role-pick">
-                            <input type="checkbox" name="roles[]" value="mystery" >
-                            <span>Mystery Shoppers</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="checkbox" name="roles[]" value="loan" >
-                            <span>Loan Servicing</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="checkbox" name="roles[]" value="property" >
-                            <span>Property &amp; Field Inspections</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="checkbox" name="roles[]" value="collateral" >
-                            <span>Loan Servicing &amp; Collateral Inspections</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="checkbox" name="roles[]" value="cx" >
-                            <span>Mystery Shopping &amp; Customer Experience</span>
-                        </label>
-                                    </div>
-
-                <label><span>Experience <span class="muted">(optional)</span></span>
-                    <textarea name="experience" rows="3" maxlength="2000" placeholder="Prior inspection, mystery shopping or field work…"></textarea>
-                </label>
-
-                <label class="checkbox"><input type="checkbox" name="agree" value="1" > I agree to the terms and to be contacted by VIGN about assignments. *</label>
-
-                <button type="submit" class="btn btn-red btn-block">Sign Up Free</button>
-                <p class="form-note">Demo form. Applications are not saved yet.</p>
-            </form>
         </div>
     </section>
 </main>
@@ -242,21 +189,44 @@
     </div>
 </footer>
 <script>
-// Static preview: forms are not connected yet. Show a note instead of submitting.
-document.querySelectorAll('form').forEach(function (f) {
-  f.addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var n = f.querySelector('.preview-note');
-    if (!n) {
-      n = document.createElement('p');
-      n.className = 'preview-note';
-      n.setAttribute('role', 'status');
-      n.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fff7e0;border:1px solid #f0d58a;color:#5a4500;font-size:14px';
-      f.appendChild(n);
+// Sign up in 3 steps. Without JavaScript all steps show as one form.
+(function () {
+    var f = document.getElementById('join-form'); if (!f) return;
+    var steps = [].slice.call(f.querySelectorAll('.jn-step')), tabs = [].slice.call(f.querySelectorAll('.jn-steps li')), cur = 0, best = 0;
+    var back = document.getElementById('jnBack'), next = document.getElementById('jnNext'), send = document.getElementById('jnSend'), roleErr = document.getElementById('roleErr');
+    f.classList.add('js-steps');
+    function ok(i) {
+        var bad = [].slice.call(steps[i].querySelectorAll('input, select, textarea')).filter(function (el) { return !el.checkValidity(); });
+        if (i === 2) { var any = f.querySelector('[name="roles[]"]:checked'); roleErr.hidden = !!any; if (!any) bad.unshift(f.querySelector('[name="roles[]"]')); }
+        if (bad.length) { if (bad[0] !== f.querySelector('[name="roles[]"]') && bad[0].reportValidity) bad[0].reportValidity(); bad[0].focus(); return false; }
+        return true;
     }
-    n.textContent = 'Preview only: this form is not connected yet. On the live site it will be sent to VIGN.';
-  });
-});
+    function show(i) {
+        cur = i; best = Math.max(best, i);
+        steps.forEach(function (s, k) { s.hidden = k !== i; });
+        tabs.forEach(function (t, k) { t.classList.toggle('on', k === i); t.classList.toggle('done', k < i); if (k === i) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current'); });
+        f.querySelector('.jn-bar i').style.width = ((i + 1) / steps.length * 100) + '%';
+        back.hidden = i === 0; next.hidden = i === steps.length - 1; send.hidden = i !== steps.length - 1;
+    }
+    next.addEventListener('click', function () { if (ok(cur)) { show(cur + 1); var el = steps[cur].querySelector('input, select'); if (el) el.focus(); } });
+    back.addEventListener('click', function () { show(cur - 1); });
+    tabs.forEach(function (t, k) { t.addEventListener('click', function () { if (k <= best || (k === cur + 1 && ok(cur))) show(k); }); });
+    f.addEventListener('change', function (e) { if (e.target.name === 'roles[]') roleErr.hidden = true; });
+    f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        for (var i = 0; i < steps.length; i++) if (!ok(i)) { show(i); ok(i); return; }
+        var v = function (n) { return (f[n] && f[n].value || '').trim(); };
+        var roles = [].slice.call(f.querySelectorAll('[name="roles[]"]:checked')).map(function (c) { return c.value; });
+        var shop = roles.some(function (r) { return r === 'mystery' || r === 'cx'; }), insp = roles.some(function (r) { return r === 'loan' || r === 'property' || r === 'collateral'; });
+        var LBL = { mystery: 'Mystery Shoppers', loan: 'Loan Servicing', property: 'Property & Field', collateral: 'Collateral', cx: 'Customer Experience' };
+        var id = window.VIGNDB ? VIGNDB.add('signups', { name: v('first_name') + ' ' + v('last_name'), email: v('email'), phone: v('phone'), role: shop && insp ? 'Both' : shop ? 'Mystery Shopper' : 'Inspector',
+            work: roles.map(function (r) { return LBL[r]; }).join(', '), area: v('city') + ', ' + v('state'), zip: v('zip'), coverage: v('coverage'), exp: v('experience') || 'None given', src: 'Website form' }) : '';
+        var name = v('first_name').replace(/[<>&"]/g, '');
+        f.innerHTML = '<div class="jn-done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><h2>Thanks' + (name ? ', ' + name : '') + '!</h2><p>VIGN will review your application and email you when you are approved. Then job offers in your area will show up in your inspector portal.</p>' +
+            (id ? '<p class="form-note">Preview: saved in this browser as <b>' + id + '</b>. It now shows in the Admin Menu under <b>Approve New Inspectors</b>.</p>' : '<p class="form-note">Preview: this browser blocks saving, so nothing was kept.</p>') + '<a class="btn btn-ghost" href="index.html">Back to the website</a></div>';
+    });
+    show(0);
+})();
 </script>
 </body>
 </html>

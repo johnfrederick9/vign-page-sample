@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
     <link rel="stylesheet" href="css/vign.css">
     <script src="js/vign.js" defer></script>
+    <script src="js/vign-db.js"></script>
 </head>
 <body class="">
 <header class="site-header">
@@ -55,93 +56,103 @@
     </div>
 </header>
 <main>
-    <section class="page-hero page-hero-blue">
-        <div class="container">
-            <span class="eyebrow mono">For clients · Request an inspection</span>
-            <h1>Tell us what to check.</h1>
-            <p class="lead">Send the details below and our team will confirm the assignment, price and timeline. Have a long list? Call us and we'll set you up with a client account to import it.</p>
+    <section class="jn-hero rq-hero">
+        <div class="container jn-hero-grid">
+            <div>
+                <span class="eyebrow mono">For clients · Request an inspection</span>
+                <h1>Tell us what to check.</h1>
+                <p class="lead">Send the details and our team will confirm the assignment, price and timeline.</p>
+                <ul class="jn-chips">
+                    <li><i class="fa-solid fa-map-location-dot" aria-hidden="true"></i> Nationwide</li>
+                    <li><i class="fa-solid fa-camera" aria-hidden="true"></i> Photo reports</li>
+                    <li><i class="fa-solid fa-star-half-stroke" aria-hidden="true"></i> Graded 1–4</li>
+                </ul>
+                <a href="#request-form" class="btn btn-red jn-cta">Request in 3 steps <i class="fa-solid fa-arrow-down" aria-hidden="true"></i></a>
+            </div>
+            <div class="card mini rq-next">
+                <h3>What happens next</h3>
+                <ol class="jn-how">
+                    <li><i class="fa-solid fa-inbox" aria-hidden="true"></i><span><b>We review</b> your request</span></li>
+                    <li><i class="fa-solid fa-file-signature" aria-hidden="true"></i><span><b>We confirm</b> the price and timeline</span></li>
+                    <li><i class="fa-solid fa-user-check" aria-hidden="true"></i><span><b>A local inspector or shopper</b> is assigned</span></li>
+                    <li><i class="fa-solid fa-chart-column" aria-hidden="true"></i><span><b>You get the graded report</b> online</span></li>
+                </ol>
+            </div>
         </div>
     </section>
 
-    <section class="section section-tight">
-        <div class="container request-grid">
-            <form class="card form request-form" method="post" action="#" enctype="multipart/form-data" novalidate>
-                                                
-                <!-- 1. Contact -->
-                <h3 class="form-section"><span class="sec-num"></span> Your details</h3>
-                <label>Full name *<input type="text" name="full_name" value="" maxlength="100" autocomplete="name" required></label>
-                <div class="form-row two">
-                    <label>Company<input type="text" name="company" value="" maxlength="150" autocomplete="organization" placeholder="ABC Servicing"></label>
-                    <label>Your role<input type="text" name="role" value="" maxlength="80" placeholder="Asset manager, store owner…"></label>
-                </div>
-                <div class="form-row two">
-                    <label>Email *<input type="email" name="email" value="" maxlength="150" autocomplete="email" required></label>
-                    <label>Phone<input type="tel" name="phone" value="" maxlength="30" autocomplete="tel"></label>
-                </div>
+    <section class="section jn-main">
+        <div class="container jn-grid">
+            <form class="card form jn-form request-form" id="request-form" method="post" action="#" enctype="multipart/form-data" novalidate>
+                <ol class="jn-steps" aria-label="Request steps">
+                    <li class="on"><span>1</span>You</li>
+                    <li><span>2</span>Service</li>
+                    <li><span>3</span>Details</li>
+                </ol>
+                <div class="jn-bar" aria-hidden="true"><i></i></div>
 
-                <!-- 2. Service -->
-                <h3 class="form-section"><span class="sec-num"></span> Service needed</h3>
-                <div class="service-picks">
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="mystery" data-group="shop"  required>
-                            <span>Mystery Shoppers</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="loan" data-group="property"  required>
-                            <span>Loan Servicing</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="property" data-group="property"  required>
-                            <span>Property &amp; Field Inspections</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="collateral" data-group="property"  required>
-                            <span>Loan Servicing &amp; Collateral Inspections</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="cx" data-group="shop"  required>
-                            <span>Mystery Shopping &amp; Customer Experience</span>
-                        </label>
-                                            <label class="role-pick">
-                            <input type="radio" name="service" value="other" data-group="any"  required>
-                            <span>Other / Not sure</span>
-                        </label>
-                                    </div>
+                <fieldset class="jn-step">
+                    <legend>Your details</legend>
+                    <label>Full name *<input type="text" name="full_name" maxlength="100" autocomplete="name" required></label>
+                    <div class="form-row two">
+                        <label>Company<input type="text" name="company" maxlength="150" autocomplete="organization" placeholder="ABC Servicing"></label>
+                        <label>Your role<input type="text" name="role" maxlength="80" placeholder="Asset manager, store owner…"></label>
+                    </div>
+                    <div class="form-row two">
+                        <label>Email *<input type="email" name="email" maxlength="150" autocomplete="email" required></label>
+                        <label>Phone<input type="tel" name="phone" maxlength="30" autocomplete="tel"></label>
+                    </div>
+                </fieldset>
 
-                <!-- Timing & files -->
-                <h3 class="form-section"><span class="sec-num"></span> Timing &amp; files</h3>
-                <div class="form-row two">
-                    <label>Preferred date<input type="date" name="preferred_date" value=""></label>
-                    <label>Turnaround
-                        <select name="turnaround">
-                            <option >Standard</option><option >Rush (24–48 hours)</option><option >Flexible</option>                        </select>
+                <fieldset class="jn-step" data-need="service">
+                    <legend>Service needed *</legend>
+                    <div class="jn-work">
+                        <label class="jn-pick"><input type="radio" name="service" value="mystery" data-group="shop" required><i class="fa-solid fa-user-secret" aria-hidden="true"></i><span><b>Mystery Shoppers</b><small>A shopper visits as a customer</small></span></label>
+                        <label class="jn-pick"><input type="radio" name="service" value="loan" data-group="property" required><i class="fa-solid fa-house-circle-check" aria-hidden="true"></i><span><b>Loan Servicing</b><small>Occupancy and condition checks</small></span></label>
+                        <label class="jn-pick"><input type="radio" name="service" value="property" data-group="property" required><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i><span><b>Property &amp; Field Inspections</b><small>Checklist with photos</small></span></label>
+                        <label class="jn-pick"><input type="radio" name="service" value="collateral" data-group="property" required><i class="fa-solid fa-car" aria-hidden="true"></i><span><b>Loan Servicing &amp; Collateral</b><small>Verify vehicles and equipment</small></span></label>
+                        <label class="jn-pick"><input type="radio" name="service" value="cx" data-group="shop" required><i class="fa-solid fa-star" aria-hidden="true"></i><span><b>Customer Experience</b><small>Service and cleanliness scores</small></span></label>
+                        <label class="jn-pick"><input type="radio" name="service" value="other" data-group="any" required><i class="fa-solid fa-circle-question" aria-hidden="true"></i><span><b>Other / Not sure</b><small>Tell us in the next step</small></span></label>
+                    </div>
+                    <p class="jn-err" hidden>Pick the service you need.</p>
+                </fieldset>
+
+                <fieldset class="jn-step">
+                    <legend>Where, when and files</legend>
+                    <label>Street address *<input type="text" name="address" maxlength="150" required autocomplete="address-line1" placeholder="123 Main St"></label>
+                    <div class="form-row three">
+                        <label>City *<input type="text" name="city" maxlength="80" required autocomplete="address-level2"></label>
+                        <label>State *<select name="state" required><option value="">Select…</option><option value="AL">AL</option><option value="AK">AK</option><option value="AZ">AZ</option><option value="AR">AR</option><option value="CA">CA</option><option value="CO">CO</option><option value="CT">CT</option><option value="DE">DE</option><option value="DC">DC</option><option value="FL">FL</option><option value="GA">GA</option><option value="HI">HI</option><option value="ID">ID</option><option value="IL">IL</option><option value="IN">IN</option><option value="IA">IA</option><option value="KS">KS</option><option value="KY">KY</option><option value="LA">LA</option><option value="ME">ME</option><option value="MD">MD</option><option value="MA">MA</option><option value="MI">MI</option><option value="MN">MN</option><option value="MS">MS</option><option value="MO">MO</option><option value="MT">MT</option><option value="NE">NE</option><option value="NV">NV</option><option value="NH">NH</option><option value="NJ">NJ</option><option value="NM">NM</option><option value="NY">NY</option><option value="NC">NC</option><option value="ND">ND</option><option value="OH">OH</option><option value="OK">OK</option><option value="OR">OR</option><option value="PA">PA</option><option value="RI">RI</option><option value="SC">SC</option><option value="SD">SD</option><option value="TN">TN</option><option value="TX">TX</option><option value="UT">UT</option><option value="VT">VT</option><option value="VA">VA</option><option value="WA">WA</option><option value="WV">WV</option><option value="WI">WI</option><option value="WY">WY</option></select></label>
+                        <label>ZIP *<input type="text" name="zip" maxlength="10" inputmode="numeric" required pattern="\d{5}(-\d{4})?" title="5-digit ZIP, for example 11550" autocomplete="postal-code"></label>
+                    </div>
+                    <label>Notes<textarea name="notes" rows="2" maxlength="3000" placeholder="Deadlines, how to get in, anything special…"></textarea></label>
+                    <div class="form-row two">
+                        <label>Preferred date<input type="date" name="preferred_date"></label>
+                        <label>Turnaround<select name="turnaround"><option>Standard</option><option>Rush (24–48 hours)</option><option>Flexible</option></select></label>
+                    </div>
+                    <label><span>Upload files <span class="muted">(photos, prior reports, contracts, lists of locations)</span></span>
+                        <span class="file-drop">
+                            <input type="file" name="files[]" multiple accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx">
+                            <span class="file-hint">PDF, JPG, PNG, CSV or Excel · max 20 MB per file</span>
+                        </span>
                     </label>
-                </div>
-                <label><span>Upload files <span class="muted">(photos, prior reports, contracts, lists of locations)</span></span>
-                    <span class="file-drop">
-                        <input type="file" name="files[]" multiple accept=".pdf,.jpg,.jpeg,.png,.csv,.xlsx">
-                        <span class="file-hint">PDF, JPG, PNG, CSV or Excel · max 20 MB per file</span>
-                    </span>
-                </label>
-                <label>Notes / location<textarea name="notes" rows="5" maxlength="3000" placeholder="Address or location to be inspected, deadlines and any special instructions…"></textarea></label>
+                </fieldset>
 
-                <button type="submit" class="btn btn-primary btn-lg btn-block">Send request <span class="arr">→</span></button>
+                <div class="jn-nav">
+                    <button type="button" class="btn btn-ghost" data-back hidden><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back</button>
+                    <button type="button" class="btn btn-primary" data-next>Next <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                    <button type="submit" class="btn btn-red" data-send>Send request <i class="fa-solid fa-paper-plane" aria-hidden="true"></i></button>
+                </div>
                 <p class="form-note">Demo form. Nothing is saved, uploaded or sent yet.</p>
             </form>
 
-            <aside class="request-aside">
-                <div class="card mini sticky">
-                    <h3>What happens next</h3>
-                    <ol class="mini-steps">
-                        <li>We review your request</li>
-                        <li>We confirm price and timeline</li>
-                        <li>A local inspector or shopper is assigned</li>
-                        <li>You get the graded report online</li>
-                    </ol>
+            <aside class="jn-side">
+                <div class="card mini">
+                    <h3>Prefer to talk?</h3>
+                    <p style="margin:0 0 6px"><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:+15169240087" class="big-phone">516 924-0087</a></p>
+                    <p class="small" style="margin:0"><a href="mailto:Processateagle@aol.com">Processateagle@aol.com</a></p>
                     <hr>
-                    <p class="muted small">Prefer to talk?</p>
-                    <p><i class="fa-solid fa-phone" aria-hidden="true"></i> <a href="tel:+15169240087" class="big-phone">516 924-0087</a></p>
-                    <p class="small"><a href="mailto:Processateagle@aol.com">Processateagle@aol.com</a></p>
+                    <p class="muted small" style="margin:0"><b>Have a long list?</b> Call us and we'll set you up with a client account to import it from a spreadsheet.</p>
                 </div>
             </aside>
         </div>
@@ -191,21 +202,45 @@
     </div>
 </footer>
 <script>
-// Static preview: forms are not connected yet. Show a note instead of submitting.
-document.querySelectorAll('form').forEach(function (f) {
-  f.addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var n = f.querySelector('.preview-note');
-    if (!n) {
-      n = document.createElement('p');
-      n.className = 'preview-note';
-      n.setAttribute('role', 'status');
-      n.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fff7e0;border:1px solid #f0d58a;color:#5a4500;font-size:14px';
-      f.appendChild(n);
+// Request in 3 steps. Without JavaScript all steps show as one form.
+(function () {
+    var f = document.getElementById('request-form'); if (!f) return;
+    var steps = [].slice.call(f.querySelectorAll('.jn-step')), tabs = [].slice.call(f.querySelectorAll('.jn-steps li')), cur = 0, best = 0;
+    var back = f.querySelector('[data-back]'), next = f.querySelector('[data-next]'), send = f.querySelector('[data-send]');
+    f.classList.add('js-steps');
+    function ok(i) {
+        var s = steps[i], need = s.getAttribute('data-need');
+        if (need) { var any = f.querySelector('[name="' + need + '"]:checked'), err = s.querySelector('.jn-err'); err.hidden = !!any; if (!any) { s.querySelector('input').focus(); return false; } }
+        var bad = [].slice.call(s.querySelectorAll('input:not([type=radio]), select, textarea')).filter(function (el) { return !el.checkValidity(); });
+        if (bad.length) { bad[0].reportValidity(); bad[0].focus(); return false; }
+        return true;
     }
-    n.textContent = 'Preview only: this form is not connected yet. On the live site it will be sent to VIGN.';
-  });
-});
+    function show(i) {
+        cur = i; best = Math.max(best, i);
+        steps.forEach(function (s, k) { s.hidden = k !== i; });
+        tabs.forEach(function (t, k) { t.classList.toggle('on', k === i); t.classList.toggle('done', k < i); if (k === i) t.setAttribute('aria-current', 'step'); else t.removeAttribute('aria-current'); });
+        f.querySelector('.jn-bar i').style.width = ((i + 1) / steps.length * 100) + '%';
+        back.hidden = i === 0; next.hidden = i === steps.length - 1; send.hidden = i !== steps.length - 1;
+    }
+    next.addEventListener('click', function () { if (ok(cur)) { show(cur + 1); var el = steps[cur].querySelector('input, select, textarea'); if (el) el.focus(); } });
+    back.addEventListener('click', function () { show(cur - 1); });
+    tabs.forEach(function (t, k) { t.addEventListener('click', function () { if (k <= best || (k === cur + 1 && ok(cur))) show(k); }); });
+    f.addEventListener('change', function (e) { if (e.target.name === 'service') { var err = e.target.closest('.jn-step').querySelector('.jn-err'); if (err) err.hidden = true; } });
+    f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        for (var i = 0; i < steps.length; i++) if (!ok(i)) { show(i); ok(i); return; }
+        var v = function (n) { return (f[n] && f[n].value || '').trim(); };
+        var SVC = { mystery: 'Mystery Shoppers', loan: 'Loan Servicing', property: 'Property & Field Inspections', collateral: 'Loan Servicing & Collateral Inspections', cx: 'Mystery Shopping & Customer Experience', other: 'Other / Not sure' };
+        var picked = f.querySelector('[name=service]:checked'), wanted = { 'Rush (24–48 hours)': 2, 'Flexible': 10 }[v('turnaround')] || 7;
+        if (v('preferred_date')) wanted = Math.max(0, Math.round((new Date(v('preferred_date') + 'T12:00:00') - new Date().setHours(12, 0, 0, 0)) / 864e5));
+        var id = window.VIGNDB ? VIGNDB.add('requests', { company: v('company') || v('full_name') + ' (no company)', contact: v('full_name'), email: v('email'), phone: v('phone'), role: v('role'),
+            service: SVC[picked ? picked.value : 'other'], addr: v('address') + ', ' + v('city') + ', ' + v('state') + ' ' + v('zip'), wanted: wanted, turnaround: v('turnaround'), notes: v('notes'), src: 'Website form' }) : '';
+        var name = v('full_name').split(' ')[0].replace(/[<>&"]/g, '');
+        f.innerHTML = '<div class="jn-done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><h2>Thanks' + (name ? ', ' + name : '') + '!</h2><p>We got your request' + (id ? ' <b>' + id + '</b>' : '') + '. Our team will call or email you to confirm the price and timeline, then assign a local inspector or shopper.</p>' +
+            (id ? '<p class="form-note">Preview: saved in this browser. It now shows in the Admin Menu under <b>New Inspection Requests</b>.</p>' : '<p class="form-note">Preview: this browser blocks saving, so nothing was kept.</p>') + '<a class="btn btn-ghost" href="index.html">Back to the website</a></div>';
+    });
+    show(0);
+})();
 </script>
 <script>
 // Static preview: pre-select the service from ?service=... (the PHP version does this on the server)
