@@ -36,48 +36,34 @@
             </a>
 
             <h1>Sign in</h1>
-            <p class="muted">Welcome back. Sign in to your VIGN account.</p>
+            <p class="muted">Choose your account type.</p>
 
-            
-            <form method="post" action="#" class="form" autocomplete="on">
-                                <label>Email address
-                    <input type="email" name="email" value="" maxlength="150" autocomplete="username" required autofocus>
-                </label>
-                <label>
-                    <!-- <span class="label-row">Password <a href="#" class="small-link">Forgot password?</a></span> -->
-                    <span class="password-field">
-                        <input type="password" name="password" id="password" maxlength="200" autocomplete="current-password" required>
-                        <button type="button" class="pw-toggle" data-target="password" aria-label="Show password">Show</button>
-                    </span>
-                </label>
-                <label class="checkbox"><input type="checkbox" name="remember"> Remember me</label>
-                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
-            </form>
+            <div class="portal-choices">
+                <div class="portal-choice" aria-disabled="true" title="Coming soon" style="cursor:default;opacity:.62;box-shadow:none;transform:none">
+                    <span class="portal-choice-ico"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i></span>
+                    <span class="portal-choice-text"><b>I&#39;m an Inspector or Shopper</b><small>Your jobs, forms and pay</small></span>
+                    <span style="margin-left:auto;flex:none;padding:3px 10px;border-radius:999px;background:#eef1f6;color:#5b6478;font-size:.74rem;font-weight:700">Coming soon</span>
+                </div>
+                <div class="portal-choice" aria-disabled="true" title="Coming soon" style="cursor:default;opacity:.62;box-shadow:none;transform:none">
+                    <span class="portal-choice-ico"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+                    <span class="portal-choice-text"><b>I&#39;m a Client</b><small>Your inspections and results</small></span>
+                    <span style="margin-left:auto;flex:none;padding:3px 10px;border-radius:999px;background:#eef1f6;color:#5b6478;font-size:.74rem;font-weight:700">Coming soon</span>
+                </div>
+                <a href="staff/index.html" class="portal-choice">
+                    <span class="portal-choice-ico"><i class="fa-solid fa-briefcase" aria-hidden="true"></i></span>
+                    <span class="portal-choice-text"><b>VIGN Staff</b><small>The Staff Office</small></span>
+                    <i class="fa-solid fa-arrow-right portal-choice-go" aria-hidden="true"></i>
+                </a>
+            </div>
 
             <p class="muted small center">
                 Inspector or shopper? <a href="join.html">Join the network free</a><br>
                 Client accounts are created by VIGN staff.
             </p>
             <p class="center"><a href="index.html" class="small-link">← Back to website</a></p>
+            <p class="center muted small" style="margin-top:18px;font-size:12px">Preview only: <a href="admin/login.html">Admin sign in</a> (VIGN admin has its own address in the real system)</p>
         </div>
     </main>
 </div>
-<script>
-// Static preview: forms are not connected yet. Show a note instead of submitting.
-document.querySelectorAll('form').forEach(function (f) {
-  f.addEventListener('submit', function (ev) {
-    ev.preventDefault();
-    var n = f.querySelector('.preview-note');
-    if (!n) {
-      n = document.createElement('p');
-      n.className = 'preview-note';
-      n.setAttribute('role', 'status');
-      n.style.cssText = 'margin-top:12px;padding:10px 14px;border-radius:8px;background:#fff7e0;border:1px solid #f0d58a;color:#5a4500;font-size:14px';
-      f.appendChild(n);
-    }
-    n.textContent = 'Preview only: this form is not connected yet. On the live site it will be sent to VIGN.';
-  });
-});
-</script>
 </body>
 </html>
