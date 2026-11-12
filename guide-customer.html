@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VIGN System Overview</title>
+<link rel="icon" href="images/vign-logo.png" type="image/png">
+<link rel="stylesheet" href="vendors/fontawesome/css/all.min.css">
+<style>
+:root {
+    --bg: #f5f7fb; --card: #ffffff; --ink: #172033; --muted: #5b6478; --line: #e2e7f0;
+    --navy: #1e3a8a; --navy-2: #2747a8; --red: #c8102e; --green: #15803d; --amber: #a16207;
+    --soft-blue: #eef2ff; --soft-green: #e8f7ee; --soft-amber: #fff6dd; --soft-red: #fdecee;
+    --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 4px 14px rgba(16, 24, 40, .05);
+}
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+        --bg: #0e1422; --card: #161e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #263049;
+        --navy: #8fb0ff; --navy-2: #a9c1ff; --red: #ff7b8c; --green: #5fd08b; --amber: #f0c060;
+        --soft-blue: #1a2645; --soft-green: #14301f; --soft-amber: #33290f; --soft-red: #3a1820;
+        --shadow: none;
+    }
+}
+:root[data-theme="dark"] {
+    --bg: #0e1422; --card: #161e30; --ink: #e7ebf3; --muted: #9aa4b8; --line: #263049;
+    --navy: #8fb0ff; --navy-2: #a9c1ff; --red: #ff7b8c; --green: #5fd08b; --amber: #f0c060;
+    --soft-blue: #1a2645; --soft-green: #14301f; --soft-amber: #33290f; --soft-red: #3a1820;
+    --shadow: none;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--navy); }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px 60px; }
+header.top { background: linear-gradient(120deg, #13286a, #1e3a8a 60%, #2b4fb5); color: #fff; padding: 34px 0 30px; }
+header.top .wrap { padding-bottom: 0; display: flex; gap: 18px; align-items: center; }
+header.top img { width: 74px; height: auto; background: #fff; border-radius: 14px; padding: 6px; flex: none; }
+header.top h1 { margin: 0; font-size: 1.75rem; line-height: 1.2; }
+header.top p { margin: 6px 0 0; opacity: .88; }
+nav.toc { position: sticky; top: 0; z-index: 5; background: var(--card); border-bottom: 1px solid var(--line); }
+nav.toc .wrap { display: flex; gap: 6px; overflow-x: auto; padding: 10px 16px; scrollbar-width: thin; }
+nav.toc a { white-space: nowrap; text-decoration: none; padding: 6px 12px; border-radius: 999px; font-size: .9rem; color: var(--muted); }
+nav.toc a:hover { background: var(--soft-blue); color: var(--navy); }
+section { margin-top: 34px; }
+h2 { font-size: 1.4rem; margin: 0 0 6px; display: flex; gap: 10px; align-items: center; }
+h2 .n { display: inline-grid; place-items: center; width: 32px; height: 32px; border-radius: 9px; background: var(--navy); color: #fff; font-size: 1rem; flex: none; }
+:root[data-theme="dark"] h2 .n { color: #0e1422; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) h2 .n { color: #0e1422; } }
+h3 { font-size: 1.08rem; margin: 22px 0 8px; }
+.lead { color: var(--muted); margin: 0 0 16px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 18px 20px; box-shadow: var(--shadow); }
+.grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(min(230px, 100%), 1fr)); }
+.who { display: flex; flex-direction: column; gap: 6px; }
+.who i.big { font-size: 1.4rem; color: var(--navy); }
+.who b { font-size: 1.02rem; }
+.who small { color: var(--muted); }
+.who a.open { margin-top: auto; font-weight: 600; text-decoration: none; }
+.note { padding: 12px 16px; border-radius: 12px; background: var(--soft-amber); border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent); font-size: .95rem; }
+.note.blue { background: var(--soft-blue); border-color: color-mix(in srgb, var(--navy) 25%, transparent); }
+.note.green { background: var(--soft-green); border-color: color-mix(in srgb, var(--green) 30%, transparent); }
+.tbl-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+table { width: 100%; border-collapse: collapse; font-size: .93rem; }
+th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: color-mix(in srgb, var(--soft-blue) 60%, var(--card)); }
+tr:last-child td { border-bottom: 0; }
+.pill { display: inline-block; padding: 1px 9px; border-radius: 999px; font-size: .78rem; font-weight: 700; white-space: nowrap; }
+.p-done { background: var(--soft-green); color: var(--green); } .p-wait { background: var(--soft-amber); color: var(--amber); } .p-samp { background: var(--soft-red); color: var(--red); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--soft-blue); padding: 1px 6px; border-radius: 6px; }
+/* architecture picture */
+.arch { display: grid; gap: 12px; }
+.arch .row { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); }
+.box { border: 2px solid var(--navy); border-radius: 12px; padding: 12px; background: var(--card); text-align: center; }
+.box b { display: block; } .box small { color: var(--muted); display: block; line-height: 1.35; margin-top: 4px; }
+.box.data { border-style: dashed; border-color: var(--muted); }
+.arrow { text-align: center; color: var(--muted); font-size: .9rem; }
+.files { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(min(220px, 100%), 1fr)); }
+.files .card { padding: 14px 16px; }
+.files code { display: inline-block; margin-bottom: 4px; }
+/* flow */
+.flow { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: s; }
+.flow > li { position: relative; padding: 16px 18px 16px 66px; }
+.flow > li::before { counter-increment: s; content: counter(s); position: absolute; left: 18px; top: 16px; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; background: var(--navy); color: #fff; font-weight: 700; }
+:root[data-theme="dark"] .flow > li::before { color: #0e1422; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .flow > li::before { color: #0e1422; } }
+.flow h4 { margin: 0 0 4px; font-size: 1.02rem; }
+.flow .who-tag { display: inline-block; font-size: .75rem; font-weight: 700; padding: 1px 8px; border-radius: 999px; background: var(--soft-blue); color: var(--navy); margin-left: 6px; vertical-align: middle; }
+.flow ol { margin: 6px 0 0; padding-left: 20px; }
+.flow .see { margin: 8px 0 0; padding: 8px 12px; border-radius: 10px; background: var(--soft-green); font-size: .93rem; }
+.go { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 7px 14px; border-radius: 9px; background: var(--navy); color: #fff; text-decoration: none; font-weight: 600; font-size: .92rem; }
+:root[data-theme="dark"] .go { color: #0e1422; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .go { color: #0e1422; } }
+.go.alt { background: transparent; color: var(--navy); border: 1px solid var(--navy); }
+/* checklist */
+.checks { display: grid; gap: 14px; }
+.checks h3 { margin: 0 0 8px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.checks h3 small { font-weight: 600; color: var(--muted); font-size: .85rem; }
+.checks label { display: flex; gap: 10px; align-items: flex-start; padding: 8px 4px; border-top: 1px solid var(--line); cursor: pointer; }
+.checks label:first-of-type { border-top: 0; }
+.checks input { width: 20px; height: 20px; margin-top: 2px; flex: none; accent-color: var(--green); }
+.checks input:checked + span { color: var(--muted); text-decoration: line-through; }
+.checks span small { display: block; color: var(--muted); text-decoration: none; }
+.bar { height: 10px; border-radius: 999px; background: var(--line); overflow: hidden; margin: 8px 0 4px; }
+.bar i { display: block; height: 100%; width: 0; background: var(--green); transition: width .3s; }
+.btn { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 9px; padding: 7px 14px; font: inherit; font-size: .9rem; cursor: pointer; }
+.btn:hover { border-color: var(--navy); }
+ul.plain { margin: 6px 0 0; padding-left: 20px; }
+ul.plain li { margin: 4px 0; }
+.why { color: var(--muted); font-size: .92rem; }
+footer { margin-top: 40px; color: var(--muted); font-size: .88rem; text-align: center; }
+.theme { margin-left: auto; background: rgba(255, 255, 255, .15); color: #fff; border: 1px solid rgba(255, 255, 255, .35); }
+@media (max-width: 560px) { header.top .wrap { flex-wrap: wrap; } header.top img { width: 56px; } .theme { margin-left: 0; } .flow > li { padding-left: 18px; padding-top: 60px; } }
+</style>
+</head>
+<body>
+<header class="top"><div class="wrap">
+    <img src="images/vign-logo.png" alt="VIGN USA logo">
+    <div><h1>Your VIGN system: how it will work</h1><p>A simple overview of what we are building for VIGN USA, step by step.</p></div>
+    <button class="btn theme" id="theme" type="button" aria-label="Switch light or dark"><i class="fa-solid fa-circle-half-stroke"></i> Theme</button>
+</div></header>
+<nav class="toc" aria-label="Sections"><div class="wrap">
+    <a href="#idea">The idea</a><a href="#users">1. Who uses it</a><a href="#join">2. Joining</a><a href="#job">3. Life of a job</a><a href="#money">4. Money</a><a href="#can">5. Who can do what</a><a href="#safe">6. Safety</a><a href="#next">7. Next</a>
+</div></nav>
+
+<div class="wrap">
+
+<section id="idea">
+    <h2><span class="n"><i class="fa-solid fa-lightbulb"></i></span>The idea in one line</h2>
+    <p class="lead">Companies need a property or a store checked. VIGN has inspectors and mystery shoppers across the US. <b>The system connects them</b>, from the order all the way to the report and the payment.</p>
+    <p class="note blue"><i class="fa-solid fa-circle-info"></i> The screens you have seen so far are a <b>preview with sample data</b>. Names, addresses, prices and scores are made up, so we can agree on how everything looks and works before the real system goes live.</p>
+</section>
+
+<section id="users">
+    <h2><span class="n">1</span>Who uses the system</h2>
+    <div class="grid">
+        <div class="card who"><i class="fa-solid fa-globe big"></i><b>Website visitors</b><small>Anyone. They read about your services, send an inspection request, or sign up as an inspector, free.</small></div>
+        <div class="card who"><i class="fa-solid fa-user-tie big"></i><b>You (Admin)</b><small>Your own page. You see everything: new requests, jobs, inspectors, reports, invoices, payments and documents.</small></div>
+        <div class="card who"><i class="fa-solid fa-building big"></i><b>Your office staff</b><small>The daily work: enter jobs, assign them, review reports, send invoices, pay inspectors.</small></div>
+        <div class="card who"><i class="fa-solid fa-person-walking big"></i><b>Inspectors and shoppers</b><small>Use their phone: accept jobs, fill in the checklist on site, take photos, see their pay.</small></div>
+        <div class="card who"><i class="fa-solid fa-briefcase big"></i><b>Clients</b><small>Banks, insurers, stores and food chains. They order inspections, follow them, read reports and pay invoices.</small></div>
+    </div>
+    <p class="note green" style="margin-top:14px"><i class="fa-solid fa-shield-halved"></i> <b>Everyone sees only their own things.</b> Inspectors and clients never see your admin page, and one client never sees another client's jobs.</p>
+</section>
+
+<section id="join">
+    <h2><span class="n">2</span>How people join</h2>
+    <div class="grid">
+        <div class="card"><b><i class="fa-solid fa-person-walking"></i> A new inspector</b>
+            <ol class="plain"><li>Signs up free on the website</li><li>You see the sign-up in <b>Approve New Inspectors</b></li><li>You approve and set their area: <b>ZIP codes, counties or a whole state</b></li><li>They start getting job offers for that area</li></ol></div>
+        <div class="card"><b><i class="fa-solid fa-briefcase"></i> A new client</b>
+            <ol class="plain"><li>Sends a first request from the website form, no account needed</li><li>Your office sets them up with a billing plan: <b>per job, monthly or yearly</b></li><li>They get their own login and sign the agreement online</li><li>From then on they order, follow jobs and see reports in their portal</li></ol></div>
+    </div>
+</section>
+
+<section id="job">
+    <h2><span class="n">3</span>The life of one job</h2>
+    <div class="card" style="text-align:center;font-weight:600">Client orders → You accept → Offered to inspectors → First to accept gets it → Visit and report → Your office checks it → Client sees it → Invoice → Inspector paid</div>
+    <ol class="flow" style="margin-top:14px">
+        <li class="card"><h4>The order comes in <span class="who-tag">Client</span></h4>From the website, the client's portal, or a spreadsheet with many jobs at once (for example all of a chain's stores). It shows up in your <b>New Inspection Requests</b>.</li>
+        <li class="card"><h4>You accept the job <span class="who-tag">You</span></h4>One click on <b>Accept Job</b>. Every job gets a <b>due date of 10 days at most</b>. Jobs that happen <b>once or twice a month</b> can be set to repeat automatically.</li>
+        <li class="card"><h4>It goes out to the area <span class="who-tag">You</span></h4>The job is offered to <b>all available inspectors who cover that area</b>. Or you can pick one inspector yourself.</li>
+        <li class="card"><h4>First to accept gets it <span class="who-tag">Inspector</span></h4>Inspectors see the offer on their phone with <b>Accept</b> or <b>Decline</b>. When you snooze, you lose: the first one to accept gets the job. If it's declined, it comes back to you to give to someone else.</li>
+        <li class="card"><h4>The visit and the report <span class="who-tag">Inspector</span></h4>On site, the inspector rates each item on the checklist, takes photos and sends the report from the phone. If the job is still open on <b>day 5</b>, the inspector gets an automatic reminder email.</li>
+        <li class="card"><h4>Your office checks it <span class="who-tag">You</span> <span class="who-tag">Staff</span></h4>Every report is checked before the client sees it. Approve it, or send it back to the inspector with a note to fix it.</li>
+        <li class="card"><h4>The client sees the result <span class="who-tag">Client</span></h4>The client sees the grade, the checklist and the photos. Their locations are ranked <b>from the highest grade to the lowest</b>, so they see their best performing stores first.</li>
+    </ol>
+</section>
+
+<section id="money">
+    <h2><span class="n">4</span>How the money works</h2>
+    <div class="grid">
+        <div class="card"><b><i class="fa-solid fa-arrow-down"></i> From clients</b><ul class="plain"><li>Billed <b>per job</b>, or by a <b>monthly or yearly</b> plan</li><li>Billing runs <b>automatically</b></li><li>A card is charged automatically <b>only when the client has signed the agreement</b></li><li>You always see which invoices are open, due and past due</li></ul></div>
+        <div class="card"><b><i class="fa-solid fa-arrow-up"></i> To inspectors</b><ul class="plain"><li>Each finished job adds to the inspector's pay</li><li>You mark the pay as sent; the inspector sees it in their portal</li><li>Agreements, instructions and <b>1099s</b> are kept in <b>Documents</b>. 1099s are private: only you and that inspector can open them</li></ul></div>
+    </div>
+</section>
+
+<section id="can">
+    <h2><span class="n">5</span>Who can do what</h2>
+    <div class="tbl-wrap"><table>
+        <thead><tr><th>You (Admin)</th><th>Office staff</th><th>Inspector</th><th>Client</th></tr></thead>
+        <tbody><tr>
+            <td>Everything, plus approve inspectors, billing plans, documents and 1099s</td>
+            <td>Enter and import jobs, assign them, review reports, invoices, inspector pay</td>
+            <td>Accept or decline jobs, fill in the checklist, photos, see their own pay and documents</td>
+            <td>Order jobs, follow them, read approved reports, pay invoices, sign agreements</td>
+        </tr></tbody>
+    </table></div>
+</section>
+
+<section id="safe">
+    <h2><span class="n">6</span>Keeping it safe</h2>
+    <ul class="plain">
+        <li>Every person has their own login and sees only their own information</li>
+        <li>Photos, documents and tax forms are stored privately, never as public links</li>
+        <li>Card details are never shown in full, only the last 4 digits</li>
+        <li>Clients never see a report until your office has approved it</li>
+    </ul>
+</section>
+
+<section id="next">
+    <h2><span class="n">7</span>What we will finalize together</h2>
+    <p class="lead">These are shown as samples for now. We'll set them up the way you want:</p>
+    <ul class="plain">
+        <li>Prices for the monthly and yearly plans</li>
+        <li>How the final grade is calculated</li>
+        <li>The inspection and mystery-shopping forms</li>
+        <li>The spreadsheet layout for clients who send many jobs at once</li>
+    </ul>
+    <p class="note blue" style="margin-top:14px"><i class="fa-solid fa-comments"></i> Anything you'd like to add or change, just let us know. This is your system.</p>
+</section>
+
+<footer>VIGN USA · Verity Insight Group Network · "You Are The Eyes and Ears of Corporate America"</footer>
+</div>
+
+<script>
+(function () {
+    var root = document.documentElement;
+    try { var t = localStorage.getItem('vign-guide-theme'); if (t) root.dataset.theme = t; } catch (e) {}
+    document.getElementById('theme').addEventListener('click', function () {
+        var dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+        root.dataset.theme = dark ? 'light' : 'dark';
+        try { localStorage.setItem('vign-guide-theme', root.dataset.theme); } catch (e) {}
+    });
+})();
+</script>
+</body>
+</html>
