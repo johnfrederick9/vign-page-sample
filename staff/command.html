@@ -36,17 +36,33 @@ VS.init = function () {
     // Activity, last 30 days: created + delivered (bars), reports sent in (line)
     var days = []; for (var d = -29; d <= 0; d++) days.push(d);
     var c1 = days.map(function (d) { return on('created', d); }), c2 = days.map(function (d) { return on('reviewed', d); }), c3 = days.map(function (d) { return on('sent', d); });
-    var max = Math.max(3, Math.max.apply(null, c1.concat(c2, c3)));
-    var W = 720, H = 200, L = 26, B = 22, bw = (W - L) / 30, y = function (v) { return H - B - (v / max) * (H - B - 10); };
-    var svg = '<svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Activity, last 30 days">';
-    for (var g = 0; g <= max; g += Math.ceil(max / 4)) svg += '<line class="grid" x1="' + L + '" x2="' + W + '" y1="' + y(g) + '" y2="' + y(g) + '"/><text x="' + (L - 6) + '" y="' + (y(g) + 3) + '" text-anchor="end">' + g + '</text>';
+    // chart: one count axis; Created + Delivered = paired bars, Reports sent in = line. Hover a day = all 3 numbers
+    var sum = function (a) { return a.reduce(function (t, v) { return t + v; }, 0); };
+    var top = Math.max(3, Math.max.apply(null, c1.concat(c2, c3)));
+    var step = top <= 4 ? 1 : top <= 8 ? 2 : Math.ceil(top / 4), ymax = step * Math.ceil(top / step);
+    var W = 560, H = 250, L = 28, R = 6, T = 12, B = 26, base = H - B, bw = (W - L - R) / 30;
+    var y = function (v) { return base - (v / ymax) * (base - T); };
+    var cx = function (i) { return L + i * bw + bw / 2; };
+    var gw = Math.min(18, bw * .72), w1 = (gw - 2) / 2; // 2px gap between the two bars
+    var bar = function (x, v, cls) { if (!v) return ''; var t = y(v), r = Math.min(4, w1 / 2, base - t); return '<path class="' + cls + '" d="M' + x + ',' + base + 'V' + (t + r) + 'Q' + x + ',' + t + ' ' + (x + r) + ',' + t + 'H' + (x + w1 - r) + 'Q' + (x + w1) + ',' + t + ' ' + (x + w1) + ',' + (t + r) + 'V' + base + 'Z"/>'; };
+    var svg = '<div class="chart-wrap"><svg class="chart" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Activity, last 30 days: ' + sum(c1) + ' jobs created, ' + sum(c3) + ' reports sent in, ' + sum(c2) + ' delivered. Daily numbers are in the table below.">';
+    svg += '<rect class="band" id="cBand" x="0" y="' + T + '" width="' + bw + '" height="' + (base - T) + '" rx="6" style="display:none"/>';
+    for (var g = step; g <= ymax; g += step) svg += '<line class="grid" x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '"/><text x="' + (L - 8) + '" y="' + (y(g) + 3.5) + '" text-anchor="end">' + g + '</text>';
+    svg += '<line class="base" x1="' + L + '" x2="' + (W - R) + '" y1="' + base + '" y2="' + base + '"/><text x="' + (L - 8) + '" y="' + (base + 3.5) + '" text-anchor="end">0</text>';
     days.forEach(function (d, i) {
-        var x = L + i * bw;
-        svg += '<a href="flowjobs.html?dtype=created&min=' + V.iso(d) + '&max=' + V.iso(d) + '"><rect class="bar1" x="' + (x + 2) + '" y="' + y(c1[i]) + '" width="' + (bw / 2 - 2) + '" height="' + (H - B - y(c1[i])) + '"><title>' + V.dayShort(d) + ': ' + c1[i] + ' created</title></rect></a>';
-        svg += '<rect class="bar2" x="' + (x + bw / 2) + '" y="' + y(c2[i]) + '" width="' + (bw / 2 - 2) + '" height="' + (H - B - y(c2[i])) + '"><title>' + V.dayShort(d) + ': ' + c2[i] + ' delivered</title></rect>';
-        if (i % 5 === 4 || i === 29) svg += '<text x="' + (x + bw / 2) + '" y="' + (H - 6) + '" text-anchor="middle">' + V.dayShort(d) + '</text>';
+        var x0 = cx(i) - gw / 2;
+        svg += bar(x0, c1[i], 'bar1') + bar(x0 + w1 + 2, c2[i], 'bar2');
+        if ((29 - i) % 7 === 0) svg += '<text x="' + cx(i) + '" y="' + (H - 7) + '" text-anchor="' + (i === 29 ? 'end' : 'middle') + '"' + (i === 29 ? ' dx="' + (bw / 2) + '"' : '') + '>' + (d === 0 ? 'Today' : V.dayShort(d)) + '</text>';
     });
-    svg += '<polyline class="line" points="' + c3.map(function (v, i) { return (L + i * bw + bw / 2) + ',' + y(v); }).join(' ') + '"/></svg>';
+    svg += '<polyline class="line" points="' + c3.map(function (v, i) { return cx(i) + ',' + y(v); }).join(' ') + '"/>';
+    svg += '<circle class="dot" id="cDot" r="4.5" style="display:none"/>';
+    // the hit target is the whole day column (bigger than the bars)
+    days.forEach(function (d, i) { svg += '<rect class="hit" data-i="' + i + '" x="' + (L + i * bw) + '" y="' + T + '" width="' + bw + '" height="' + (base - T) + '"/>'; });
+    svg += '</svg><div class="ctip" id="cTip" role="status" aria-live="polite"></div></div>';
+    var key = '<div class="ckey"><span><i class="sw1"></i>Created <b>' + sum(c1) + '</b></span><span><i class="sw3"></i>Reports sent in <b>' + sum(c3) + '</b></span><span><i class="sw2"></i>Delivered <b>' + sum(c2) + '</b></span><span class="muted">30-day totals · hover a day for its numbers · click it for the jobs</span></div>';
+    var table = '<details class="cdet"><summary>Daily numbers (table)</summary><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Day</th><th class="r">Created</th><th class="r">Reports sent in</th><th class="r">Delivered</th></tr></thead><tbody>' +
+        days.slice().reverse().map(function (d) { var i = d + 29; return '<tr><td>' + (d === 0 ? 'Today' : V.dayShort(d)) + '</td><td class="r">' + c1[i] + '</td><td class="r">' + c3[i] + '</td><td class="r">' + c2[i] + '</td></tr>'; }).join('') + '</tbody></table></div></details>';
+    svg = key + svg + table;
 
     // Due pipeline
     var openJ = J.filter(V.open), cnt = function (f) { return openJ.filter(f).length; };
@@ -87,7 +103,26 @@ VS.init = function () {
         '</div></div>';
     V.$('#app').innerHTML = html;
     // legend for the chart
-    V.$('.chart').insertAdjacentHTML('afterend', '<div class="keyrow" style="padding:10px 0 0"><span><i style="background:#b7c8ff"></i>Created</span><span><i style="background:var(--blue)"></i>Delivered</span><span><i style="background:var(--red);height:3px"></i>Reports sent in</span></div>');
+    // hover / tap a day: highlight it and show all three numbers; click: that day's jobs
+    var tip = V.$('#cTip'), band = V.$('#cBand'), dot = V.$('#cDot'), chart = V.$('.chart'), wrap = V.$('.chart-wrap');
+    var row = function (cls, n, label) { var p = document.createElement('div'), i = document.createElement('i'), b = document.createElement('b'); i.className = cls; b.textContent = n; p.appendChild(i); p.appendChild(b); p.appendChild(document.createTextNode(' ' + label)); return p; };
+    var showDay = function (i) {
+        band.setAttribute('x', L + i * bw); band.style.display = '';
+        dot.setAttribute('cx', cx(i)); dot.setAttribute('cy', y(c3[i])); dot.style.display = '';
+        tip.textContent = '';
+        var h = document.createElement('div'); h.className = 'ctip-h'; h.textContent = days[i] === 0 ? 'Today' : V.date(days[i]).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        tip.appendChild(h); tip.appendChild(row('sw1', c1[i], 'created')); tip.appendChild(row('sw3', c3[i], 'reports sent in')); tip.appendChild(row('sw2', c2[i], 'delivered'));
+        var sx = chart.getBoundingClientRect().width / W, px = cx(i) * sx, tw = tip.offsetWidth || 150, ww = wrap.clientWidth;
+        tip.style.left = Math.max(0, Math.min(ww - tw, px > ww / 2 ? px - tw - 14 : px + 14)) + 'px';
+        tip.classList.add('on');
+    };
+    var hide = function () { tip.classList.remove('on'); band.style.display = 'none'; dot.style.display = 'none'; };
+    V.$$('.chart .hit').forEach(function (r) {
+        var i = +r.dataset.i;
+        r.addEventListener('pointerenter', function () { showDay(i); });
+        r.addEventListener('click', function () { location.href = 'flowjobs.html?dtype=created&min=' + V.iso(days[i]) + '&max=' + V.iso(days[i]); });
+    });
+    chart.addEventListener('pointerleave', hide);
 };
 </script>
 </body>

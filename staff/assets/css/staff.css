@@ -39,12 +39,12 @@ body.st .sb-brand { display: none; }
 
 /* Charts (inline SVG) */
 .chart { width: 100%; height: auto; display: block; }
-.chart text { font-family: var(--font); font-size: 10px; fill: var(--ink-3); }
+.chart text { font-family: var(--font); font-size: 11px; fill: var(--ink-3); }
 .chart .grid { stroke: var(--line); }
-.chart .bar1 { fill: #b7c8ff; } .chart .bar2 { fill: var(--blue); }
-.chart .line { fill: none; stroke: var(--red); stroke-width: 2; }
-.chart .dot { fill: var(--red); }
-.chart rect:hover { opacity: .75; cursor: pointer; }
+
+
+
+
 .keyrow { display: flex; gap: 14px; flex-wrap: wrap; font-size: .78rem; color: var(--ink-3); padding: 0 18px 14px; }
 .keyrow i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 5px; vertical-align: -1px; }
 .pipe { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
@@ -200,3 +200,30 @@ body.st .ps-demo { right: auto; left: 14px; }
 .nt-menu a.on { background: var(--blue-50); }
 .nt-n { min-width: 22px; height: 20px; padding: 0 6px; border-radius: 10px; background: var(--bg-soft); color: var(--ink-2); font-size: .72rem; display: grid; place-items: center; align-self: center; }
 .nt-n.hot { background: var(--red); color: #fff; }
+
+/* Activity chart (Home): validated colors — Created blue, Reports sent in orange, Delivered green */
+.card2 { --c-created: #2a78d6; --c-sent: #eb6834; --c-deliv: #1baf7a; }
+.chart-wrap { position: relative; }
+.chart .grid { stroke: var(--line); stroke-dasharray: 2 4; }
+.chart .base { stroke: #cfd5e1; }
+.chart .bar1 { fill: var(--c-created); }
+.chart .bar2 { fill: var(--c-deliv); }
+.chart .line { fill: none; stroke: var(--c-sent); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.chart .dot { fill: var(--c-sent); stroke: #fff; stroke-width: 2; pointer-events: none; }
+.chart .band { fill: #eef2fb; pointer-events: none; }
+.chart .hit { fill: transparent; cursor: pointer; }
+.ckey { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; margin: 0 0 12px; font-size: .84rem; color: var(--ink-2); }
+.ckey b { color: var(--ink); margin-left: 3px; }
+.ckey .muted { font-size: .76rem; color: var(--ink-3); margin-left: auto; }
+.ckey i, .ctip i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+.sw1 { background: var(--c-created); } .sw2 { background: var(--c-deliv); }
+.ckey i.sw3, .ctip i.sw3 { height: 3px; width: 14px; border-radius: 2px; vertical-align: 3px; background: var(--c-sent); }
+.ctip { position: absolute; top: 8px; left: 0; min-width: 150px; padding: 9px 12px; background: #fff; border: 1px solid var(--line); border-radius: 10px; box-shadow: var(--shadow-md); font-size: .8rem; color: var(--ink-2); pointer-events: none; opacity: 0; transition: opacity .12s; }
+.ctip.on { opacity: 1; }
+.ctip-h { font-weight: 700; color: var(--ink); margin-bottom: 4px; }
+.ctip div + div { margin-top: 2px; }
+.ctip b { color: var(--ink); display: inline-block; min-width: 16px; }
+.cdet { margin-top: 10px; font-size: .84rem; }
+.cdet summary { cursor: pointer; color: var(--blue); font-weight: 600; }
+.cdet .tbl-wrap { max-height: 260px; overflow: auto; margin-top: 8px; }
+@media (max-width: 560px) { .ckey .muted { margin-left: 0; width: 100%; } }
