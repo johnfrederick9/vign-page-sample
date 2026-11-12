@@ -56,13 +56,8 @@
 </header>
 <main>
     <!-- ============ HERO ============ -->
-    <section class="hero">
+    <section class="hero hero-v2">
         <div class="container">
-            <div class="hero-meta">
-                <span class="mono">Mystery shopping · Property inspections · Loan &amp; collateral checks</span>
-                <span class="mono muted hide-md">Nationwide · On the ground</span>
-            </div>
-
             <div class="hero-grid">
                 <div class="hero-copy">
                     <h1>
@@ -71,53 +66,39 @@
                         <span class="accent">Every result online.</span>
                     </h1>
                     <p class="lead">
-                        VIGN USA is a national network of field inspectors and mystery shoppers.
-                        We visit your stores, properties and collateral, complete a standard checklist on a phone
-                        with a photo on every finding, and deliver a graded report to your client portal.
+                        A national network of field inspectors and mystery shoppers. We visit your properties, stores and collateral,
+                        check every item with a photo, and send a graded report to your client portal.
                     </p>
 
                     <div class="hero-actions">
                         <a href="request.html" class="btn btn-primary btn-lg">Request an inspection <span class="arr">↗</span></a>
-                        <a href="#sample" class="text-link">See how scoring works <span class="arr">→</span></a>
-                        <a href="join.html" class="text-link">Join the network free <span class="arr">→</span></a>
+                        <a href="join.html" class="btn btn-outline btn-lg">Join the network free</a>
                     </div>
 
-                    <p class="hero-links">
-                        Built for:
-                        <a href="service-mystery-shoppers.html">Mystery Shoppers</a>, <a href="service-loan-servicing.html">Loan Servicing</a>, <a href="service-property-inspections.html">Property &amp; Field Inspections</a>, <a href="service-loan-collateral.html">Loan Servicing &amp; Collateral Inspections</a> and <a href="service-mystery-shopping-cx.html">Mystery Shopping &amp; Customer Experience</a>.
-                    </p>
-                    <p class="fine">
-                        Inspectors and mystery shoppers join for free. Questions? Call
-                        <a href="tel:+15169240087">516 924-0087</a>.
+                    <div class="hero-svcs" aria-label="Our services">
+                        <a href="service-mystery-shoppers.html"><i class="fa-solid fa-user-secret" aria-hidden="true"></i>Mystery Shoppers</a>
+                        <a href="service-loan-servicing.html"><i class="fa-solid fa-house-circle-check" aria-hidden="true"></i>Loan Servicing</a>
+                        <a href="service-property-inspections.html"><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>Property &amp; Field</a>
+                        <a href="service-loan-collateral.html"><i class="fa-solid fa-car" aria-hidden="true"></i>Loan &amp; Collateral</a>
+                        <a href="service-mystery-shopping-cx.html"><i class="fa-solid fa-star" aria-hidden="true"></i>Customer Experience</a>
+                    </div>
+
+                    <p class="hero-foot">
+                        <a href="#sample" class="text-link">See how scoring works <span class="arr">→</span></a>
+                        <span><i class="fa-solid fa-phone" aria-hidden="true"></i> Questions? <a href="tel:+15169240087">516 924-0087</a></span>
                     </p>
                 </div>
 
-                <!-- Visual: scene + floating checklist item (illustration) -->
-                <div class="hero-visual">
-                    <div class="scene">
-                        <img src="images/hero-scene.svg" alt="" class="scene-img">
-                        <span class="scene-badge mono">Eyes and ears on the ground.</span>
-                    </div>
-
-                    <div class="item-card" aria-label="Example checklist item">
-                        <div class="item-top mono">
-                            <span>Maple Ridge · Exterior</span>
-                            <span>Item 3 of 14</span>
-                        </div>
-                        <div class="item-photo">
-                            <img src="images/item-scene.svg" alt="Photo of a front door and window with a cracked pane">
-                            <span class="photo-tag mono"><i class="fa-solid fa-camera" aria-hidden="true"></i> Photo attached · 9:42 AM</span>
-                        </div>
-                        <h3 class="item-title">Doors / windows / locks</h3>
-                        <div class="rate-buttons" role="group" aria-label="Rate this item">
-                            <button type="button" class="rb rb1">Good</button>
-                            <button type="button" class="rb rb2">Minor</button>
-                            <button type="button" class="rb rb3 is-on">Repair</button>
-                            <button type="button" class="rb rb4">Urgent</button>
-                        </div>
-                        <p class="item-note">Cracked pane, left window. One tap per item, and the score adds itself up.</p>
-                    </div>
-                    <p class="visual-caption mono">Sample item · Tap a rating</p>
+                <!-- Visual: Don's two occupancy inspection photos (VIG - 6 and VIG - 7) -->
+                <div class="hero-visual hero-photos">
+                    <figure class="hph hph-main">
+                        <img src="images/hero/occupancy-front.jpg" alt="VIGN inspector at the front door of a house with a tablet" width="1200" height="900">
+                        <figcaption class="hph-desc"><b>Occupancy Verification</b> Is someone living here? The inspector checks the front door, windows, locks and overall condition.</figcaption>
+                    </figure>
+                    <figure class="hph hph-small">
+                        <img src="images/hero/occupancy-meter.jpg" alt="VIGN inspector beside a house, looking at the electric meter" width="1000" height="667">
+                        <figcaption class="hph-desc"><b>Utility check</b> A running electric meter shows the home is in use. A photo goes into the report.</figcaption>
+                    </figure>
                 </div>
             </div>
         </div>
@@ -178,6 +159,67 @@
                     <p>Insurance, construction progress, audits and custom programs. Tell us what you need checked.</p>
                     <a href="request.html?service=other" class="text-link light">Tell us what you need <span class="arr">→</span></a>
                 </article>
+            </div>
+        </div>
+    </section>
+
+
+    <!-- ============ OCCUPANCY INSPECTIONS (customer photos) ============ -->
+    <section class="section shop-section occ-section" aria-labelledby="occ-title">
+        <div class="container">
+            <div class="shop-head">
+                <div>
+                    <span class="eyebrow mono">Occupancy inspections</span>
+                    <h2 id="occ-title">On the property.<br><span class="shop-accent">On the record.</span></h2>
+                </div>
+                <div class="shop-head-side">
+                    <p>For lenders, servicers and insurers: a local inspector confirms the address, who lives there and the condition of the home, with photos.</p>
+                    <div class="shop-nav">
+                        <button type="button" class="shop-prev" aria-label="Previous" disabled><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></button>
+                        <button type="button" class="shop-next" aria-label="Next"><i class="fa-solid fa-arrow-right" aria-hidden="true"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div class="shop-track" tabindex="0" aria-label="Examples of occupancy inspection visits">
+                <a class="shop-card" href="service-property-inspections.html">
+                    <div class="shop-media">
+                        <img src="images/field/occ-card-address.jpg" alt="VIGN inspector checking the house number on a tablet at a front door" width="1000" height="587" loading="lazy">
+                        <span class="shop-icon"><i class="fa-solid fa-location-dot" aria-hidden="true"></i></span>
+                    </div>
+                    <p class="pic-desc"><b>Occupancy Inspection</b> Verifying the Property Address</p>
+                    <div class="shop-body">
+                        <span class="shop-label mono"><b>01</b>Right address</span>
+                        <h3>Is this the right house?</h3>
+                        <p>House number, street and photo of the front, matched to the address on the order.</p>
+                        <ul class="shop-tags"><li><i class="fa-solid fa-check" aria-hidden="true"></i>Address check</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>House number</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>Front photo</li></ul>
+                    </div>
+                </a>
+                <a class="shop-card" href="service-loan-servicing.html">
+                    <div class="shop-media">
+                        <img src="images/field/occ-card-door.jpg" alt="VIGN inspector at the front door talking with the occupant" width="1000" height="587" loading="lazy">
+                        <span class="shop-icon"><i class="fa-solid fa-door-open" aria-hidden="true"></i></span>
+                    </div>
+                    <p class="pic-desc"><b>Occupancy Inspection</b> Confirming Occupancy at the Door</p>
+                    <div class="shop-body">
+                        <span class="shop-label mono"><b>02</b>At the door</span>
+                        <h3>Is someone living there?</h3>
+                        <p>The inspector knocks, talks with the occupant when someone answers, and records what was confirmed.</p>
+                        <ul class="shop-tags"><li><i class="fa-solid fa-check" aria-hidden="true"></i>Occupied / vacant</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>Who answered</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>Notes</li></ul>
+                    </div>
+                </a>
+                <a class="shop-card" href="service-loan-collateral.html">
+                    <div class="shop-media">
+                        <img src="images/field/occ-card-exterior.jpg" alt="VIGN inspector photographing the outside of a home from the street" width="1000" height="587" loading="lazy">
+                        <span class="shop-icon"><i class="fa-solid fa-camera" aria-hidden="true"></i></span>
+                    </div>
+                    <p class="pic-desc"><b>Occupancy Inspection</b> Documenting Exterior Observations</p>
+                    <div class="shop-body">
+                        <span class="shop-label mono"><b>03</b>Outside the home</span>
+                        <h3>What shape is the property in?</h3>
+                        <p>Roof, windows, lawn, cars and any damage, photographed from the street and rated 1 to 4.</p>
+                        <ul class="shop-tags"><li><i class="fa-solid fa-check" aria-hidden="true"></i>Exterior photos</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>Condition</li><li><i class="fa-solid fa-check" aria-hidden="true"></i>Damage</li></ul>
+                    </div>
+                </a>
             </div>
         </div>
     </section>
@@ -247,6 +289,7 @@
                         <img src="images/field/card-fast-food.jpg" alt="Mystery shopper checking a fast-food order against the receipt" width="1000" height="587" loading="lazy">
                         <span class="shop-icon"><i class="fa-solid fa-burger" aria-hidden="true"></i></span>
                     </div>
+                    <p class="pic-desc"><b>Mystery Shopper</b> Checking Fast-Food Order Accuracy</p>
                     <div class="shop-body">
                         <span class="shop-label mono"><b>01</b>Fast food</span>
                         <h3>Was the order right, and was it fast?</h3>
@@ -259,6 +302,7 @@
                         <img src="images/field/card-restaurant.jpg" alt="Mystery shopper checking cleanliness at a restaurant drink station" width="1000" height="587" loading="lazy">
                         <span class="shop-icon"><i class="fa-solid fa-utensils" aria-hidden="true"></i></span>
                     </div>
+                    <p class="pic-desc"><b>Mystery Shopper</b> Checking Restaurant Cleanliness</p>
                     <div class="shop-body">
                         <span class="shop-label mono"><b>02</b>Restaurants</span>
                         <h3>Clean tables. Stocked stations.</h3>
@@ -271,6 +315,7 @@
                         <img src="images/field/card-retail.jpg" alt="Mystery shopper being helped by a retail store associate" width="1000" height="587" loading="lazy">
                         <span class="shop-icon"><i class="fa-solid fa-bag-shopping" aria-hidden="true"></i></span>
                     </div>
+                    <p class="pic-desc"><b>Mystery Shopper</b> Evaluating Retail Customer Service</p>
                     <div class="shop-body">
                         <span class="shop-label mono"><b>03</b>Retail stores</span>
                         <h3>Was the customer really helped?</h3>
@@ -283,6 +328,7 @@
                         <img src="images/field/card-hotel.jpg" alt="Mystery shopper checking in at a hotel front desk" width="1000" height="587" loading="lazy">
                         <span class="shop-icon"><i class="fa-solid fa-bell-concierge" aria-hidden="true"></i></span>
                     </div>
+                    <p class="pic-desc"><b>Mystery Shopper</b> Evaluating Hotel Guest Service</p>
                     <div class="shop-body">
                         <span class="shop-label mono"><b>04</b>Hotels</span>
                         <h3>The welcome at the front desk.</h3>
@@ -295,6 +341,7 @@
                         <img src="images/field/card-drive-through.jpg" alt="Mystery shopper receiving an order at a drive-through window" width="1000" height="587" loading="lazy">
                         <span class="shop-icon"><i class="fa-solid fa-car-side" aria-hidden="true"></i></span>
                     </div>
+                    <p class="pic-desc"><b>Mystery Shopper</b> Evaluating Drive-Through Service</p>
                     <div class="shop-body">
                         <span class="shop-label mono"><b>05</b>Drive-through</span>
                         <h3>Speaker to window, on the clock.</h3>
@@ -312,7 +359,7 @@
         <div class="container">
             <div class="section-head">
                 <span class="eyebrow mono">Who we serve</span>
-                <h2>Eyes on the ground for</h2>
+                <h2>Who we work for</h2>
             </div>
             <div class="client-grid">
                 <div class="client-item"><h3>Retail &amp; Hospitality Brands</h3><p>Mystery shops and customer experience audits across all locations.</p></div>
