@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | VIGN USA Admin</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-db.js"></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="adm">
+<!-- Main system: /admin/settings.php. Opened from the name badge menu (top right): your details, your own password, how long a job offer stays open. -->
+<main class="amain" id="app"></main>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var V = VA;
+    if (!V.gate()) return;
+    V.shell('settings');
+    var me = (V.sec('users').rows.filter(function (u) { return u.name === 'Don Balducci'; })[0]) || {}, P = V.prefs, e = V.esc;
+    var sect = function (icon, color, title, sub, body) { return '<section class="sect"><div class="sect-h"><h2><span class="ic ' + color + '"><i class="fa-solid ' + icon + '"></i></span>' + title + '</h2><p>' + sub + '</p></div><div class="set1-b">' + body + '</div></section>'; };
+    var html = '<div class="band"><div><h1><i class="fa-solid fa-gear"></i>Settings</h1><p>Your own admin account. Other admins and staff are managed in <a href="index.html#users" style="color:#fff;text-decoration:underline">Admins &amp; Staff</a>.</p></div></div><div class="set1">';
+    html += sect('fa-user', 'blue', 'My details', 'Shown in Job History as the person who did each step.',
+        '<div class="set1-2"><label class="fld1">Full name<input id="nm" type="text" maxlength="60" value="' + e(V.me.name) + '"></label>' +
+        '<label class="fld1">Phone<input id="ph" type="tel" maxlength="20" value="' + e(P.phone || '') + '" placeholder="(516) 555-0100"></label></div>' +
+        '<label class="fld1"><span>Sign-in email <small>(another admin changes it in Admins &amp; Staff)</small></span><input type="email" value="' + e(me.email || 'don@vignusa.com') + '" disabled></label>');
+    html += sect('fa-lock', 'red', 'Change password', 'Admins can open everything, so use a strong password only you know.',
+        '<form id="pw" class="set1-b" style="padding:0" autocomplete="off" novalidate>' +
+        '<label class="fld1">Current password<input id="p0" type="password" autocomplete="current-password"></label>' +
+        '<div class="set1-2"><label class="fld1">New password<input id="p1" type="password" autocomplete="new-password"></label>' +
+        '<label class="fld1">Type the new password again<input id="p2" type="password" autocomplete="new-password"></label></div>' +
+        '<ul class="pw-rules" id="rules"><li data-r="len"><i class="fa-regular fa-circle"></i> At least 10 characters</li><li data-r="mix"><i class="fa-regular fa-circle"></i> Letters and at least one number</li><li data-r="new"><i class="fa-regular fa-circle"></i> Not the same as the current password</li><li data-r="same"><i class="fa-regular fa-circle"></i> Both new passwords match</li></ul>' +
+        '<div class="set1-f"><button class="btn btn-primary btn-sm" type="submit"><i class="fa-solid fa-key"></i> Change password</button><span class="muted small">Preview: nothing is saved. In the real system you are signed out on your other devices.</span></div></form>');
+    html += sect('fa-bullhorn', 'amber', 'Job offers', 'Offer to area: every inspector who covers the job gets it, first to accept wins.',
+        '<label class="fld1" style="max-width:320px">An offer stays open for<select id="oh">' + [12, 24, 48, 72].map(function (h) { return '<option value="' + h + '"' + (h === V.offerHours() ? ' selected' : '') + '>' + h + ' hours' + (h === 24 ? ' (default)' : '') + '</option>'; }).join('') + '</select></label>' +
+        '<p class="note1"><i class="fa-solid fa-circle-info"></i> If nobody accepts in time, the job comes back to Assign Jobs as "no answer" so you can pick someone.</p>');
+    html += '<div class="set1-f"><button class="btn btn-primary" id="save"><i class="fa-solid fa-check"></i> Save my details and job offers</button><a class="btn btn-ghost" href="index.html">Back to Admin Menu</a></div></div>';
+    V.$('#app').innerHTML = html;
+
+    V.$('#save').addEventListener('click', function () {
+        var nm = V.$('#nm').value.trim();
+        if (nm.length < 2) { V.$('#nm').closest('.fld1').classList.add('miss'); V.toast('Type your full name.'); return; }
+        V.$('#nm').closest('.fld1').classList.remove('miss');
+        P.name = nm; P.phone = V.$('#ph').value.trim(); P.offerHours = +V.$('#oh').value;
+        V.toast(V.savePrefs() ? 'Saved. New offers stay open for ' + P.offerHours + ' hours.' : 'This browser blocks saving, so it is not kept.');
+        V.me.name = nm; var w = V.$('.me-who b'); if (w) w.textContent = nm; var b = V.$('#meBtn b'); if (b) b.textContent = nm;
+    });
+    function check() {
+        var a = V.$('#p0').value, b = V.$('#p1').value, c = V.$('#p2').value;
+        var r = { len: b.length >= 10, mix: /[a-z]/i.test(b) && /\d/.test(b), new: !!b && b !== a, same: !!b && b === c };
+        V.$$('#rules li').forEach(function (li) { var ok = r[li.dataset.r]; li.classList.toggle('ok', ok); li.querySelector('i').className = ok ? 'fa-solid fa-circle-check' : 'fa-regular fa-circle'; });
+        return r;
+    }
+    V.$('#pw').addEventListener('input', check);
+    V.$('#pw').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var r = check(), a = V.$('#p0');
+        a.closest('.fld1').classList.toggle('miss', !a.value);
+        if (!a.value) { V.toast('Type your current password first.'); return; }
+        if (!(r.len && r.mix && r.new && r.same)) { V.toast('The new password does not meet all the rules yet.'); return; }
+        V.$('#pw').reset(); check();
+        V.toast('Password changed (preview only: nothing was saved).');
+    });
+});
+</script>
+</body>
+</html>

@@ -276,3 +276,31 @@ body.adm { background: var(--bg-soft); font-size: 15px; }
 
 /* R-17 affiliates */
 .code1 { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 700; letter-spacing: .04em; background: #fff4e5; color: #8a4b00; border: 1px dashed #f0b45c; border-radius: 6px; padding: 1px 7px; }
+
+/* ---------- name badge menu + Settings page (2026-11-13) ---------- */
+.anav-right { position: relative; }
+button.anav-user { background: #fff; font: inherit; cursor: pointer; }
+button.anav-user:hover, button.anav-user[aria-expanded="true"] { border-color: var(--line-2); box-shadow: var(--shadow-sm); }
+.me-menu { position: absolute; right: 0; top: calc(100% + 8px); min-width: 220px; background: #fff; border: 1px solid var(--line); border-radius: 12px; box-shadow: var(--shadow-md); padding: 6px; z-index: 60; }
+.me-menu[hidden] { display: none; }
+.me-who { padding: 8px 10px 10px; border-bottom: 1px solid var(--line); margin-bottom: 4px; }
+.me-who b { display: block; font-size: .88rem; }
+.me-who small { color: var(--ink-3); font-size: .74rem; }
+.me-menu a { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; color: var(--ink); font-size: .88rem; text-decoration: none !important; }
+.me-menu a i { width: 16px; text-align: center; color: var(--ink-3); }
+.me-menu a:hover, .me-menu a.on { background: var(--line); }
+.me-menu a.out { color: #b91c1c; }
+.me-menu a.out i { color: #b91c1c; }
+.edit-btn.red { color: #b91c1c; }
+.set1 { display: grid; gap: 18px; margin-top: 20px; max-width: 760px; }
+.set1 .sect { display: block; margin: 0; }
+.set1-b { padding: 16px 18px; display: grid; gap: 12px; }
+.set1-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.set1-f { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.set1 .fld1 small { font-weight: 400; color: var(--ink-3); }
+.set1 .fld1 input:disabled { background: var(--line); color: var(--ink-3); }
+.set1 .fld1.miss input { border-color: #dc2626; }
+.pw-rules { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; font-size: .82rem; color: var(--ink-3); }
+.pw-rules li.ok { color: #15803d; }
+.pw-rules li i { width: 16px; }
+@media (max-width: 640px) { .set1-2 { grid-template-columns: 1fr; } .me-menu { right: -6px; } }

@@ -26,6 +26,13 @@ var PILL = { Yes: 'p-green', No: 'p-grey', Active: 'p-green', Published: 'p-gree
     Overdue: 'p-red', 'Past due': 'p-red', Declined: 'p-red', Failed: 'p-red', Unassigned: 'p-red', Inactive: 'p-grey', 'Bills next': 'p-grey' };
 V.pill = function (v) { return '<span class="pill ' + (PILL[v] || 'p-grey') + '">' + V.esc(v) + '</span>'; };
 
+/* ---------- #22 admin settings (name badge menu > Settings). Preview: kept in this browser; a password is never saved ---------- */
+V.SETKEY = 'vign-admin-settings';
+V.prefs = (function () { try { return JSON.parse(localStorage.getItem(V.SETKEY) || 'null') || {}; } catch (e) { return {}; } })();
+V.savePrefs = function () { try { localStorage.setItem(V.SETKEY, JSON.stringify(V.prefs)); return true; } catch (e) { return false; } };
+if (V.prefs.name) V.me.name = V.prefs.name;
+V.offerHours = function () { return +V.prefs.offerHours || 24; };   // how long a job offer stays open (main system: Settings, default 24 h)
+
 /* ---------- R-15 job history: who did what, and when ---------- */
 V.who = function () { return V.me.name + ' (admin)'; };
 V.log = function (r, what, who) {
@@ -167,14 +174,22 @@ V.shell = function (page) {
         '<nav class="anav-links" aria-label="Admin menu">' + links.map(function (l) {
             return '<a href="' + l[1] + '"' + (l[0] === page ? ' class="on"' : '') + ' data-nav="' + l[0] + '"><i class="fa-solid ' + l[2] + '"></i>' + l[3] + (l[4] ? '<span class="cnt">' + l[4] + '</span>' : '') + '</a>';
         }).join('') + '</nav>' +
-        '<div class="anav-right"><a class="anav-user" href="login.html?out=1" title="Sign out"><span><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></span><span class="av">' + V.me.name.split(' ').map(function (p) { return p[0]; }).join('') + '</span></a></div></div></header>');
+        '<div class="anav-right"><button type="button" class="anav-user" id="meBtn" aria-haspopup="true" aria-expanded="false" title="Your account"><span><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></span><span class="av">' + V.me.name.split(' ').map(function (p) { return p[0]; }).join('') + '</span></button>' +
+        '<div class="me-menu" id="meMenu" role="menu" hidden><div class="me-who"><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></div>' +
+        '<a role="menuitem" href="settings.html"' + (page === 'settings' ? ' class="on" aria-current="page"' : '') + '><i class="fa-solid fa-gear"></i> Settings</a>' +
+        '<a role="menuitem" class="out" href="login.html?out=1"><i class="fa-solid fa-right-from-bracket"></i> Sign out</a></div></div></div></header>');
+    var mb = V.$('#meBtn'), mm = V.$('#meMenu');
+    var setMenu = function (open) { mm.hidden = !open; mb.setAttribute('aria-expanded', open); };
+    mb.addEventListener('click', function (e) { e.stopPropagation(); setMenu(mm.hidden); });
+    document.addEventListener('click', function (e) { if (!e.target.closest('#meMenu')) setMenu(false); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') setMenu(false); });
     V.$('#burger').addEventListener('click', function () { V.$('#anav').classList.toggle('open'); });
 };
 
 // ---------- Admin Menu ----------
 V.menu = function (app) {
     try { var ans = JSON.parse(localStorage.getItem('vign-offer-answers') || '{}'); Object.keys(ans).forEach(function (id) { var j = V.sec('jobs').rows.filter(function (x) { return x.id === id; })[0]; if (j) V.answerOffer(j, 'Maria Lopez', ans[id] === 'accepted'); }); } catch (e) {}
-    var html = '<div class="band"><div><h1><i class="fa-solid fa-table-cells-large"></i>Admin Menu</h1><p>Click a tile to open its list. Sample data. New requests and join requests from the website are saved in this browser: <a href="../database.html" style="color:inherit;text-decoration:underline">preview database</a>.</p></div></div>';
+    var html = '<div class="band"><div><h1><i class="fa-solid fa-table-cells-large"></i>Admin Menu</h1><p>Click a tile to open its list. Sample data. New requests and join requests from the website are saved in this browser.</p></div></div>';
     html += '<div class="need" id="need"></div>';
     html += '<div class="tiles" role="tablist">' + shown().map(function (s) {
         return '<button class="tile" role="tab" data-tile="' + s.key + '" aria-controls="sec-' + s.key + '">' + '<span class="ic ' + s.color + '"><i class="fa-solid ' + s.icon + '"></i></span>' +
@@ -255,7 +270,7 @@ function offerPopup(jobs, done) {
                 (g.list.length ? '<ul class="offl">' + g.list.map(function (i) { return '<li><i class="fa-solid fa-user"></i><b>' + V.esc(i.name) + '</b> · ' + V.esc(i.role) + '<small>' + V.covTxt(i) + '</small></li>'; }).join('') + '</ul>'
                     : '<p class="note1" style="margin:0"><i class="fa-solid fa-triangle-exclamation"></i> No active inspector covers this place. Assign someone by hand, or add coverage in Inspectors List.</p>') + '</div>';
         }).join('') +
-        '<p class="note1"><i class="fa-solid fa-bolt"></i> Each one sees it under <b>New offers</b> in their portal with Accept / Decline. <b>The first to accept gets the job</b>; the others see "Taken". If everyone declines, it comes back here as "Declined by …".</p>',
+        '<p class="note1"><i class="fa-solid fa-bolt"></i> The offer stays open for <b>' + V.offerHours() + ' hours</b> (Settings). Each one sees it under <b>New offers</b> in their portal with Accept / Decline. <b>The first to accept gets the job</b>; the others see "Taken". If everyone declines, it comes back here as "Declined by …".</p>',
         '<i class="fa-solid fa-paper-plane"></i> Send offer', function () {
             var sent = 0;
             groups.forEach(function (g) { if (!g.list.length) return; g.j.offers = (g.j.offers || []).filter(function (o) { return o.ans === 'Declined'; }).concat(g.list.map(function (i) { return { name: i.name, ans: 'Waiting' }; })); g.j.status = 'Offered'; g.j.offeredOn = 0; g.j.inspector = ''; V.log(g.j, 'Offered to ' + g.list.length + ' inspector' + (g.list.length > 1 ? 's' : '') + ' in the area'); sent++; });
@@ -265,7 +280,7 @@ function offerPopup(jobs, done) {
 // the offer's answers; the preview buttons stand in for inspectors answering on their phone
 function offerView(j, done) {
     var o = j.offers || [];
-    var m = V.modal('Offer · ' + V.esc(j.id), '<p style="margin:0 0 8px">' + V.esc(j.addr) + ' · sent ' + V.day(j.offeredOn || 0) + '</p>' +
+    var m = V.modal('Offer · ' + V.esc(j.id), '<p style="margin:0 0 8px">' + V.esc(j.addr) + ' · sent ' + V.day(j.offeredOn || 0) + ' · open for ' + V.offerHours() + ' hours</p>' +
         '<table class="tbl"><thead><tr><th>Inspector</th><th>Answer</th><th>Preview: answer for them</th></tr></thead><tbody>' + o.map(function (x, k) {
             return '<tr><td><b>' + V.esc(x.name) + '</b></td><td>' + V.pill(x.ans) + '</td><td>' + (x.ans === 'Waiting' ? '<button class="edit-btn grn" data-oa="' + k + '"><i class="fa-solid fa-check"></i> Accepts</button><button class="edit-btn" data-od="' + k + '"><i class="fa-solid fa-xmark"></i> Declines</button>' : '') + '</td></tr>';
         }).join('') + '</tbody></table><p class="muted small">Inspectors answer in their own portal. Maria Lopez can try it in the <a href="../inspector/command.html">inspector portal</a>.</p>',
@@ -311,7 +326,7 @@ function acceptPopup(r, done) {
 }
 V.ACTS = {
     requests: function (r) { return r.status === 'New' ? btn('job', 'fa-briefcase', 'Accept Job', 'pri') + btn('decline', 'fa-xmark', 'Decline') : btn('view', 'fa-eye', 'View'); },
-    jobs: function (r) { var h = btn('hist', 'fa-clock-rotate-left', 'History'); if (r.status === 'Offered') return btn('offerview', 'fa-hourglass-half', 'See answers', 'pri') + btn('assign', 'fa-user-check', 'Assign') + h; return btn('assign', 'fa-user-check', r.inspector ? 'Reassign' : 'Assign', r.inspector ? '' : 'pri') + (r.inspector ? '' : btn('offer', 'fa-bullhorn', 'Offer to area')) + h; },
+    jobs: function (r) { var h = btn('hist', 'fa-clock-rotate-left', 'History'); if (r.status === 'Offered') return btn('offerview', 'fa-hourglass-half', 'See answers', 'pri') + btn('assign', 'fa-user-check', 'Assign') + h; return btn('assign', 'fa-user-check', r.inspector ? 'Reassign' : 'Assign', r.inspector ? '' : 'pri') + (r.inspector ? btn('unassign', 'fa-user-xmark', 'Unassign', 'red') : btn('offer', 'fa-bullhorn', 'Offer to area')) + h; },
     clients: function (r) { return btn('rates', 'fa-tags', 'Rates'); },
     inspectors: function (r) { return btn('insjobs', 'fa-briefcase', 'Jobs'); },
     signups: function (r) { return r.status === 'New' ? btn('approve', 'fa-check', 'Approve', 'grn') + btn('decline', 'fa-xmark', 'Decline') : ''; },
@@ -326,6 +341,21 @@ V.RUN = {
     job: function (r, s, done) { acceptPopup(r, done); },
     offer: function (r, s, done) { offerPopup([r], done); },
     offerview: function (r, s, done) { offerView(r, done); },
+    // #21 undo an assignment (a mistake, or accepted by accident): back to red Unassigned
+    unassign: function (r, s, done) {
+        var who = r.inspector;
+        V.modal('Unassign ' + V.esc(r.id), '<p style="margin:0 0 10px"><b>' + V.esc(who) + '</b> is taken off <b>' + V.esc(r.id) + '</b> · ' + V.esc(r.addr) + '.</p>' +
+            '<ul class="offl" style="margin:0 0 10px"><li><i class="fa-solid fa-circle-xmark"></i>The job goes back to red <b>Unassigned</b>, ready to assign or offer again</li><li><i class="fa-solid fa-mobile-screen"></i>It leaves ' + V.esc(who) + '\'s job list</li><li><i class="fa-solid fa-envelope"></i>' + V.esc(who) + ' gets an email</li><li><i class="fa-solid fa-clock-rotate-left"></i>A line is added to the job History</li></ul>' +
+            (r.status === 'In field' ? '<p class="note1" style="margin:0 0 10px"><i class="fa-solid fa-triangle-exclamation"></i> This job is <b>In field</b>: the inspector may be at the address now. Call them first.</p>' : '') +
+            '<label class="fld1">Reason (optional, goes in History)<input type="text" id="why" maxlength="200" placeholder="e.g. accepted by mistake"></label>',
+            '<i class="fa-solid fa-user-xmark"></i> Unassign', function (m) {
+                var why = V.$('#why', m).value.trim();
+                r.inspector = ''; r.status = 'Unassigned';
+                if (r.offers) r.offers.forEach(function (o) { if (o.name === who && o.ans === 'Accepted') o.ans = 'Unassigned'; });
+                V.log(r, 'Unassigned from ' + who + (why ? ' (' + why + ')' : ''));
+                V.toast(r.id + ' is Unassigned again. ' + who + ' gets an email (preview only).'); done();
+            });
+    },
     insjobs: function (r) { var j = live(V.sec('jobs')).filter(function (x) { return x.inspector === r.name; }); V.modal('Open jobs · ' + V.esc(r.name), j.length ? '<ul class="offl">' + j.map(function (x) { return '<li><b>' + V.esc(x.id) + '</b> · ' + V.esc(x.addr) + '<small>due ' + V.day(x.due) + ' · ' + V.esc(x.status) + '</small></li>'; }).join('') + '</ul>' : '<p class="muted">No open jobs in this list.</p>'); },
     decline: function (r, s, done) { r.status = 'Declined'; V.log(r, s && s.key === 'signups' ? 'Join request declined' : 'Request declined'); V.toast(r.id + ' declined.'); done(); },
     hist: function (r, s) { V.histPopup(r, s.key === 'finished' ? r.client + ' · ' + r.form + '.' : r.client + ' · ' + r.addr + '.'); },
@@ -438,7 +468,7 @@ function cell(s, c, r) {
     if (s.key === 'clients' && c[0] === 'bal') return balBox(r.name, owed(r.name));
     if (s.key === 'affiliates' && c[0] === 'end') return v == null ? '<span class="muted">No end</span>' : V.day(v) + (v < 0 ? ' <span class="pill1 red" style="color:#b91c1c;font-weight:700">Ended</span>' : '');
     if (s.key === 'affiliates' && c[0] === 'code') return '<span class="code1">' + V.esc(v) + '</span>';
-    if ((s.key === 'clients' && c[0] === 'ref') || (s.key === 'requests' && c[0] === 'ref')) { var code = s.key === 'clients' ? r.refCode : r.ref, af = V.aff(code); if (!code) return '<span class="muted small">—</span>'; return af ? '<b>' + V.esc(af.name) + '</b><small><span class="code1">' + V.esc(V.cleanCode(code)) + '</span></small>' : '<span class="code1">' + V.esc(code) + '</span><small class="late">unknown code</small>'; }
+    if ((s.key === 'clients' && c[0] === 'ref') || (s.key === 'requests' && c[0] === 'ref')) { var code = s.key === 'clients' ? r.refCode : r.ref, af = V.aff(code); if (!code) return '<span class="muted small">—</span>'; return af ? '<b>' + V.esc(af.name) + '</b><small><span class="code1">' + V.esc(V.cleanCode(code)) + '</span></small>' + (s.key === 'requests' && !V.affOn(af, r.date || 0) ? '<small class="late">code not active that day: not counted</small>' : '') : '<span class="code1">' + V.esc(code) + '</span><small class="late">unknown code</small>'; }
     if (s.key === 'commissions' && c[0] === 'status' && v === 'Waiting for client payment') return V.pill('Waiting') + '<small>for the client to pay</small>';
     if (s.key === 'clients' && c[0] === 'rateNow') { var rn = V.rateNow(r); return '<a href="#" class="lnk" style="white-space:nowrap" data-rates="' + r._i + '"><b>' + V.money(rn.amt) + '</b>' + V.esc(rn.per) + '</a>' + (rn.pilot ? ' <span class="pill p-amber">Pilot</span>' : '') + '<small>' + V.esc(rn.why) + '</small>'; }
     if ((s.key === 'jobs' && c[0] === 'by')) return v ? '<b>' + V.esc(v) + '</b><small>' + V.esc(r.byHow || '') + '</small>' : '<span class="muted small">—</span>';
@@ -654,7 +684,10 @@ function build(s, el) {
                 if (!row) { target.id = 'A-' + (s.rows.length + 1); msg = ' Code ' + target.code + ' is ready to share.'; }
                 if (!V.affOn(target, 0)) msg += ' Note: the code does not work today (outside its dates).';
             }
-            if (s.key === 'clients' && target.refCode) { target.refCode = V.cleanCode(target.refCode); if (!V.aff(target.refCode)) msg = ' Note: no affiliate has the code ' + target.refCode + '.'; else msg = ' Referred by ' + V.aff(target.refCode).name + '.'; }
+            if (s.key === 'clients' && target.refCode) { target.refCode = V.cleanCode(target.refCode); var ra = V.aff(target.refCode);
+                if (!ra) msg = ' Note: no affiliate has the code ' + target.refCode + '.';
+                else if (!V.affOn(ra, 0) && !(row && V.sameCode(row.refCode, target.refCode))) { msg = ' The code ' + target.refCode + (ra.end != null && ra.end < 0 ? ' ended on ' + V.day(ra.end) : ' starts on ' + V.day(ra.start)) + ', so the client is NOT linked to ' + ra.name + '.'; target.refCode = ''; }
+                else { msg = ' Referred by ' + ra.name + '.'; if (!row || !V.sameCode(row.refCode, target.refCode)) target.refSince = 0; } }
             if (s.key === 'users') {
                 if (!row && (!String(target.name || '').trim() || !/@/.test(target.email || ''))) { V.toast('Type a name and an email.'); return; }
                 if (target.role === 'Admin') { ['billing', 'pay', 'rates', 'docs'].forEach(function (k) { target[k] = 'Yes'; }); }
