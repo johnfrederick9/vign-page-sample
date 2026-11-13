@@ -362,3 +362,22 @@ body.st .ps-demo { right: auto; left: 14px; }
 .note2 { display: block; }
 .note2 > i { margin-right: 6px; }
 .fftools .btn[hidden] { display: none; }
+
+/* ---------- Fill in the form by hand: visit details + the form's other questions (2026-11-13) ---------- */
+.ffsec { margin: 16px 0 8px; padding-top: 12px; border-top: 1px solid var(--line); font-size: .74rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.ffsec:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.ffsec .muted { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 6px; }
+.ffx { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 14px; }
+.ffx .fld { margin-top: 0; margin-bottom: 10px; }
+.ffx .ffwide { grid-column: 1 / -1; }
+.ffticks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+.ffticks label { display: inline-flex; align-items: center; gap: 8px; padding: 7px 12px; border: 1px solid var(--line); border-radius: 999px; font-size: .85rem; cursor: pointer; }
+.ffticks label:has(input:checked) { border-color: var(--blue); background: #eef4ff; color: var(--blue); }
+.ffticks input { margin: 0; accent-color: var(--blue); }
+.ffurg { display: flex; gap: 8px; align-items: flex-start; margin: 12px 0 0; padding: 10px 12px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .85rem; }
+.ffurg[hidden] { display: none; }
+.ffurg i { margin-top: 3px; }
+.fld.miss select, .fld.miss input, .fld.miss textarea { border-color: #f59e0b; box-shadow: 0 0 0 3px rgba(245, 158, 11, .18); }
+@media (max-width: 700px) { .ffx { grid-template-columns: 1fr; } }
+.fld-l { display: block; }
+.fld-l .muted { display: inline; font-weight: 400; }

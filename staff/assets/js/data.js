@@ -30,12 +30,8 @@ VS.price = { mystery: [55, 25], loan: [65, 35], property: [85, 45], collateral: 
 VS.ratings = { '1': ['Good', 'r1'], '2': ['Minor', 'r2'], '3': ['Repair', 'r3'], '4': ['Urgent', 'r4'], 'NO': ['N/O', 'r0'], 'NA': ['N/A', 'r0'] };
 VS.points = { '1': 100, '2': 67, '3': 33, '4': 0 };   // sample formula, not decided yet
 
-VS.forms = {
-    residential: ['Residential Property Inspection', ['Roof visible from ground / drainage', 'Foundation / exterior walls', 'Doors / windows / locks', 'Siding / paint / exterior finish', 'Driveway / walks / stairs / railings', 'Yard / trees / fencing', 'Ceilings / walls / floors', 'Kitchen / cabinets / fixtures', 'Bathrooms / plumbing leaks visible', 'Heating / cooling (visual only)', 'Electrical outlets / panels (visual only)', 'Smoke / CO alarms (presence only)', 'Water intrusion / stains / mold-like growth', 'Pest / vandalism indicators']],
-    vacant: ['Vacant Property / Preservation Inspection', ['Boarded / broken openings', 'Locks / entry security / forced entry', 'Doors / windows / garage', 'Roof / gutters / structural indicators', 'Standing water / drainage', 'Lawn growth / vegetation / trees', 'Trash / debris / dumped items', 'Graffiti / vandalism / trespass signs', 'Visible water damage / freezing risk', 'Utilities / meters (visual indicators)', 'Pool / open hazards / exposed holes', 'Mailbox / notices / deliveries', 'Fire / storm / wind damage', 'HOA / municipal notices observed']],
-    commercial: ['Commercial Property Inspection', ['Storefront / facade / signage', 'Roof / gutters (visible only)', 'Parking / pavement / access', 'Landscaping / grounds / drainage', 'Doors / glazing / security', 'Common areas / hallways / stairs', 'Interior walls / ceilings / flooring', 'Restrooms / water fixtures', 'Loading / service areas', 'HVAC equipment (visual only)', 'Lighting / visible wiring', 'Fire extinguishers / exits (presence / obstruction)', 'Accessibility concerns observed', 'Leaks / odors / water damage', 'Sanitation / waste / pests']],
-    mystery: ['Mystery Shop Visit (sample form)', ['Greeting and first impression', 'Staff knowledge and helpfulness', 'Wait time and speed of service', 'Store cleanliness and presentation', 'Policy and procedure compliance', 'Checkout and closing experience']]
-};
+/* the forms come from ../js/vign-forms.js (one copy, same as the main system): [title, rated items, key] */
+VS.forms = {}; VIGNFORMS.order.forEach(function (k) { VS.forms[k] = [VIGNFORMS[k].title, VIGNFORMS.items(k), k]; });
 VS.formFor = { mystery: 'mystery', cx: 'mystery', loan: 'vacant', collateral: 'vacant', property: 'residential' };
 
 VS.clients = [
@@ -100,6 +96,14 @@ VS.inspectors = [
     });
     // keep the inspector-portal story: Maria's 18 Elm St job was sent back
     jobs.forEach(function (j) { if (j.status === 'returned') { j.ins = 'INS-0417'; j.addr = '18 Elm St'; j.city = 'Freeport, NY 11520'; j.client = 1001; j.svc = 'property'; j.form = 'residential'; j.price = 85; j.pay = 45; } });
+    // show the Rental and Exterior forms on a few jobs not visited yet (no answers, so the sample numbers stay the same)
+    var swap = { 'new|residential': ['rental'], 'assigned|vacant|collateral': ['exterior'] };   // collateral check = drive-by
+    jobs.forEach(function (j) {
+        var q = swap[j.status + '|' + j.form] || swap[j.status + '|' + j.form + '|' + j.svc]; if (!q || !q.length) return;
+        j.form = q.shift();
+        if (j.form === 'exterior') { j.access = 'Exterior only'; j.notes = 'Exterior only, from the street. Do not go on the property. Photograph the front, side and house number.'; }
+        else j.notes = 'Move-out report. Meet the property manager for the keys; record the meter readings.';
+    });
     VS.jobs = jobs;
 })();
 

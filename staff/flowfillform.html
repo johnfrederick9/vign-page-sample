@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="../css/vign.css">
     <link rel="stylesheet" href="assets/css/style.css">
     <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="../js/vign-forms.js" defer></script>
     <script src="assets/js/data.js" defer></script>
     <script src="assets/js/link.js" defer></script>
 </head>
@@ -22,24 +23,59 @@ VS.init = function () {
     var V = VS, j = V.job(V.param('job'));
     if (!j) { var pick = V.jobs.filter(function (x) { return x.status === 'assigned' || x.status === 'in_field' || x.status === 'returned'; })[0]; j = pick; }
     var c = V.client(j.client), ins = j.ins ? V.ins(j.ins) : null, form = V.forms[j.form], R = ['1', '2', '3', '4', 'NO', 'NA'];
+    var FM = window.VIGNFORMS, other = FM.fields(j.form, 'before').concat(FM.fields(j.form, 'after')), e = V.esc, vis = j.visit || {};
+    function sel(name, opts, val, blank) { return '<select name="' + name + '">' + (blank ? '<option value="">' + blank + '</option>' : '') + opts.map(function (o) { return '<option' + (val === o ? ' selected' : '') + '>' + e(o) + '</option>'; }).join('') + '</select>'; }
+    function qHtml(q) {
+        var lab = '<span class="fld-l">' + e(q[1]) + (q[4] ? ' <span class="muted small">(optional)</span>' : '') + '</span>', v = vis[q[0]] || '', nm = 'q_' + q[0];
+        if (q[2] === 'sel') return '<label class="fld" data-q="' + q[0] + '">' + lab + sel(nm, q[3], v, 'Choose…') + '</label>';
+        if (q[2] === 'yn') return '<label class="fld" data-q="' + q[0] + '">' + lab + sel(nm, ['Yes', 'No'], v, 'Choose…') + '</label>';
+        if (q[2] === 'area') return '<label class="fld ffwide" data-q="' + q[0] + '">' + lab + '<textarea name="' + nm + '" rows="2">' + e(v) + '</textarea></label>';
+        return '<label class="fld" data-q="' + q[0] + '">' + lab + '<input type="' + (q[2] === 'num' ? 'number' : 'text') + '" name="' + nm + '" value="' + e(v) + '"></label>';
+    }
+    function secHtml(sec) {
+        if (!sec.ticks) return '<h4 class="ffsec">' + e(sec.name) + '</h4><div class="ffx">' + sec.list.map(qHtml).join('') + '</div>';
+        return '<h4 class="ffsec">' + e(sec.name) + ' <span class="muted small">tick all that apply</span></h4><div class="ffticks">' + sec.list.filter(function (q) { return q[2] === 'yn'; }).map(function (q) {
+            return '<label><input type="checkbox" name="q_' + q[0] + '" value="Yes"' + (vis[q[0]] === 'Yes' ? ' checked' : '') + '> ' + e(q[1]) + '</label>'; }).join('') + '</div><div class="ffx">' + sec.list.filter(function (q) { return q[2] !== 'yn'; }).map(qHtml).join('') + '</div>';
+    }
     var html = V.band('fa-pen-to-square', 'Fill in the form by hand', 'Job ' + j.id + ' · ' + V.esc(j.addr) + ', ' + V.esc(j.city) + ' · ' + V.esc(c.name),
         '<a class="bbtn" href="flowjob.html?job=' + j.id + '"><i class="fa-solid fa-arrow-left"></i> Back to the job</a>');
     html += '<p class="note2" style="margin-top:16px"><i class="fa-solid fa-circle-info"></i> Use this when an inspector phones in the results or sends a paper form. The report is marked <b>"entered by staff"</b> and goes to Review like any other.</p>';
-    html += '<form id="ff"><div class="grid2"><div>' + V.card(V.esc(form[0]), form[1].length + ' items · 1 Good · 2 Minor · 3 Repair · 4 Urgent', '<div class="fftools"><span id="ffprog"></span><button type="button" class="btn btn-ghost btn-xs" id="ffall"><i class="fa-solid fa-check-double"></i> Mark the rest 1 · Good</button></div><ol class="ffl">' + form[1].map(function (it, i) {
+    html += '<form id="ff"><div class="grid2"><div>' + V.card(V.esc(form[0]), e(FM.ratingSection(j.form)) + ' · ' + form[1].length + ' items · 1 Good · 2 Minor · 3 Repair · 4 Urgent', '<div class="fftools"><span id="ffprog"></span><button type="button" class="btn btn-ghost btn-xs" id="ffall"><i class="fa-solid fa-check-double"></i> Mark the rest 1 · Good</button></div><ol class="ffl">' + form[1].map(function (it, i) {
         var a = j.answers ? j.answers[i] : '';
         return '<li><div class="ffq">' + V.esc(it) + '</div><div class="ffr" role="radiogroup" aria-label="' + V.esc(it) + '">' + R.map(function (r) { return '<label class="' + V.ratings[r][1] + '"><input type="radio" name="a' + i + '" value="' + r + '"' + (a === r ? ' checked' : '') + '><span>' + (r.length > 1 ? V.ratings[r][0] : r) + '</span></label>'; }).join('') + '<button type="button" class="ffadd" data-note="' + i + '" title="Add a note" aria-label="Add a note to ' + V.esc(it) + '"><i class="fa-regular fa-note-sticky"></i></button></div>' +
             '<input type="text" class="ffn" name="n' + i + '" placeholder="What did the inspector see? (needed for 3 or 4)" value="' + V.esc(j.findings ? j.findings[i] : '') + '"></li>';
-    }).join('') + '</ol>', true) + '</div><div>' +
+    }).join('') + '</ol>', true) +
+        V.card('Other questions on this form', '<span class="muted small">Same as the inspector\'s phone</span>', other.map(secHtml).join('') +
+            '<h4 class="ffsec">Report notes</h4><div class="ffx"><label class="fld" data-q="_fu">Follow-up recommended?' + sel('fu', ['Yes', 'No'], vis.fu, 'Choose…') + '</label></div>' +
+            '<div class="ffx"><label class="fld"><span class="fld-l">Immediate hazards / damage <span class="muted small">(blank if none)</span></span><textarea name="hz" rows="2">' + e(vis.hazards || '') + '</textarea></label>' +
+            '<label class="fld"><span class="fld-l">Notes / limitations <span class="muted small">(areas not reached)</span></span><textarea name="lim" rows="2">' + e(vis.limitations || '') + '</textarea></label></div>') +
+        '</div><div>' +
         V.card('Who did the visit', '', '<label class="fld">Inspector<select name="who">' + V.inspectors.filter(function (i) { return i.active; }).map(function (i) { return '<option value="' + i.id + '"' + (ins && ins.id === i.id ? ' selected' : '') + '>' + V.esc(i.name) + '</option>'; }).join('') + '</select></label>' +
-            '<label class="fld">Visit date<input type="date" name="day" value="' + V.iso(0) + '"></label><label class="fld">How we got the results<select name="how"><option>Phoned in</option><option>Paper form (scanned)</option><option>Email</option></select></label>') +
+            '<label class="fld">Visit date<input type="date" name="day" value="' + V.iso(0) + '"></label>' +
+            '<label class="fld" data-q="_w">Weather' + sel('w', FM.WEATHER, vis.weather, 'Choose…') + '</label>' +
+            '<label class="fld" data-q="_acc">How the inspector got in' + sel('acc', FM.ACCESS, vis.access || (FM.ACCESS.indexOf(j.access) > -1 ? j.access : ''), 'Choose…') + '</label>' +
+            '<label class="fld" data-q="_an"><span class="fld-l">Access note <span class="muted small" id="anreq">(optional)</span></span><input type="text" name="an" maxlength="255" value="' + e(vis.accessNote || '') + '" placeholder="e.g. Gate locked"></label><label class="fld">How we got the results<select name="how"><option>Phoned in</option><option>Paper form (scanned)</option><option>Email</option></select></label>') +
         V.card('Photos', '<span class="muted small" id="phc">None yet</span>', '<label class="ffdrop" id="phd"><input type="file" id="ph" accept="image/*" multiple><i class="fa-solid fa-camera"></i><b>Add the photos the inspector sent</b><small>Click to choose, or drag them here · JPG / PNG</small></label><ul class="ffthumbs" id="phl"></ul><p class="muted small" style="margin:10px 0 0"><i class="fa-solid fa-circle-info"></i> Items rated 3 or 4 need a photo.</p>') +
-        V.card('Score', '<span class="samp">sample formula</span>', '<div class="ffscore"><b id="sc">–</b><span id="sct">Rate the items to see the score.</span></div>') +
+        V.card('Score', '<span class="samp">sample formula</span>', '<div class="ffscore"><b id="sc">–</b><span id="sct">Rate the items to see the score.</span></div><p class="ffurg" id="urg" hidden><i class="fa-solid fa-triangle-exclamation"></i> <span></span></p>') +
         '<div class="form-foot"><button type="button" class="btn btn-ghost" id="draft">Save draft</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send to Review</button></div>' +
         '</div></div></form><div id="done"></div>';
     V.$('#app').innerHTML = html;
     var f = V.$('#ff');
     function vals() { return form[1].map(function (x, i) { var r = f.querySelector('[name=a' + i + ']:checked'); return r ? r.value : ''; }); }
-    function score() { var a = vals(), t = 0, n = 0; a.forEach(function (x) { if (V.points[x] != null) { t += V.points[x]; n++; } }); var s = n ? Math.round(t / n) : null; V.$('#sc').textContent = s == null ? '–' : s; V.$('#sc').className = s == null ? '' : 'rate ' + V.scoreCls(s); V.$('#sct').textContent = a.filter(Boolean).length + ' of ' + a.length + ' rated'; return s; }
+    function score() { var a = vals(), t = 0, n = 0; a.forEach(function (x) { if (V.points[x] != null) { t += V.points[x]; n++; } }); var s = n ? Math.round(t / n) : null; V.$('#sc').textContent = s == null ? '–' : s; V.$('#sc').className = s == null ? '' : 'rate ' + V.scoreCls(s); V.$('#sct').textContent = a.filter(Boolean).length + ' of ' + a.length + ' rated';
+        var u = urgent(); V.$('#urg').hidden = !u.length; V.$('#urg span').innerHTML = '<b>Urgent</b> (rated 4): ' + u.map(e).join(' · ') + '. The office is told right away.';
+        return s; }
+    function urgent() { return vals().map(function (x, i) { return x === '4' ? (i + 1) + '. ' + form[1][i] : null; }).filter(Boolean); }
+    function accUi() { var nd = f.acc.value === 'No access' || f.acc.value === 'Other'; V.$('#anreq').textContent = nd ? '(needed)' : '(optional)'; }
+    function ask() {   // the visit details and form questions still blank
+        var out = [];
+        [['w', 'Weather', '_w'], ['acc', 'How the inspector got in', '_acc'], ['fu', 'Follow-up recommended?', '_fu']].forEach(function (x) { if (!f[x[0]].value) out.push([x[1], x[2]]); });
+        if ((f.acc.value === 'No access' || f.acc.value === 'Other') && !f.an.value.trim()) out.push(['Access note', '_an']);
+        other.forEach(function (sec) { sec.list.forEach(function (q) { var el = f['q_' + q[0]]; if (!q[4] && el && !String(el.value).trim()) out.push([q[1], q[0]]); }); });
+        V.$$('.fld.miss', f).forEach(function (x) { x.classList.remove('miss'); });
+        out.forEach(function (x) { var el = f.querySelector('[data-q="' + x[1] + '"]'); if (el) el.classList.add('miss'); });
+        return out;
+    }
     function need() {
         var a = vals();
         a.forEach(function (x, i) {
@@ -56,12 +92,12 @@ VS.init = function () {
         var n = 0; vals().forEach(function (x, i) { if (!x) { f.querySelector('[name=a' + i + '][value="1"]').checked = true; n++; } });
         score(); need(); V.toast(n + ' item' + (n === 1 ? '' : 's') + ' marked 1 · Good. Change any that are not.');
     });
-    f.addEventListener('change', function () { score(); need(); }); f.addEventListener('input', function (e) { if (e.target.classList.contains('ffn')) need(); }); score(); need();
+    f.addEventListener('change', function () { score(); need(); accUi(); }); accUi(); f.addEventListener('input', function (e) { if (e.target.classList.contains('ffn')) need(); }); score(); need();
 
     // photos: thumbnails with a remove button; drag and drop works too (kept in the page only)
     var photos = [], pin = V.$('#ph'), drop = V.$('#phd');
     function drawPh() {
-        V.$('#phl').innerHTML = photos.map(function (p, i) { return '<li><img src="' + p.url + '" alt=""><span>' + V.esc(p.name) + '</span><button type="button" data-rm="' + i + '" aria-label="Remove ' + V.esc(p.name) + '"><i class="fa-solid fa-xmark"></i></button></li>'; }).join('');
+        V.$('#phl').innerHTML = photos.map(function (p, i) { return '<li><img src="' + p.url + '" alt=""><span><b>P-' + ('0' + (i + 1)).slice(-2) + '</b> ' + V.esc(p.name) + '</span><button type="button" data-rm="' + i + '" aria-label="Remove ' + V.esc(p.name) + '"><i class="fa-solid fa-xmark"></i></button></li>'; }).join('');
         V.$('#phc').textContent = photos.length ? photos.length + ' photo' + (photos.length > 1 ? 's' : '') : 'None yet';
     }
     function addPh(list) { Array.prototype.forEach.call(list || [], function (file) { if (/^image\//.test(file.type)) photos.push({ name: file.name, url: URL.createObjectURL(file) }); }); drawPh(); }
@@ -77,10 +113,14 @@ VS.init = function () {
         if (miss) { V.toast(miss + ' item(s) not rated yet.'); return; }
         if (noNote) { need(); V.toast(noNote + ' item(s) rated 3 or 4 need a note.'); return; }
         if (!photos.length && a.some(function (x) { return x === '3' || x === '4'; })) { V.toast('Items rated 3 or 4 need a photo. Add the photos the inspector sent.'); V.$('#phd').focus(); return; }
-        var s = score(), who = V.ins(f.who.value);
+        var nq = ask(); if (nq.length) { V.toast('Answer: ' + nq.map(function (x) { return x[0]; }).join(' · ')); var fm = f.querySelector('.fld.miss'); if (fm) fm.scrollIntoView({ block: 'center' }); return; }
+        var s = score(), who = V.ins(f.who.value), u = urgent();
+        j.visit = { weather: f.w.value, access: f.acc.value, accessNote: f.an.value.trim(), fu: f.fu.value, hazards: f.hz.value.trim(), limitations: f.lim.value.trim() };
+        other.forEach(function (sec) { sec.list.forEach(function (q) { var el = f['q_' + q[0]]; if (el) j.visit[q[0]] = el.type === 'checkbox' ? (el.checked ? 'Yes' : '') : String(el.value).trim(); }); });
+        j.urgent = u.length > 0;
         j.answers = a; j.findings = a.map(function (x, i) { return f.querySelector('[name=n' + i + ']').value.trim(); }); j.ins = who.id; j.sent = 0; j.status = 'submitted'; j.byStaff = f.how.value;
         f.style.display = 'none';
-        V.$('#done').innerHTML = V.card('<i class="fa-solid fa-circle-check" style="color:var(--g)"></i> Sent to Review', '', '<p style="margin:0">Job <b>' + j.id + '</b> · ' + V.esc(form[0]) + ' · score <b>' + s + '</b> <span class="samp">sample</span> · ' + photos.length + ' photo' + (photos.length === 1 ? '' : 's') + '<br>Visit by ' + V.esc(who.name) + ' · ' + V.esc(f.how.value) + ' · entered by staff</p><p class="note1"><i class="fa-solid fa-circle-info"></i>Preview only: nothing was saved. In the real system it is now in Review, marked "entered by staff".</p><div class="acts1" style="margin-top:12px"><a class="btn btn-primary" href="flowreview.html">Go to Review</a><a class="btn btn-ghost" href="flowjob.html?job=' + j.id + '">Back to the job</a></div>');
+        V.$('#done').innerHTML = V.card('<i class="fa-solid fa-circle-check" style="color:var(--g)"></i> Sent to Review', '', '<p style="margin:0">Job <b>' + j.id + '</b> · ' + V.esc(form[0]) + ' · score <b>' + s + '</b> <span class="samp">sample</span> · ' + photos.length + ' photo' + (photos.length === 1 ? '' : 's') + '<br>Visit by ' + V.esc(who.name) + ' · ' + V.esc(f.how.value) + ' · entered by staff<br>' + V.esc(j.visit.weather) + ' · ' + V.esc(j.visit.access) + (j.visit.accessNote ? ' (' + V.esc(j.visit.accessNote) + ')' : '') + ' · follow-up: ' + V.esc(j.visit.fu) + '</p>' + (u.length ? '<p class="ffurg"><i class="fa-solid fa-triangle-exclamation"></i> <span><b>Urgent</b>: ' + u.map(V.esc).join(' · ') + '. It goes to the top of Review.</span></p>' : '') + '<p class="note1"><i class="fa-solid fa-circle-info"></i>Preview only: nothing was saved. In the real system it is now in Review, marked "entered by staff".</p><div class="acts1" style="margin-top:12px"><a class="btn btn-primary" href="flowreview.html">Go to Review</a><a class="btn btn-ghost" href="flowjob.html?job=' + j.id + '">Back to the job</a></div>');
     });
 };
 </script>
