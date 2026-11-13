@@ -273,3 +273,6 @@ body.adm { background: var(--bg-soft); font-size: 15px; }
 @media (max-width: 560px) { .modal-b fieldset.rad { grid-template-columns: 1fr; } }
 .modal-b fieldset.wide { grid-column: 1 / -1; }
 .modal-b label.sw-row + label.sw-row { margin-top: -8px; }
+
+/* R-17 affiliates */
+.code1 { display: inline-block; font-family: 'JetBrains Mono', ui-monospace, monospace; font-size: .78rem; font-weight: 700; letter-spacing: .04em; background: #fff4e5; color: #8a4b00; border: 1px dashed #f0b45c; border-radius: 6px; padding: 1px 7px; }

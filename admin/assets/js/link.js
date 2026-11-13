@@ -96,7 +96,37 @@ function prep(s) {
         r.bal = Math.max(0, (r.amount || 0) - (r.paid || 0));
         r.status = r.billed == null ? 'Bills next' : r.bal === 0 ? 'Paid' : r.due < 0 ? 'Past due' : 'Open';
     });
+    if (s.key === 'commissions') { var inv = V.sec('invoices'); prep(inv); s.rows.forEach(function (c) {
+        var i = inv.rows.filter(function (x) { return x.id === c.invoice; })[0];
+        if (c.status === 'Waiting for client payment' && i && i.billed != null && i.bal === 0) { c.status = 'Owed'; }
+    }); }
+    if (s.key === 'affiliates') { var cm = V.sec('commissions'); prep(cm); s.rows.forEach(function (a) {
+        a.rule = a.earn === 'One-time payment' ? V.money(a.amount) + ' one time' : (a.pct || 0) + '% of each payment' + (a.months ? ' · ' + a.months + ' months' : ' · no end');
+        a.nClients = V.sec('clients').rows.filter(function (c) { return !c._del && V.sameCode(c.refCode, a.code); }).length;
+        var mine = cm.rows.filter(function (c) { return !c._del && c.affiliate === a.name; });
+        a.earned = mine.filter(function (c) { return c.status !== 'Waiting for client payment'; }).reduce(function (t, c) { return t + c.amount; }, 0);
+        a.owed = mine.filter(function (c) { return c.status === 'Owed'; }).reduce(function (t, c) { return t + c.amount; }, 0);
+    }); }
 }
+/* ---------- R-17 affiliates: codes + commissions ---------- */
+V.cleanCode = function (c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
+V.sameCode = function (a, b) { return !!a && V.cleanCode(a) === V.cleanCode(b); };
+V.aff = function (code) { return code ? V.sec('affiliates').rows.filter(function (a) { return !a._del && V.sameCode(a.code, code); })[0] : null; };
+// a new invoice for a referred client makes its commission line by itself
+V.makeCommission = function (inv) {
+    var c = V.sec('clients').rows.filter(function (x) { return x.name === inv.client; })[0], a = c && V.aff(c.refCode);
+    if (!a || a.active !== 'Yes') return null;
+    var cm = V.sec('commissions'), mine = cm.rows.filter(function (x) { return x.affiliate === a.name && x.client === c.name; });
+    var line = { id: 'CM-' + (108 + cm.rows.length), affiliate: a.name, client: c.name, invoice: inv.id, base: inv.amount || 0, status: 'Waiting for client payment' };
+    if (a.earn === 'One-time payment') { if (mine.length) return null; line.amount = +a.amount || 0; line.rule = 'One time, first payment'; }
+    else {
+        var month = Math.floor(-(c.refSince || 0) / 30) + 1;
+        if (a.months && month > a.months) return null;
+        line.amount = Math.round((inv.amount || 0) * (a.pct || 0)) / 100; line.rule = (a.pct || 0) + '% · month ' + month + (a.months ? ' of ' + a.months : '');
+    }
+    cm.rows.unshift(line); if (cm._draw) cm._draw();
+    return line;
+};
 var NEED = {
     requests: function (r) { return r.status === 'New'; },
     jobs: function (r) { return !r.inspector && r.status !== 'Offered'; },
@@ -104,7 +134,8 @@ var NEED = {
     finished: function (r) { return r.status === 'Waiting review'; },
     invoices: function (r) { return r.status === 'Open' || r.status === 'Past due'; },
     statements: function (r) { return r.status === 'Pending'; },
-    documents: function (r) { return r.signed === 'Waiting'; }
+    documents: function (r) { return r.signed === 'Waiting'; },
+    commissions: function (r) { return r.status === 'Owed'; }
 };
 function shown() { return V.sections.filter(function (s) { return !s.hidden; }); }
 function live(s) { return s.rows.filter(function (r) { return !r._del; }); }
@@ -285,7 +316,9 @@ V.ACTS = {
     finished: function (r) { return btn('review', r.status === 'Waiting review' ? 'fa-magnifying-glass' : 'fa-eye', r.status === 'Waiting review' ? 'Check' : 'View', r.status === 'Waiting review' ? 'pri' : '') + btn('hist', 'fa-clock-rotate-left', 'History'); },
     invoices: function (r) { return r.billed == null ? '<span class="muted small">Automatic</span>' : (r.bal > 0 ? btn('pay', 'fa-money-check-dollar', 'Record payment') : '') + btn('pdf', 'fa-file-pdf', 'PDF'); },
     statements: function (r) { return r.status === 'Pending' ? btn('paid', 'fa-check', 'Mark paid', 'grn') : ''; },
-    documents: function (r) { return btn('viewdoc', 'fa-eye', 'View') + btn('download', 'fa-download', 'Download'); }
+    documents: function (r) { return btn('viewdoc', 'fa-eye', 'View') + btn('download', 'fa-download', 'Download'); },
+    affiliates: function (r) { return btn('affcl', 'fa-building', 'Clients') + btn('affcm', 'fa-list', 'Commissions'); },
+    commissions: function (r) { return r.status === 'Owed' ? btn('cpaid', 'fa-check', 'Mark paid', 'grn') : r.status === 'Waiting for client payment' ? '<span class="muted small">Client hasn\'t paid yet</span>' : ''; }
 };
 V.RUN = {
     job: function (r, s, done) { acceptPopup(r, done); },
@@ -295,7 +328,26 @@ V.RUN = {
     decline: function (r, s, done) { r.status = 'Declined'; V.log(r, s && s.key === 'signups' ? 'Join request declined' : 'Request declined'); V.toast(r.id + ' declined.'); done(); },
     hist: function (r, s) { V.histPopup(r, s.key === 'finished' ? r.client + ' · ' + r.form + '.' : r.client + ' · ' + r.addr + '.'); },
     rates: function (r) { ratesPopup(r); },
-    view: function (r) { V.modal(V.esc(r.id) + ' · ' + V.esc(r.company), '<dl class="dl1"><dt>Service</dt><dd>' + V.esc(r.service) + '</dd><dt>Address</dt><dd>' + V.esc(r.addr) + '</dd><dt>Contact</dt><dd>' + V.esc(r.contact) + '</dd><dt>Wanted by</dt><dd>' + V.day(r.wanted) + '</dd><dt>Notes</dt><dd>' + V.esc(r.notes || '—') + '</dd><dt>Status</dt><dd>' + V.pill(r.status) + '</dd></dl>' + (r.hist && r.hist.length ? '<h4 class="h4">History</h4>' + V.histHtml(r) : '')); },
+    affcl: function (a) {
+        var cl = V.sec('clients').rows.filter(function (c) { return !c._del && V.sameCode(c.refCode, a.code); });
+        var rq = V.sec('requests').rows.filter(function (q) { return V.sameCode(q.ref, a.code); });
+        V.modal('Clients from ' + V.esc(a.name) + ' · code ' + V.esc(a.code),
+            (cl.length ? '<ul class="offl">' + cl.map(function (c) { return '<li><i class="fa-solid fa-building"></i><b>' + V.esc(c.name) + '</b><small>referred since ' + V.day(c.refSince || 0) + ' · plan ' + V.esc(c.plan) + '</small></li>'; }).join('') + '</ul>' : '<p class="muted">No clients with this code yet.</p>') +
+            (rq.length ? '<h4 class="h4">Requests that used the code</h4><ul class="offl">' + rq.map(function (q) { return '<li><b>' + V.esc(q.id) + '</b> · ' + V.esc(q.company) + '<small>' + V.esc(q.status) + ' · add the code to the client when you set them up</small></li>'; }).join('') + '</ul>' : ''));
+    },
+    affcm: function (a) {
+        var cm = V.sec('commissions'); prep(cm);
+        var mine = cm.rows.filter(function (c) { return !c._del && c.affiliate === a.name; });
+        V.modal('Commissions · ' + V.esc(a.name), '<p class="muted small" style="margin:0 0 8px">Earns: ' + V.esc(a.rule) + '</p>' +
+            (mine.length ? '<table class="tbl"><thead><tr><th>Client</th><th>Invoice</th><th class="r">Client paid</th><th class="r">Commission</th><th>Status</th></tr></thead><tbody>' + mine.map(function (c) { return '<tr><td>' + V.esc(c.client) + '</td><td>' + V.esc(c.invoice) + '</td><td class="r">' + V.money(c.base) + '</td><td class="r"><b>' + V.money(c.amount) + '</b></td><td>' + V.pill(c.status) + '</td></tr>'; }).join('') + '</tbody></table>' : '<p class="muted">No commissions yet.</p>') +
+            '<p class="note1"><i class="fa-solid fa-circle-info"></i> Owed now: <b>' + V.money(a.owed) + '</b>. Pay them in Affiliate Commissions.</p>');
+    },
+    cpaid: function (r, s, done) {
+        var a = V.sec('affiliates').rows.filter(function (x) { return x.name === r.affiliate; })[0];
+        if (a && a.w9 !== 'Yes') { V.toast('No W-9 on file for ' + r.affiliate + ' yet. Upload it in Documents, then switch "W-9 on file" on.'); return; }
+        r.status = 'Paid'; r.payday = 0; V.toast(V.money(r.amount) + ' to ' + r.affiliate + ' marked paid (preview only, no real payment).'); done();
+    },
+    view: function (r) { V.modal(V.esc(r.id) + ' · ' + V.esc(r.company), '<dl class="dl1"><dt>Service</dt><dd>' + V.esc(r.service) + '</dd><dt>Address</dt><dd>' + V.esc(r.addr) + '</dd><dt>Contact</dt><dd>' + V.esc(r.contact) + '</dd><dt>Wanted by</dt><dd>' + V.day(r.wanted) + '</dd><dt>Notes</dt><dd>' + V.esc(r.notes || '—') + '</dd>' + (r.ref ? '<dt>Referral code</dt><dd><span class="code1">' + V.esc(V.cleanCode(r.ref)) + '</span> ' + (V.aff(r.ref) ? '= ' + V.esc(V.aff(r.ref).name) + ' (' + V.esc(V.aff(r.ref).type) + ')' : '<span class="late">unknown code</span>') + '</dd>' : '') + '<dt>Status</dt><dd>' + V.pill(r.status) + '</dd></dl>' + (r.hist && r.hist.length ? '<h4 class="h4">History</h4>' + V.histHtml(r) : '')); },
     assign: function (r, s, done) { assignPopup([r], done); },
     approve: function (r, s, done) {
         r.status = 'Approved';
@@ -323,7 +375,7 @@ V.RUN = {
     paid: function (r, s, done) { r.status = 'Paid'; r.payday = 0; V.toast(r.id + ' marked paid. ' + r.inspector + ' sees it on their Payments page (preview only).'); done(); },
     viewdoc: function (r) {
         V.modal(V.esc(r.name), '<div class="docprev"><i class="fa-regular fa-file-pdf"></i><p>The document would open here.</p></div><dl class="dl1"><dt>Type</dt><dd>' + V.esc(r.type) + '</dd><dt>For</dt><dd>' + V.esc(r.who) + '</dd><dt>Who can see it</dt><dd>' + visible(r) + '</dd><dt>Signed</dt><dd>' + V.pill(r.signed) + '</dd><dt>Size</dt><dd>' + V.esc(r.size || '') + '</dd></dl>' +
-            (r.type === '1099' ? '<p class="note1"><i class="fa-solid fa-lock"></i> Tax forms have private details (SSN). Only admins and this inspector can open it. No public link.</p>' : ''));
+            (r.type === '1099' || r.type === 'W-9' ? '<p class="note1"><i class="fa-solid fa-lock"></i> Tax forms have private details (SSN). Only admins and this person can open it. No public link.</p>' : ''));
     },
     download: function (r) {
         var a = document.createElement('a');
@@ -332,14 +384,14 @@ V.RUN = {
     }
 };
 function visible(r) {
-    if (r.type === '1099') return '<i class="fa-solid fa-lock"></i> Admin + ' + V.esc(r.who) + ' only';
+    if (r.type === '1099' || r.type === 'W-9') return '<i class="fa-solid fa-lock"></i> Admin + ' + V.esc(r.who) + ' only';
     if (/^All /.test(r.who)) return 'Admin + ' + V.esc(r.who.toLowerCase());
     return 'Admin + ' + V.esc(r.who);
 }
 
 /* ---------- LoyalServe way: click the name / number to edit; click a balance to see the invoices ---------- */
 // column that is the link in each tile (no separate Edit column, like SMK)
-var LINK = { requests: 'id', jobs: 'id', signups: 'name', finished: 'id', invoices: 'id', statements: 'id', documents: 'name', clients: 'name', inspectors: 'name', users: 'name' };
+var LINK = { requests: 'id', jobs: 'id', signups: 'name', finished: 'id', invoices: 'id', statements: 'id', documents: 'name', clients: 'name', inspectors: 'name', users: 'name', affiliates: 'name' };
 // tiles with no edit form: the link runs their main job instead
 var LINKACT = { jobs: 'assign', finished: 'review' };
 function owed(client) { var inv = V.sec('invoices'); prep(inv); return live(inv).filter(function (r) { return r.client === client && r.billed != null && r.bal > 0; }).reduce(function (t, r) { return t + r.bal; }, 0); }
@@ -382,6 +434,9 @@ function cell(s, c, r) {
         return '<a href="#" class="lnk" data-open="' + r._i + '" title="' + (LINKACT[s.key] ? 'Open' : 'Edit') + '">' + inner + '</a>';
     }
     if (s.key === 'clients' && c[0] === 'bal') return balBox(r.name, owed(r.name));
+    if (s.key === 'affiliates' && c[0] === 'code') return '<span class="code1">' + V.esc(v) + '</span>';
+    if ((s.key === 'clients' && c[0] === 'ref') || (s.key === 'requests' && c[0] === 'ref')) { var code = s.key === 'clients' ? r.refCode : r.ref, af = V.aff(code); if (!code) return '<span class="muted small">—</span>'; return af ? '<b>' + V.esc(af.name) + '</b><small><span class="code1">' + V.esc(V.cleanCode(code)) + '</span></small>' : '<span class="code1">' + V.esc(code) + '</span><small class="late">unknown code</small>'; }
+    if (s.key === 'commissions' && c[0] === 'status' && v === 'Waiting for client payment') return V.pill('Waiting') + '<small>for the client to pay</small>';
     if (s.key === 'clients' && c[0] === 'rateNow') { var rn = V.rateNow(r); return '<a href="#" class="lnk" style="white-space:nowrap" data-rates="' + r._i + '"><b>' + V.money(rn.amt) + '</b>' + V.esc(rn.per) + '</a>' + (rn.pilot ? ' <span class="pill p-amber">Pilot</span>' : '') + '<small>' + V.esc(rn.why) + '</small>'; }
     if ((s.key === 'jobs' && c[0] === 'by')) return v ? '<b>' + V.esc(v) + '</b><small>' + V.esc(r.byHow || '') + '</small>' : '<span class="muted small">—</span>';
     if (s.key === 'finished' && c[0] === 'checkedBy') return v ? V.esc(v) : '<span class="muted small">Not checked yet</span>';
@@ -417,7 +472,8 @@ function cell(s, c, r) {
 }
 var VIEWF = {
     invoices: { open: function (r) { return r.status === 'Open' || r.status === 'Past due'; }, late: function (r) { return r.status === 'Past due'; }, soon: function (r) { return r.status === 'Open' && r.due <= 7; }, next: function (r) { return r.status === 'Bills next'; }, paid: function (r) { return r.status === 'Paid'; } },
-    documents: { Agreement: function (r) { return r.type === 'Agreement'; }, Instructions: function (r) { return r.type === 'Instructions'; }, '1099': function (r) { return r.type === '1099'; }, unsigned: function (r) { return r.signed === 'Waiting'; } }
+    documents: { Agreement: function (r) { return r.type === 'Agreement'; }, Instructions: function (r) { return r.type === 'Instructions'; }, '1099': function (r) { return r.type === '1099' || r.type === 'W-9'; }, unsigned: function (r) { return r.signed === 'Waiting'; } },
+    commissions: { owed: function (r) { return r.status === 'Owed'; }, wait: function (r) { return r.status === 'Waiting for client payment'; }, paid: function (r) { return r.status === 'Paid'; } }
 };
 
 function isYN(o) { return o && o.length === 2 && o.indexOf('Yes') > -1 && o.indexOf('No') > -1; }
@@ -482,7 +538,7 @@ function build(s, el) {
             else if (what === 'decline') r.status = 'Declined';
             else if (what === 'retry') r.status = 'Resent';
             else if (what === 'close') r.status = 'Closed';
-            else if (what === 'paid') { r.status = 'Paid'; r.payday = 0; }
+            else if (what === 'paid') { if (s.key === 'commissions') { var af = V.sec('affiliates').rows.filter(function (x) { return x.name === r.affiliate; })[0]; if (r.status !== 'Owed' || (af && af.w9 !== 'Yes')) return; } r.status = 'Paid'; r.payday = 0; }
         });
         V.toast(p.length + ' row(s) updated (preview only).');
         V.$('[data-all]', el).checked = false;
@@ -553,6 +609,7 @@ function build(s, el) {
             }).join('') + (s.key === 'clients' ? '<p class="wide note1"><i class="fa-solid fa-credit-card"></i> The card is charged automatically <b>only when the agreement is signed</b>. Only the last 4 digits are ever shown.</p>' : '') +
             (s.key === 'documents' ? '<p class="wide note1"><i class="fa-solid fa-lock"></i> Clients and inspectors only see their own files. 1099s are private: admin + that inspector only.</p>' : '') +
             (s.key === 'clients' ? '<p class="wide note1"><i class="fa-solid fa-tags"></i> <b>Rates:</b> while the Pilot Program runs, jobs use the pilot rate. After the end date they use the contract rate. If you fill in "Rate by number of stores", the client\'s store count picks the contract rate.</p>' : '') +
+            (s.key === 'affiliates' ? '<p class="wide note1"><i class="fa-solid fa-handshake"></i> Give the <b>code</b> to the affiliate (for example on their podcast). A new client types it on the Request Inspection form, or you add it to the client. <b>Recurring</b> = their % of every payment that client makes, for the months set. <b>One-time</b> = one payment after the client\'s first payment. Commission is owed only after the client pays. <b>Sample rules</b>: Don to confirm.</p>' : '') +
             (s.key === 'users' ? '<p class="wide note1"><i class="fa-solid fa-user-shield"></i> <b>Admin</b> = sees everything and can add other admins (all switches on). <b>Staff</b> = only the areas switched on. 1099s are never shown to staff. Real system: the server checks this on every page and request.</p>' : '') +
             '</div><div class="modal-f"><button type="button" class="btn btn-ghost btn-xs" data-x>Close</button><button type="submit" class="btn btn-primary btn-xs"><i class="fa-solid fa-floppy-disk"></i> Save</button></div></form></div>';
         m.classList.add('open');
@@ -586,6 +643,13 @@ function build(s, el) {
             });
             if (s.key === 'clients' && target.auto === 'Yes' && target.agree !== 'Yes') { target.auto = 'No'; msg = ' Auto-charge stays OFF until the agreement is signed.'; }
             if (s.key === 'clients' && target.auto === 'Yes' && !target.card) { target.auto = 'No'; msg = ' Auto-charge stays OFF: no card on file.'; }
+            if (s.key === 'affiliates') {
+                target.code = V.cleanCode(target.code);
+                if (!String(target.name || '').trim() || !target.code) { V.toast('Type a name and a code (letters and numbers).'); return; }
+                if (s.rows.some(function (a) { return a !== row && !a._del && V.sameCode(a.code, target.code); })) { V.toast('The code ' + target.code + ' is already used. Pick another one.'); return; }
+                if (!row) { target.id = 'A-' + (s.rows.length + 1); msg = ' Code ' + target.code + ' is ready to share.'; }
+            }
+            if (s.key === 'clients' && target.refCode) { target.refCode = V.cleanCode(target.refCode); if (!V.aff(target.refCode)) msg = ' Note: no affiliate has the code ' + target.refCode + '.'; else msg = ' Referred by ' + V.aff(target.refCode).name + '.'; }
             if (s.key === 'users') {
                 if (!row && (!String(target.name || '').trim() || !/@/.test(target.email || ''))) { V.toast('Type a name and an email.'); return; }
                 if (target.role === 'Admin') { ['billing', 'pay', 'rates', 'docs'].forEach(function (k) { target[k] = 'Yes'; }); }
@@ -594,7 +658,7 @@ function build(s, el) {
                 if (!row) { target.id = 'U-' + (s.rows.length + 1); target.last = null; msg += target.role === 'Admin' ? ' New admin added: they see everything.' : ' New staff member: they only see the areas switched on.'; }
             }
             if (s.key === 'documents' && isNew) { target.up = 0; target.size = '—'; target.signed = target.needsign === 'Yes' ? 'Waiting' : '—'; }
-            if (s.key === 'invoices' && isNew) target.paid = 0;
+            if (s.key === 'invoices' && isNew) { target.paid = 0; target.id = 'INV-' + (2613 + s.rows.length); var ln = V.makeCommission(target); if (ln) msg = ' Commission line ' + ln.id + ' made for ' + ln.affiliate + ' (' + V.money(ln.amount) + ', owed after the client pays).'; }
             if (!row) { target.id = target.id || 'NEW-' + (s.rows.length + 1); if (s.key === 'jobs' || s.key === 'requests') { target.by = V.me.name; target.byHow = 'Admin · typed in'; V.log(target, 'Typed in by hand'); } s.rows.unshift(target); }
             m.classList.remove('open');
             V.toast((row ? 'Saved' : 'Added') + (window.VIGNDB && VIGNDB.TABLES[s.key] ? ' (saved in this browser).' : ' (preview only, not stored).') + msg);

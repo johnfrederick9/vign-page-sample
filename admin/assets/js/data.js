@@ -23,13 +23,13 @@ VA.sections = [
     { key: 'requests', title: 'New Inspection Requests', icon: 'fa-inbox', color: 'blue',
       desc: 'Orders sent in by clients (website "Request Inspection" form, client portal, or file import). Accept each one as a job (due date max 10 days), then assign or offer it.',
       add: 'Add Request', toggle: false,
-      cols: [['date', 'Received', 'date'], ['id', 'Request #'], ['company', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['wanted', 'Wanted By', 'date'], ['repeat', 'Repeat'], ['status', 'Status', 'status']],
+      cols: [['date', 'Received', 'date'], ['id', 'Request #'], ['company', 'Client'], ['service', 'Service'], ['addr', 'Address / Location'], ['wanted', 'Wanted By', 'date'], ['repeat', 'Repeat'], ['ref', 'Code'], ['status', 'Status', 'status']],
       fields: [['company', 'Client', 'text'], ['contact', 'Contact name', 'text'], ['service', 'Service', 'select', ['Mystery Shoppers', 'Loan Servicing', 'Property & Field Inspections', 'Loan Servicing & Collateral Inspections', 'Mystery Shopping & Customer Experience']], ['addr', 'Address / location', 'text'], ['wanted', 'Wanted by', 'date'], ['notes', 'Notes from the client', 'textarea'], ['repeat', 'Repeat', 'select', ['None', 'Once a month', 'Twice a month']]],
       rows: [
         { id: 'RQ-1048', date: 0, company: 'Lakeshore Loan Servicing', contact: 'M. Chen', service: 'Loan Servicing', addr: '88 Birchwood Ct, Huntington, NY 11743', wanted: 4, notes: 'Vacant. Check winterization.', status: 'New' },
         { id: 'RQ-1047', date: 0, company: 'Bright Brew Coffee Co.', contact: 'K. Olsen', service: 'Mystery Shoppers', addr: 'Bright Brew #14, 2210 Hempstead Tpke, East Meadow, NY', wanted: 7, notes: 'Weekend visit, afternoon. Every store, twice a month.', repeat: 'Twice a month', status: 'New' },
         { id: 'RQ-1046', date: -1, company: 'Keystone Insurance Group', contact: 'D. Wright', service: 'Property & Field Inspections', addr: '415 Jericho Tpke, Syosset, NY 11791', wanted: 3, notes: 'Roof claim. Exterior photos.', status: 'New' },
-        { id: 'RQ-1045', date: -1, company: 'Hometown Realty (new)', contact: 'P. Grant', service: 'Property & Field Inspections', addr: '9 Oakview Ave, Massapequa, NY 11758', wanted: 5, notes: 'First order from the website.', status: 'New' },
+        { id: 'RQ-1045', date: -1, company: 'Hometown Realty (new)', contact: 'P. Grant', service: 'Property & Field Inspections', addr: '9 Oakview Ave, Massapequa, NY 11758', wanted: 5, notes: 'First order from the website. Heard about us on a podcast.', ref: 'PODCASTJOE', status: 'New' },
         { id: 'RQ-1041', date: -3, company: 'First Harbor Mortgage', contact: 'A. Reyes', service: 'Loan Servicing', addr: '1220 Maple Ridge Dr, Garden City, NY 11530', wanted: 1, notes: '', status: 'Accepted' },
         { id: 'RQ-1039', date: -4, company: 'Unknown sender', contact: '', service: 'Mystery Shoppers', addr: 'No address given', wanted: 0, notes: 'Test message', status: 'Declined' }
       ] },
@@ -111,13 +111,42 @@ VA.sections = [
         { id: 'ST-0914', inspector: 'Priya Nair', period: 'Nov 1 – Nov 7', jobs: 4, amount: 100, how: 'Check', payday: -3, status: 'Paid' }
       ] },
 
+    { key: 'affiliates', title: 'Affiliates & Codes', icon: 'fa-handshake', color: 'orange',
+      desc: 'Outside people (like podcasters) and sales staff who bring in clients. Each one has a CODE. A new client types the code on the Request Inspection form, or the admin adds it to the client. When that client pays, the affiliate earns a one-time payment or a % of each payment. Rates, months and "paid after the client pays" are SAMPLE guesses: Don to confirm (R-17).',
+      add: 'Add Affiliate', toggle: true,
+      cols: [['name', 'Affiliate'], ['type', 'Type'], ['code', 'Code'], ['rule', 'Earns'], ['nClients', 'Clients', 'r'], ['earned', 'Earned', 'money'], ['owed', 'Owed Now', 'money'], ['w9', 'W-9 On File', 'yesno'], ['active', 'Active', 'yesno']],
+      fields: [['name', 'Full name', 'text'], ['email', 'Email', 'text'], ['type', 'Type', 'select', ['Podcaster', 'Sales staff', 'Other']], ['show', 'Podcast / company (optional)', 'text'], ['code', 'Code (letters and numbers, like PODCASTJOE)', 'text'],
+               ['earn', 'How they earn', 'select', ['Recurring % of each payment', 'One-time payment']], ['pct', 'Recurring: % of each client payment', 'number'], ['months', 'Recurring: for how many months (0 = no end)', 'number'], ['amount', 'One-time: amount ($) after the first payment', 'number'],
+               ['w9', 'W-9 on file (needed before paying)', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
+      rows: [
+        { id: 'A-1', name: 'Joe Rivera', email: 'joe@mainstreetmoney.example', type: 'Podcaster', show: 'Main Street Money (podcast)', code: 'PODCASTJOE', earn: 'Recurring % of each payment', pct: 10, months: 12, amount: 0, w9: 'Yes', active: 'Yes' },
+        { id: 'A-2', name: 'Tina Marsh', email: 'tina@fieldnotes.example', type: 'Podcaster', show: 'Field Notes Show (podcast)', code: 'FIELDNOTES', earn: 'One-time payment', pct: 0, months: 0, amount: 150, w9: 'No', active: 'Yes' },
+        { id: 'A-3', name: 'Carla Diaz', email: 'carla@vign.example', type: 'Sales staff', show: 'VIGN sales', code: 'CARLA25', earn: 'Recurring % of each payment', pct: 5, months: 12, amount: 0, w9: 'Yes', active: 'Yes' }
+      ] },
+
+    { key: 'commissions', title: 'Affiliate Commissions', icon: 'fa-hand-holding-dollar', color: 'green',
+      desc: 'What each affiliate earned from their clients\' payments. A line is made by itself for every invoice of a referred client. It stays "Waiting for client payment" until the client pays the invoice, then it is "Owed". Mark it paid when the affiliate is paid. Affiliates are outside people: W-9 first, private 1099 at year end (Documents).',
+      add: '', toggle: false, markpaid: true,
+      views: [['owed', 'Owed'], ['wait', 'Waiting for client payment'], ['paid', 'Paid'], ['all', 'All']],
+      cols: [['id', 'Line #'], ['affiliate', 'Affiliate'], ['client', 'Client'], ['invoice', 'Invoice'], ['base', 'Client Paid', 'money'], ['rule', 'Rule'], ['amount', 'Commission', 'money'], ['payday', 'Paid On', 'date'], ['status', 'Status', 'status']],
+      fields: [],
+      rows: [
+        { id: 'CM-104', affiliate: 'Carla Diaz', client: 'Northgate Savings Bank', invoice: 'INV-2580', base: 280, rule: '5% · month 2 of 12', amount: 14, status: 'Owed' },
+        { id: 'CM-103', affiliate: 'Joe Rivera', client: 'Bright Brew Coffee Co.', invoice: 'INV-2571', base: 400, rule: '10% · month 1 of 12', amount: 40, payday: -10, status: 'Paid' },
+        { id: 'CM-105', affiliate: 'Joe Rivera', client: 'Bright Brew Coffee Co.', invoice: 'INV-2598', base: 450, rule: '10% · month 2 of 12', amount: 45, status: 'Waiting for client payment' },
+        { id: 'CM-106', affiliate: 'Joe Rivera', client: 'Bright Brew Coffee Co.', invoice: 'INV-2612', base: 50, rule: '10% · month 2 of 12', amount: 5, status: 'Waiting for client payment' },
+        { id: 'CM-107', affiliate: 'Carla Diaz', client: 'Northgate Savings Bank', invoice: 'INV-2606', base: 70, rule: '5% · month 3 of 12', amount: 3.5, status: 'Waiting for client payment' }
+      ] },
+
     { key: 'documents', title: 'Documents', icon: 'fa-folder-open', color: 'orange',
       desc: 'Agreements, instructions and tax forms (1099). Upload a file and choose who can see it. Clients and inspectors only see their own files; 1099s are private.',
       add: 'Upload Document', toggle: false,
-      views: [['all', 'All'], ['Agreement', 'Agreements'], ['Instructions', 'Instructions'], ['1099', '1099 / Tax'], ['unsigned', 'Not signed yet']],
+      views: [['all', 'All'], ['Agreement', 'Agreements'], ['Instructions', 'Instructions'], ['1099', '1099 / W-9 / Tax'], ['unsigned', 'Not signed yet']],
       cols: [['name', 'File'], ['type', 'Type'], ['who', 'For'], ['visible', 'Who Can See It'], ['up', 'Uploaded', 'date'], ['signed', 'Signed', 'status']],
-      fields: [['type', 'Type', 'select', ['Agreement', 'Instructions', '1099', 'Other']], ['who', 'For', 'select', ['All clients', 'All inspectors', 'First Harbor Mortgage', 'Lakeshore Loan Servicing', 'Bright Brew Coffee Co.', 'Keystone Insurance Group', 'Midway Auto & Home Credit', 'Northgate Savings Bank', 'Maria Lopez', 'Derek Hall', 'Priya Nair', 'Angela Ruiz']], ['file', 'File (PDF, Word)', 'file'], ['needsign', 'Needs a signature?', 'select', ['No', 'Yes']]],
+      fields: [['type', 'Type', 'select', ['Agreement', 'Instructions', '1099', 'W-9', 'Other']], ['who', 'For', 'select', ['All clients', 'All inspectors', 'All affiliates', 'Joe Rivera', 'Tina Marsh', 'Carla Diaz', 'First Harbor Mortgage', 'Lakeshore Loan Servicing', 'Bright Brew Coffee Co.', 'Keystone Insurance Group', 'Midway Auto & Home Credit', 'Northgate Savings Bank', 'Maria Lopez', 'Derek Hall', 'Priya Nair', 'Angela Ruiz']], ['file', 'File (PDF, Word)', 'file'], ['needsign', 'Needs a signature?', 'select', ['No', 'Yes']]],
       rows: [
+        { id: 'D-23', name: 'Affiliate Agreement - Joe Rivera.pdf', type: 'Agreement', who: 'Joe Rivera', up: -45, signed: 'Signed', size: '120 KB' },
+        { id: 'D-22', name: 'W-9 - Joe Rivera.pdf', type: 'W-9', who: 'Joe Rivera', up: -45, signed: '—', size: '70 KB' },
         { id: 'D-21', name: 'Client Service Agreement - First Harbor Mortgage.pdf', type: 'Agreement', who: 'First Harbor Mortgage', up: -40, signed: 'Signed', size: '220 KB' },
         { id: 'D-20', name: 'Client Service Agreement - Lakeshore Loan Servicing.pdf', type: 'Agreement', who: 'Lakeshore Loan Servicing', up: -35, signed: 'Signed', size: '218 KB' },
         { id: 'D-19', name: 'Client Service Agreement - Bright Brew Coffee Co.pdf', type: 'Agreement', who: 'Bright Brew Coffee Co.', up: -6, signed: 'Waiting', size: '221 KB' },
@@ -134,16 +163,16 @@ VA.sections = [
     { key: 'clients', title: 'Clients, Rates & Billing', icon: 'fa-address-card', color: 'red',
       desc: 'Companies that order inspections. Every client has its OWN rate (no fixed price list): a Pilot Program intro rate first, then the contract rate, and the rate can depend on how many stores the client has. Billing plan: per job, monthly per job, monthly flat fee, or yearly flat fee. All prices are SAMPLES. A card is charged automatically only when the client has a signed agreement.',
       add: 'Add Client', toggle: true,
-      cols: [['id', 'ID'], ['name', 'Name'], ['plan', 'Plan'], ['rateNow', 'Rate Now'], ['agree', 'Agreement Signed', 'yesno'], ['card', 'Card On File'], ['auto', 'Auto-Charge Card', 'yesno'], ['jobsThis', 'Jobs This Month', 'r'], ['bal', 'Balance', 'money'], ['active', 'Active', 'yesno']],
-      fields: [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Property manager', 'Retail / restaurant', 'Bank', 'Other']], ['contact', 'Main contact', 'text'], ['email', 'Contact email', 'text'], ['plan', 'Billing plan', 'select', ['Per job', 'Monthly (per job)', 'Monthly (flat fee)', 'Yearly (flat fee)']], ['pilot', 'Pilot Program (lower intro rate first)', 'select', ['No', 'Yes']], ['pilotRate', 'Pilot rate ($ per job)', 'number'], ['pilotEnds', 'Pilot ends on (then the contract rate starts)', 'date'], ['rate', 'Contract rate ($ per job, or the flat fee)', 'number'], ['stores', 'Stores / locations in the franchise', 'number'], ['tiers', 'Rate by number of stores (optional), like 1-10:60, 11-50:55, 51+:50', 'text'], ['agree', 'Agreement signed', 'select', ['No', 'Yes']], ['card', 'Card on file (last 4 only)', 'text'], ['auto', 'Charge the card automatically', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
+      cols: [['id', 'ID'], ['name', 'Name'], ['plan', 'Plan'], ['rateNow', 'Rate Now'], ['ref', 'Referred By'], ['agree', 'Agreement Signed', 'yesno'], ['card', 'Card On File'], ['auto', 'Auto-Charge Card', 'yesno'], ['jobsThis', 'Jobs This Month', 'r'], ['bal', 'Balance', 'money'], ['active', 'Active', 'yesno']],
+      fields: [['name', 'Company name', 'text'], ['type', 'Type', 'select', ['Mortgage lender', 'Loan servicer', 'Insurance', 'Property manager', 'Retail / restaurant', 'Bank', 'Other']], ['contact', 'Main contact', 'text'], ['email', 'Contact email', 'text'], ['plan', 'Billing plan', 'select', ['Per job', 'Monthly (per job)', 'Monthly (flat fee)', 'Yearly (flat fee)']], ['pilot', 'Pilot Program (lower intro rate first)', 'select', ['No', 'Yes']], ['pilotRate', 'Pilot rate ($ per job)', 'number'], ['pilotEnds', 'Pilot ends on (then the contract rate starts)', 'date'], ['rate', 'Contract rate ($ per job, or the flat fee)', 'number'], ['stores', 'Stores / locations in the franchise', 'number'], ['tiers', 'Rate by number of stores (optional), like 1-10:60, 11-50:55, 51+:50', 'text'], ['refCode', 'Referral code (affiliate), optional', 'text'], ['refSince', 'Referred since', 'date'], ['agree', 'Agreement signed', 'select', ['No', 'Yes']], ['card', 'Card on file (last 4 only)', 'text'], ['auto', 'Charge the card automatically', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
       rows: [
         { id: 1001, name: 'First Harbor Mortgage', type: 'Mortgage lender', contact: 'A. Reyes', email: 'ops@firstharbor.example', plan: 'Monthly (per job)', agree: 'Yes', card: '', auto: 'No', jobsThis: 31, bal: 605, active: 'Yes', pilot: 'No', rate: 65, stores: 0, tiers: '' },
         { id: 1002, name: 'Lakeshore Loan Servicing', type: 'Loan servicer', contact: 'M. Chen', email: 'field@lakeshore.example', plan: 'Monthly (flat fee)', agree: 'Yes', card: 'Visa •••• 4417', auto: 'Yes', jobsThis: 40, bal: 2500, active: 'Yes', pilot: 'No', rate: 2500, stores: 0, tiers: '' },
-        { id: 1003, name: 'Bright Brew Coffee Co.', type: 'Retail / restaurant', contact: 'K. Olsen', email: 'cx@brightbrew.example', plan: 'Per job', agree: 'No', card: 'MC •••• 2290', auto: 'No', jobsThis: 18, bal: 505, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: 20, rate: 60, stores: 42, tiers: '1-10:60, 11-50:55, 51+:50' },
+        { id: 1003, name: 'Bright Brew Coffee Co.', type: 'Retail / restaurant', contact: 'K. Olsen', email: 'cx@brightbrew.example', plan: 'Per job', agree: 'No', card: 'MC •••• 2290', auto: 'No', jobsThis: 18, bal: 505, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: 20, rate: 60, stores: 42, tiers: '1-10:60, 11-50:55, 51+:50', refCode: 'PODCASTJOE', refSince: -40 },
         { id: 1004, name: 'Keystone Insurance Group', type: 'Insurance', contact: 'D. Wright', email: 'claims@keystone.example', plan: 'Yearly (flat fee)', agree: 'Yes', card: '', auto: 'No', jobsThis: 9, bal: 0, active: 'Yes', pilot: 'No', rate: 9600, stores: 0, tiers: '' },
         { id: 1005, name: 'Midway Auto & Home Credit', type: 'Bank', contact: 'S. Patel', email: 'collateral@midway.example', plan: 'Monthly (per job)', agree: 'Yes', card: 'Amex •••• 1008', auto: 'Yes', jobsThis: 11, bal: 330, active: 'Yes', pilot: 'No', rate: 30, stores: 0, tiers: '' },
-        { id: 1006, name: 'Northgate Savings Bank', type: 'Bank', contact: 'L. Brooks', email: 'branches@northgate.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 4, bal: 70, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: -5, rate: 70, stores: 9, tiers: '' },
-        { id: 1007, name: 'Summit Property Partners', type: 'Property manager', contact: 'J. Kim', email: 'pm@summit.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 0, bal: 0, active: 'No', pilot: 'Yes', pilotRate: 70, pilotEnds: 30, rate: 85, stores: 0, tiers: '' }
+        { id: 1006, name: 'Northgate Savings Bank', type: 'Bank', contact: 'L. Brooks', email: 'branches@northgate.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 4, bal: 70, active: 'Yes', pilot: 'Yes', pilotRate: 50, pilotEnds: -5, rate: 70, stores: 9, tiers: '', refCode: 'CARLA25', refSince: -70 },
+        { id: 1007, name: 'Summit Property Partners', type: 'Property manager', contact: 'J. Kim', email: 'pm@summit.example', plan: 'Per job', agree: 'No', card: '', auto: 'No', jobsThis: 0, bal: 0, active: 'No', pilot: 'Yes', pilotRate: 70, pilotEnds: 30, rate: 85, stores: 0, tiers: '', refCode: 'FIELDNOTES', refSince: -3 }
       ] },
 
     { key: 'inspectors', title: 'Inspectors List', icon: 'fa-user-shield', color: 'green',

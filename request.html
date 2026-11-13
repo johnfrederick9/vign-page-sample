@@ -97,6 +97,7 @@
                         <label>Email *<input type="email" name="email" maxlength="150" autocomplete="email" required></label>
                         <label>Phone<input type="tel" name="phone" maxlength="30" autocomplete="tel"></label>
                     </div>
+                    <label>Referral code (optional)<input type="text" name="ref_code" maxlength="20" autocomplete="off" placeholder="Heard about us on a podcast? Type the code here"></label>
                 </fieldset>
 
                 <fieldset class="jn-step" data-need="service">
@@ -226,7 +227,7 @@
         var picked = f.querySelector('[name=service]:checked'), wanted = { 'Rush (24–48 hours)': 2, 'Flexible': 10 }[v('turnaround')] || 7;
         if (v('preferred_date')) wanted = Math.max(0, Math.round((new Date(v('preferred_date') + 'T12:00:00') - new Date().setHours(12, 0, 0, 0)) / 864e5));
         var id = window.VIGNDB ? VIGNDB.add('requests', { company: v('company') || v('full_name') + ' (no company)', contact: v('full_name'), email: v('email'), phone: v('phone'), role: v('role'),
-            service: SVC[picked ? picked.value : 'other'], addr: v('address') + ', ' + v('city') + ', ' + v('state') + ' ' + v('zip'), wanted: wanted, turnaround: v('turnaround'), notes: v('notes'), src: 'Website form' }) : '';
+            service: SVC[picked ? picked.value : 'other'], addr: v('address') + ', ' + v('city') + ', ' + v('state') + ' ' + v('zip'), wanted: wanted, turnaround: v('turnaround'), notes: v('notes'), ref: v('ref_code').toUpperCase().replace(/[^A-Z0-9]/g, ''), src: 'Website form' }) : '';
         var name = v('full_name').split(' ')[0].replace(/[<>&"]/g, '');
         f.innerHTML = '<div class="jn-done"><i class="fa-solid fa-circle-check" aria-hidden="true"></i><h2>Thanks' + (name ? ', ' + name : '') + '!</h2><p>We got your request' + (id ? ' <b>' + id + '</b>' : '') + '. Our team will call or email you to confirm the price and timeline, then assign a local inspector or shopper.</p>' +
             (id ? '<p class="form-note">Preview: saved in this browser. It now shows in the Admin Menu under <b>New Inspection Requests</b>.</p>' : '<p class="form-note">Preview: this browser blocks saving, so nothing was kept.</p>') + '<a class="btn btn-ghost" href="index.html">Back to the website</a></div>';

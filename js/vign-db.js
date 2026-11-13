@@ -8,8 +8,8 @@
 (function (w) {
     var KEY = 'vign-db', VERSION = 1;
     // the tables the preview saves, and which fields are "days from today" (shifted when a new day starts)
-    var TABLES = { requests: ['date', 'wanted'], signups: ['date'], jobs: ['acc', 'due'], inspectors: [], finished: ['sent'], clients: ['pilotEnds'], users: ['last'] };
-    var NAMES = { requests: 'New Inspection Requests', signups: 'Join requests (new inspectors)', jobs: 'Jobs', inspectors: 'Inspectors List', finished: 'Finished inspections', clients: 'Clients & rates', users: 'Admins & staff (permissions)' };
+    var TABLES = { requests: ['date', 'wanted'], signups: ['date'], jobs: ['acc', 'due'], inspectors: [], finished: ['sent'], clients: ['pilotEnds', 'refSince'], users: ['last'], affiliates: [], commissions: ['payday'] };
+    var NAMES = { requests: 'New Inspection Requests', signups: 'Join requests (new inspectors)', jobs: 'Jobs', inspectors: 'Inspectors List', finished: 'Finished inspections', clients: 'Clients & rates', users: 'Admins & staff (permissions)', affiliates: 'Affiliates & codes', commissions: 'Affiliate commissions' };
     var DAY = 864e5;
     function today() { var d = new Date(); d.setHours(12, 0, 0, 0); return d; }
     function iso(d) { return d.toISOString().slice(0, 10); }
@@ -38,7 +38,9 @@
             sections.forEach(function (s) {
                 if (!TABLES[s.key]) return;
                 if (d.tables[s.key]) {
-                    s.rows = d.tables[s.key].map(function (r) { TABLES[s.key].forEach(function (k) { if (typeof r[k] === 'number') r[k] -= shift; }); (r.hist || []).forEach(function (h) { if (typeof h.d === 'number') h.d -= shift; }); return r; });
+                    var seed = {}; s.rows.forEach(function (r) { seed[r.id] = r; });
+                    s.rows = d.tables[s.key].map(function (r) { var o = seed[r.id]; if (o) Object.keys(o).forEach(function (k) { if (!(k in r)) r[k] = o[k]; }); // new sample fields reach browsers that saved before
+ TABLES[s.key].forEach(function (k) { if (typeof r[k] === 'number') r[k] -= shift; }); (r.hist || []).forEach(function (h) { if (typeof h.d === 'number') h.d -= shift; }); return r; });
                 }
                 (d.inbox[s.key] || []).forEach(function (r) {
                     if (s.rows.some(function (x) { return x.id === r.id; })) return;
