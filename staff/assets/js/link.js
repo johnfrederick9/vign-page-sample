@@ -129,10 +129,8 @@ var NAV = [
     ['aging', 'flowinvoices.html?mode=bycustomer', 'fa-hand-holding-dollar', 'Aging', 'billing'],
     ['invoices', 'flowinvoices.html?mode=issued', 'fa-file-invoice-dollar', 'Invoices', 'billing'],
     ['payments', 'flowinvoices.html?mode=paid', 'fa-money-check-dollar', 'Payments', 'billing'],
-    ['serverpay', 'flowserverpay.html', 'fa-sack-dollar', 'Inspector Pay', 'pay'],
-    ['Account'],
-    ['settings', 'flowsettings.html', 'fa-gear', 'Settings']
-];
+    ['serverpay', 'flowserverpay.html', 'fa-sack-dollar', 'Inspector Pay', 'pay']
+];   // Settings is in the account menu (your name, top right), not the sidebar
 V.shell = function () {
     var page = document.body.dataset.page;
     var review = V.jobs.filter(function (j) { return j.status === 'submitted'; }).length;
