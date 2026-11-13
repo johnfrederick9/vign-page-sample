@@ -25,14 +25,14 @@ VS.init = function () {
     var html = V.band('fa-pen-to-square', 'Fill in the form by hand', 'Job ' + j.id + ' · ' + V.esc(j.addr) + ', ' + V.esc(j.city) + ' · ' + V.esc(c.name),
         '<a class="bbtn" href="flowjob.html?job=' + j.id + '"><i class="fa-solid fa-arrow-left"></i> Back to the job</a>');
     html += '<p class="note2" style="margin-top:16px"><i class="fa-solid fa-circle-info"></i> Use this when an inspector phones in the results or sends a paper form. The report is marked <b>"entered by staff"</b> and goes to Review like any other.</p>';
-    html += '<form id="ff"><div class="grid2"><div>' + V.card(V.esc(form[0]), form[1].length + ' items · 1 Good · 2 Minor · 3 Repair · 4 Urgent', '<ol class="ffl">' + form[1].map(function (it, i) {
+    html += '<form id="ff"><div class="grid2"><div>' + V.card(V.esc(form[0]), form[1].length + ' items · 1 Good · 2 Minor · 3 Repair · 4 Urgent', '<div class="fftools"><span id="ffprog"></span><button type="button" class="btn btn-ghost btn-xs" id="ffall"><i class="fa-solid fa-check-double"></i> Mark the rest 1 · Good</button></div><ol class="ffl">' + form[1].map(function (it, i) {
         var a = j.answers ? j.answers[i] : '';
-        return '<li><div class="ffq">' + V.esc(it) + '</div><div class="ffr" role="radiogroup" aria-label="' + V.esc(it) + '">' + R.map(function (r) { return '<label class="' + V.ratings[r][1] + '"><input type="radio" name="a' + i + '" value="' + r + '"' + (a === r ? ' checked' : '') + '><span>' + (r.length > 1 ? V.ratings[r][0] : r) + '</span></label>'; }).join('') + '</div>' +
-            '<input type="text" class="ffn" name="n' + i + '" placeholder="Note (needed for 3 or 4)" value="' + V.esc(j.findings ? j.findings[i] : '') + '"></li>';
+        return '<li><div class="ffq">' + V.esc(it) + '</div><div class="ffr" role="radiogroup" aria-label="' + V.esc(it) + '">' + R.map(function (r) { return '<label class="' + V.ratings[r][1] + '"><input type="radio" name="a' + i + '" value="' + r + '"' + (a === r ? ' checked' : '') + '><span>' + (r.length > 1 ? V.ratings[r][0] : r) + '</span></label>'; }).join('') + '<button type="button" class="ffadd" data-note="' + i + '" title="Add a note" aria-label="Add a note to ' + V.esc(it) + '"><i class="fa-regular fa-note-sticky"></i></button></div>' +
+            '<input type="text" class="ffn" name="n' + i + '" placeholder="What did the inspector see? (needed for 3 or 4)" value="' + V.esc(j.findings ? j.findings[i] : '') + '"></li>';
     }).join('') + '</ol>', true) + '</div><div>' +
         V.card('Who did the visit', '', '<label class="fld">Inspector<select name="who">' + V.inspectors.filter(function (i) { return i.active; }).map(function (i) { return '<option value="' + i.id + '"' + (ins && ins.id === i.id ? ' selected' : '') + '>' + V.esc(i.name) + '</option>'; }).join('') + '</select></label>' +
             '<label class="fld">Visit date<input type="date" name="day" value="' + V.iso(0) + '"></label><label class="fld">How we got the results<select name="how"><option>Phoned in</option><option>Paper form (scanned)</option><option>Email</option></select></label>') +
-        V.card('Photos', '', '<label class="fld">Add the photos the inspector sent<input type="file" name="ph" accept="image/*" multiple></label><p class="muted small" style="margin:0">Items rated 3 or 4 need a photo.</p>') +
+        V.card('Photos', '<span class="muted small" id="phc">None yet</span>', '<label class="ffdrop" id="phd"><input type="file" id="ph" accept="image/*" multiple><i class="fa-solid fa-camera"></i><b>Add the photos the inspector sent</b><small>Click to choose, or drag them here · JPG / PNG</small></label><ul class="ffthumbs" id="phl"></ul><p class="muted small" style="margin:10px 0 0"><i class="fa-solid fa-circle-info"></i> Items rated 3 or 4 need a photo.</p>') +
         V.card('Score', '<span class="samp">sample formula</span>', '<div class="ffscore"><b id="sc">–</b><span id="sct">Rate the items to see the score.</span></div>') +
         '<div class="form-foot"><button type="button" class="btn btn-ghost" id="draft">Save draft</button><button type="submit" class="btn btn-primary"><i class="fa-solid fa-paper-plane"></i> Send to Review</button></div>' +
         '</div></div></form><div id="done"></div>';
@@ -40,17 +40,47 @@ VS.init = function () {
     var f = V.$('#ff');
     function vals() { return form[1].map(function (x, i) { var r = f.querySelector('[name=a' + i + ']:checked'); return r ? r.value : ''; }); }
     function score() { var a = vals(), t = 0, n = 0; a.forEach(function (x) { if (V.points[x] != null) { t += V.points[x]; n++; } }); var s = n ? Math.round(t / n) : null; V.$('#sc').textContent = s == null ? '–' : s; V.$('#sc').className = s == null ? '' : 'rate ' + V.scoreCls(s); V.$('#sct').textContent = a.filter(Boolean).length + ' of ' + a.length + ' rated'; return s; }
-    f.addEventListener('change', score); score();
+    function need() {
+        var a = vals();
+        a.forEach(function (x, i) {
+            var n = f.querySelector('[name=n' + i + ']'), li = n.closest('li'), bad = x === '3' || x === '4';
+            n.classList.toggle('need', bad && !n.value.trim());
+            li.classList.toggle('open', bad || !!n.value.trim() || li.dataset.opened === '1'); // the note box shows only when it is needed
+            li.classList.toggle('ff-done', !!x); li.classList.toggle('ff-bad', bad);
+        });
+        var done = a.filter(Boolean).length; V.$('#ffprog').innerHTML = '<b>' + done + '</b> of ' + a.length + ' rated';
+        V.$('#ffall').hidden = done === a.length;
+    }
+    V.$('.ffl').addEventListener('click', function (e) { var b = e.target.closest('[data-note]'); if (!b) return; var li = b.closest('li'); li.dataset.opened = '1'; need(); li.querySelector('.ffn').focus(); });
+    V.$('#ffall').addEventListener('click', function () {
+        var n = 0; vals().forEach(function (x, i) { if (!x) { f.querySelector('[name=a' + i + '][value="1"]').checked = true; n++; } });
+        score(); need(); V.toast(n + ' item' + (n === 1 ? '' : 's') + ' marked 1 · Good. Change any that are not.');
+    });
+    f.addEventListener('change', function () { score(); need(); }); f.addEventListener('input', function (e) { if (e.target.classList.contains('ffn')) need(); }); score(); need();
+
+    // photos: thumbnails with a remove button; drag and drop works too (kept in the page only)
+    var photos = [], pin = V.$('#ph'), drop = V.$('#phd');
+    function drawPh() {
+        V.$('#phl').innerHTML = photos.map(function (p, i) { return '<li><img src="' + p.url + '" alt=""><span>' + V.esc(p.name) + '</span><button type="button" data-rm="' + i + '" aria-label="Remove ' + V.esc(p.name) + '"><i class="fa-solid fa-xmark"></i></button></li>'; }).join('');
+        V.$('#phc').textContent = photos.length ? photos.length + ' photo' + (photos.length > 1 ? 's' : '') : 'None yet';
+    }
+    function addPh(list) { Array.prototype.forEach.call(list || [], function (file) { if (/^image\//.test(file.type)) photos.push({ name: file.name, url: URL.createObjectURL(file) }); }); drawPh(); }
+    pin.addEventListener('change', function () { addPh(pin.files); pin.value = ''; });
+    V.$('#phl').addEventListener('click', function (e) { var b = e.target.closest('[data-rm]'); if (!b) return; var p = photos.splice(+b.dataset.rm, 1)[0]; if (p) URL.revokeObjectURL(p.url); drawPh(); });
+    ['dragenter', 'dragover'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.add('over'); }); });
+    ['dragleave', 'drop'].forEach(function (t) { drop.addEventListener(t, function (e) { e.preventDefault(); drop.classList.remove('over'); }); });
+    drop.addEventListener('drop', function (e) { addPh(e.dataTransfer && e.dataTransfer.files); });
     V.$('#draft').addEventListener('click', function () { V.toast('Draft saved (preview only).'); });
     f.addEventListener('submit', function (e) {
         e.preventDefault();
         var a = vals(), miss = a.filter(function (x) { return !x; }).length, noNote = a.filter(function (x, i) { return (x === '3' || x === '4') && !f.querySelector('[name=n' + i + ']').value.trim(); }).length;
         if (miss) { V.toast(miss + ' item(s) not rated yet.'); return; }
-        if (noNote) { V.toast(noNote + ' item(s) rated 3 or 4 need a note.'); return; }
+        if (noNote) { need(); V.toast(noNote + ' item(s) rated 3 or 4 need a note.'); return; }
+        if (!photos.length && a.some(function (x) { return x === '3' || x === '4'; })) { V.toast('Items rated 3 or 4 need a photo. Add the photos the inspector sent.'); V.$('#phd').focus(); return; }
         var s = score(), who = V.ins(f.who.value);
         j.answers = a; j.findings = a.map(function (x, i) { return f.querySelector('[name=n' + i + ']').value.trim(); }); j.ins = who.id; j.sent = 0; j.status = 'submitted'; j.byStaff = f.how.value;
         f.style.display = 'none';
-        V.$('#done').innerHTML = V.card('<i class="fa-solid fa-circle-check" style="color:var(--g)"></i> Sent to Review', '', '<p style="margin:0">Job <b>' + j.id + '</b> · ' + V.esc(form[0]) + ' · score <b>' + s + '</b> <span class="samp">sample</span><br>Visit by ' + V.esc(who.name) + ' · ' + V.esc(f.how.value) + ' · entered by staff</p><p class="note1"><i class="fa-solid fa-circle-info"></i>Preview only: nothing was saved. In the real system it is now in Review, marked "entered by staff".</p><div class="acts1" style="margin-top:12px"><a class="btn btn-primary" href="flowreview.html">Go to Review</a><a class="btn btn-ghost" href="flowjob.html?job=' + j.id + '">Back to the job</a></div>');
+        V.$('#done').innerHTML = V.card('<i class="fa-solid fa-circle-check" style="color:var(--g)"></i> Sent to Review', '', '<p style="margin:0">Job <b>' + j.id + '</b> · ' + V.esc(form[0]) + ' · score <b>' + s + '</b> <span class="samp">sample</span> · ' + photos.length + ' photo' + (photos.length === 1 ? '' : 's') + '<br>Visit by ' + V.esc(who.name) + ' · ' + V.esc(f.how.value) + ' · entered by staff</p><p class="note1"><i class="fa-solid fa-circle-info"></i>Preview only: nothing was saved. In the real system it is now in Review, marked "entered by staff".</p><div class="acts1" style="margin-top:12px"><a class="btn btn-primary" href="flowreview.html">Go to Review</a><a class="btn btn-ghost" href="flowjob.html?job=' + j.id + '">Back to the job</a></div>');
     });
 };
 </script>

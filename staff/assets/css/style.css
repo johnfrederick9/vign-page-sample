@@ -289,3 +289,11 @@ a.stat:hover { border-color: var(--line-2); box-shadow: var(--shadow-md); transf
 .legend b { width: auto; min-width: 20px; padding: 0 4px; margin-right: 6px; }
 .alerts .pill { flex: none; align-self: center; }
 .nav2 .btn { white-space: nowrap; padding-left: .6rem; padding-right: .6rem; }
+
+/* center the icon inside its colored square (alerts, today's route, activity lists) */
+.alerts .ic { display: grid; place-items: center; line-height: 1; }
+
+
+/* number / email / phone boxes look like the other boxes (they were plain) */
+.fld input[type=number], .fld input[type=email], .fld input[type=tel], .fld input[type=url], .fld input[type=search], .fld input[type=datetime-local], .fld input[type=month] { width: 100%; font: inherit; font-size: .95rem; font-weight: 400; color: var(--ink); padding: .62rem .8rem; border: 1px solid var(--line-2); border-radius: var(--radius-sm); background: #fff; }
+.fld input[type=number]:focus, .fld input[type=email]:focus, .fld input[type=tel]:focus, .fld input[type=url]:focus, .fld input[type=search]:focus, .fld input[type=datetime-local]:focus, .fld input[type=month]:focus { outline: 0; border-color: var(--blue); box-shadow: 0 0 0 3px var(--blue-50); }

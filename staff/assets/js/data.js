@@ -157,3 +157,26 @@ VS.alerts = [
     ['amber', 'fa-image', 'A report was sent in with a photo far from the address', 'review'],
     ['green', 'fa-file-import', 'Lakeshore Loan Servicing sent a new order file', 'import']
 ];
+
+// Client messages (like SMK requestor/messages.php): one conversation per job between the client and the VIGN office.
+// from: 'client' | 'office' | 'note' (office note, the client never sees it). on = days from today.
+VS.threads = [
+    { job: 'VG-24113', msgs: [
+        { from: 'office', who: 'Jenny Park', on: -1, at: '4:12 PM', text: 'Derek went to 701 Oakview Ave today but the side gate is locked. Can you send a gate code or a contact who can open it? He can go back tomorrow.' },
+        { from: 'client', who: 'A. Reyes', on: 0, at: '8:05 AM', text: 'Gate code is 4417#. The property manager, Luis, is also on site after 10 AM: (516) 555-0190.' }] },
+    { job: 'VG-24102', msgs: [
+        { from: 'client', who: 'A. Reyes', on: 0, at: '9:20 AM', text: 'This one is a rush, the investor needs it by Friday. Can you do it?' }] },
+    { job: 'VG-24108', msgs: [
+        { from: 'client', who: 'M. Chen', on: -1, at: '3:40 PM', text: 'Any update on 6587 Willow Bend? It was due 2 days ago.' }] },
+    { job: 'VG-24116', msgs: [
+        { from: 'client', who: 'K. Olsen', on: -1, at: '11:02 AM', text: 'When will the report for Bright Brew #19 be ready?' },
+        { from: 'office', who: 'Jenny Park', on: -1, at: '11:30 AM', text: 'Priya sent it this morning. We are checking it now and you will have it today.' },
+        { from: 'note', who: 'Jenny Park', on: -1, at: '11:31 AM', text: 'Item 6 rated 4 (checkout counter blocked). Check the photos before we send it.' }] },
+    { job: 'VG-24112', msgs: [
+        { from: 'client', who: 'K. Olsen', on: -3, at: '1:15 PM', text: 'For #17 please visit between 2 and 4 PM, that is when the new team is on.' },
+        { from: 'office', who: 'Mike Russo', on: -3, at: '1:40 PM', text: 'Noted. We passed it to the shopper.', toIns: true }] },
+    { job: 'VG-24120', msgs: [
+        { from: 'office', who: 'Jenny Park', on: -1, at: '10:10 AM', text: 'We sent 18 Elm St back to the inspector for two missing photos. New report by tomorrow.' },
+        { from: 'client', who: 'A. Reyes', on: -1, at: '10:25 AM', text: 'Thanks for letting me know.' },
+        { from: 'office', who: 'Jenny Park', on: -1, at: '10:26 AM', text: 'You are welcome.' }] }
+];

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | VIGN Staff Office</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/staff.css">
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="settings">
+<main class="content" id="app"></main>
+<script>
+/* Staff Settings: my details, what the admin turned on for me (read only), emails, how the Staff Office opens, password.
+   Saved in this browser. The email is the sign-in and is set by the admin; passwords are never saved in the preview. */
+var VS = window.VS = window.VS || {};
+VS.init = function () {
+    var V = VS, e = V.esc;
+    var D = { name: V.me.name, phone: V.me.phone, title: 'Office staff', start: 'command.html', rows: '25',
+        e_requests: 'Yes', e_review: 'Yes', e_late: 'No', e_daily: 'Yes', dailyAt: '07:30' };
+    var S = Object.assign({}, D, V.prefs || {});
+    function yn(k, label, sub) {
+        return '<label class="set-row"><span>' + label + '<small>' + sub + '</small></span><input type="checkbox" class="sw" role="switch" name="' + k + '"' + (S[k] === 'Yes' ? ' checked' : '') + '></label>';
+    }
+    var h = V.band('fa-gear', 'Settings', 'Your details, which emails you get, and how the Staff Office opens for you.');
+    h += '<form id="sf" novalidate><div class="set-grid">';
+    // 1. my details
+    h += V.card('<i class="fa-solid fa-user" style="color:var(--blue)"></i> My details', '<span class="muted small">' + e(V.me.role) + '</span>',
+        '<label class="fld">Full name<input type="text" name="name" maxlength="80" autocomplete="name" value="' + e(S.name) + '"></label>' +
+        '<label class="fld">Job title<input type="text" name="title" maxlength="60" value="' + e(S.title) + '"></label>' +
+        '<label class="fld">Direct phone<input type="tel" name="phone" maxlength="20" autocomplete="tel" value="' + e(S.phone) + '"></label>' +
+        '<label class="fld">Email (your sign-in)<input type="email" value="' + e(V.me.email) + '" disabled></label>' +
+        '<p class="muted small" style="margin:8px 0 0"><i class="fa-solid fa-lock"></i> Your sign-in email and role are set by the VIGN admin.</p>');
+    // 2. what I can open (read only)
+    h += V.card('<i class="fa-solid fa-user-shield" style="color:var(--g)"></i> What I can open', '<span class="muted small">Set by the admin</span>',
+        '<ul class="set-perm">' + ['billing', 'pay', 'rates', 'docs'].map(function (k) {
+            var on = V.can(k); return '<li><i class="fa-solid ' + (on ? 'fa-circle-check on' : 'fa-circle-minus') + '"></i><span>' + e(V.PERMNAME[k]) + '</span><b class="' + (on ? 'on' : '') + '">' + (on ? 'On' : 'Off') + '</b></li>';
+        }).join('') + '</ul><p class="muted small" style="margin:10px 0 0">Need one of these? Ask the admin (Admin Menu › Admins &amp; Staff).</p>');
+    // 3. emails
+    h += V.card('<i class="fa-regular fa-envelope" style="color:var(--red)"></i> Email me when', '',
+        yn('e_requests', 'A new inspection request comes in', 'From the website or a client') +
+        yn('e_review', 'A report is waiting for review', 'An inspector sent it in') +
+        yn('e_late', 'A job becomes overdue', 'Also listed under Notifications') +
+        yn('e_daily', 'Daily summary', 'New, late and waiting jobs in one email') +
+        '<label class="fld" style="margin-top:6px">Send the daily summary at<input type="time" name="dailyAt" value="' + e(S.dailyAt) + '"></label>');
+    // 4. how the Staff Office opens + password
+    var starts = [['command.html', 'Home'], ['flowjobs.html', 'Jobs'], ['flowreview.html', 'Review reports']];
+    h += V.card('<i class="fa-solid fa-sliders" style="color:var(--a)"></i> Preferences', '',
+        '<label class="fld">Open this page after I sign in<select name="start">' + starts.map(function (x) { return '<option value="' + x[0] + '"' + (S.start === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>' +
+        '<label class="fld">Rows to show in lists<select name="rows">' + ['10', '25', '50', '100'].map(function (n) { return '<option' + (String(S.rows) === n ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></label>' +
+        '<h3 class="set-h3">Change password</h3>' +
+        '<label class="fld">Current password<input type="password" name="pw0" autocomplete="current-password"></label>' +
+        '<div class="fld-row"><label class="fld">New password<input type="password" name="pw1" autocomplete="new-password"></label><label class="fld">New password again<input type="password" name="pw2" autocomplete="new-password"></label></div>' +
+        '<p class="muted small" style="margin:8px 0 0">At least 10 characters.</p>');
+    h += '</div><div class="form-foot"><a class="btn btn-ghost" href="command.html">Cancel</a><button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save settings</button></div></form>';
+    V.$('#app').innerHTML = h;
+
+    var f = V.$('#sf');
+    function dailyOn() { f.dailyAt.disabled = !f.e_daily.checked; f.dailyAt.closest('.fld').classList.toggle('dim', !f.e_daily.checked); }
+    f.e_daily.addEventListener('change', dailyOn); dailyOn();
+    f.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var o = { name: f.name.value.trim(), title: f.title.value.trim(), phone: f.phone.value.trim(), start: f.start.value, rows: f.rows.value, dailyAt: f.dailyAt.value || '07:30' };
+        ['e_requests', 'e_review', 'e_late', 'e_daily'].forEach(function (k) { o[k] = f[k].checked ? 'Yes' : 'No'; });
+        if (!o.name) { V.toast('Type your full name.'); f.name.focus(); return; }
+        var p0 = f.pw0.value, p1 = f.pw1.value, p2 = f.pw2.value, pw = '';
+        if (p0 || p1 || p2) {
+            if (!p0) { V.toast('Type your current password.'); f.pw0.focus(); return; }
+            if (p1.length < 10) { V.toast('The new password needs at least 10 characters.'); f.pw1.focus(); return; }
+            if (p1 !== p2) { V.toast('The two new passwords do not match.'); f.pw2.focus(); return; }
+            pw = ' Password change shown only (preview: passwords are never saved).'; f.pw0.value = f.pw1.value = f.pw2.value = '';
+        }
+        try { localStorage.setItem(V.SETKEY, JSON.stringify(o)); } catch (er) { V.toast('This browser blocks saving, so nothing was kept.'); return; }
+        V.prefs = o; V.me.name = o.name; V.me.phone = o.phone;
+        var b = V.$('.top-user b'); if (b) b.textContent = o.name; var w = V.$('.dd-who b'); if (w) w.textContent = o.name;
+        var av = V.$('.top-user .av'); if (av) av.textContent = o.name.split(/\s+/).map(function (x) { return x[0]; }).join('').slice(0, 2).toUpperCase();
+        V.toast('Settings saved (in this browser).' + pw);
+    });
+};
+</script>
+</body>
+</html>

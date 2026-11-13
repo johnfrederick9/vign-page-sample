@@ -39,6 +39,6 @@
         </div>
     </main>
 </div>
-<script>document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); try { sessionStorage.setItem('vign-role', 'staff'); } catch (er) {} location.href = 'command.html'; });</script>
+<script>document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); try { sessionStorage.setItem('vign-role', 'staff'); } catch (er) {} var to = 'command.html'; try { var p = JSON.parse(localStorage.getItem('vign-staff-settings') || 'null'); if (p && /^[a-z]+\.html(\?[a-z=]+)?$/.test(p.start || '') && p.start !== 'flowmessages.html') to = p.start; } catch (er) {} location.href = to; });</script>
 </body>
 </html>

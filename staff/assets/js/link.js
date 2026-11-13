@@ -99,6 +99,23 @@ V.locked = function (k) {
         '<a class="btn btn-primary btn-sm" style="margin-top:16px" href="command.html">Back to Home</a></div>';
 };
 
+// ---------- client messages: kept in this browser so replies stay after a reload ----------
+V.SETKEY = 'vign-staff-settings';
+V.prefs = (function () { try { return JSON.parse(localStorage.getItem('vign-staff-settings') || 'null') || {}; } catch (e) { return {}; } })();
+if (V.prefs.name) V.me.name = V.prefs.name; if (V.prefs.phone) V.me.phone = V.prefs.phone;
+V.MSGKEY = 'vign-staff-msgs';
+V.loadMsgs = function () {
+    if (V._msgsLoaded) return V.threads; V._msgsLoaded = true;
+    try { var s = JSON.parse(localStorage.getItem(V.MSGKEY) || 'null'); if (s && s.threads) { V.threads = s.threads; V.readMsgs = s.read || {}; } } catch (e) {}
+    V.readMsgs = V.readMsgs || {};
+    return V.threads;
+};
+V.saveMsgs = function () { try { localStorage.setItem(V.MSGKEY, JSON.stringify({ threads: V.threads, read: V.readMsgs })); return true; } catch (e) { return false; } };
+V.lastMsg = function (t) { var m = t.msgs.filter(function (x) { return x.from !== 'note'; }); return m[m.length - 1] || t.msgs[t.msgs.length - 1] || { from: 'none', on: 0, at: '', text: 'No messages yet' }; };
+// "waiting on us" = the client wrote last and the office has not answered yet
+V.isWaiting = function (t) { var m = V.lastMsg(t); return !!m && m.from === 'client'; };
+V.waitingMsgs = function () { V.loadMsgs(); return (V.threads || []).filter(V.isWaiting).length; };
+
 // ---------- header + sidebar ----------
 var NAV = [
     ['Work'],
@@ -112,7 +129,9 @@ var NAV = [
     ['aging', 'flowinvoices.html?mode=bycustomer', 'fa-hand-holding-dollar', 'Aging', 'billing'],
     ['invoices', 'flowinvoices.html?mode=issued', 'fa-file-invoice-dollar', 'Invoices', 'billing'],
     ['payments', 'flowinvoices.html?mode=paid', 'fa-money-check-dollar', 'Payments', 'billing'],
-    ['serverpay', 'flowserverpay.html', 'fa-sack-dollar', 'Inspector Pay', 'pay']
+    ['serverpay', 'flowserverpay.html', 'fa-sack-dollar', 'Inspector Pay', 'pay'],
+    ['Account'],
+    ['settings', 'flowsettings.html', 'fa-gear', 'Settings']
 ];
 V.shell = function () {
     var page = document.body.dataset.page;
@@ -134,7 +153,7 @@ V.shell = function () {
             return '<a href="' + href + '"><i class="fa-solid ' + a[1] + '" style="color:var(--' + (a[0] === 'red' ? 'r' : a[0] === 'amber' ? 'a' : a[0] === 'green' ? 'g' : 'blue') + ')"></i><span>' + V.esc(a[2]) + '</span></a>';
         }).join('') + '</div></div></nav>' +
         '<div class="dd" id="ddMe"><button class="top-user" data-dd="ddMe" style="background:#fff;cursor:pointer;font:inherit"><span><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.role) + '</small></span><span class="av">' + initials + '</span></button>' +
-        '<div class="dd-menu right"><a href="#" id="myAcct"><i class="fa-regular fa-user"></i><span>My account</span></a><hr><a href="index.html"><i class="fa-solid fa-right-from-bracket"></i><span>Log out</span></a></div></div></header>';
+        '<div class="dd-menu right"><div class="dd-who"><b>' + V.esc(V.me.name) + '</b><small>' + V.esc(V.me.email) + '</small></div><a href="flowsettings.html"><i class="fa-solid fa-gear"></i><span>Settings</span></a><hr><a href="index.html" class="dd-out"><i class="fa-solid fa-right-from-bracket"></i><span>Log out</span></a></div></div></header>';
 
     // hide what the admin has not turned on; drop a heading that has nothing under it
     var nav = NAV.filter(function (m) { return m.length === 1 || V.can(m[4]); }).filter(function (m, i, a) { return m.length > 1 || (a[i + 1] && a[i + 1].length > 1); });
@@ -145,13 +164,13 @@ V.shell = function () {
         if (page === 'acct') { var mode = V.param('mode') || 'bycustomer'; on = (m[0] === 'aging' && mode === 'bycustomer') || (m[0] === 'invoices' && mode === 'issued') || (m[0] === 'payments' && mode === 'paid'); }
         if (page === 'jobdetail' && m[0] === 'jobs') on = true;
         if ((page === 'addjob' || page === 'import') && m[0] === 'jobs') on = true;
-        return '<a class="sb-link' + (on ? ' on" aria-current="page' : '') + '" href="' + m[1] + '"><i class="fa-solid ' + m[2] + '"></i>' + m[3] + '</a>';
+        var cnt = m[0] === 'messages' ? V.waitingMsgs() : 0;
+        return '<a class="sb-link' + (on ? ' on" aria-current="page' : '') + '" href="' + m[1] + '"><i class="fa-solid ' + m[2] + '"></i>' + m[3] + (cnt ? '<span class="sb-n" title="Waiting for an answer">' + cnt + '</span>' : '') + '</a>';
     }).join('') + '</nav><div class="sb-foot"><i class="fa-solid fa-lock"></i> Staff account. ' + (off.length ? 'Turned off for you: ' + V.esc(off.join(', ')) + '. ' : '') + 'Billing plans, cards, rates, users and settings are set by the admin.</div></aside><div class="sb-backdrop" id="sbBack"></div>';
 
     document.body.insertAdjacentHTML('afterbegin', hdr + sb);
     document.body.insertAdjacentHTML('beforeend', '<div class="ps-demo">Preview · sample data · <a href="../index.html">website</a></div>');
 
-    V.$('#myAcct').addEventListener('click', function (e) { e.preventDefault(); V.editPopup('My account', V.me, [['name', 'Name', 'text'], ['email', 'Email', 'text'], ['phone', 'Phone', 'text']], null, '<p class="muted small" style="margin:0">To change your password or role, ask the VIGN admin.</p>'); });
     // dropdowns
     V.$$('[data-dd]').forEach(function (b) {
         b.addEventListener('click', function (e) { e.stopPropagation(); var d = V.$('#' + b.dataset.dd), was = d.classList.contains('open'); V.$$('.dd').forEach(function (x) { x.classList.remove('open'); }); if (!was) d.classList.add('open'); });
@@ -188,9 +207,9 @@ V.card = function (title, right, body, flush) {
 /* ---------- table (SMK uses DataTables) ----------
    V.table(el, { cols:[{k,label,render,cls,sort,sortVal}], rows:fn, search:fn, select:true, onSelect:fn(ids), sortKey, sortDir, show, foot:fn, info:'records' }) */
 V.table = function (el, o) {
-    var st = { q: '', sort: o.sortKey || null, dir: o.sortDir || 1, page: 0, show: o.show || 25 };
+    var st = { q: '', sort: o.sortKey || null, dir: o.sortDir || 1, page: 0, show: +V.prefs.rows || o.show || 25 }; // the choice in Settings wins
     el.innerHTML = '<div class="toolbar"><div class="tb-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" placeholder="Search this list..." data-q></div>' + (o.toolbar || '') +
-        '<div class="tb-right">Show <select class="tb-select" data-show><option>10</option><option selected>25</option><option>100</option></select></div></div>' +
+        '<div class="tb-right">Show <select class="tb-select" data-show>' + [10, 25, 50, 100].map(function (n) { return '<option' + (n === st.show ? ' selected' : '') + '>' + n + '</option>'; }).join('') + '</select></div></div>' +
         '<div class="tbl-wrap"><table class="tbl cards"><thead><tr>' + (o.select ? '<th style="width:34px"><input type="checkbox" data-all aria-label="Select all"></th>' : '') +
         o.cols.map(function (c) { return '<th' + (c.sort !== false ? ' data-sort="' + c.k + '"' : '') + (c.cls ? ' class="' + c.cls + '"' : '') + '>' + c.label + '</th>'; }).join('') +
         '</tr></thead><tbody></tbody><tfoot></tfoot></table></div><div class="tbl-foot"><span data-info></span><div class="pager" data-pager></div></div>';
