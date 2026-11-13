@@ -105,7 +105,7 @@ function shell(page, title, back) {
     var top = '<div class="ps-preview">Inspector app preview with sample data. Nothing is saved. <a href="../index.html">Back to website</a></div>' +
         '<header class="ps-bar"><div class="ps-bar-in">' +
         (back ? '<a href="' + back + '" class="ps-back" aria-label="Back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i></a>'
-              : '<a href="index.html" class="ps-logo" aria-label="My jobs"><img src="../images/vign-logo.png" alt="VIGN USA"></a>') +
+              : '<a href="index.html" class="ps-logo" aria-label="My jobs"><img src="../images/vign-mark.png" alt="VignUSA.com"></a>') +
         '<div class="ps-title"><strong>' + esc(title) + '</strong><small>' + esc(ME.name) + ' · ' + ME.id + '</small></div>' +
         '<nav class="ps-topnav" aria-label="Inspector menu">' + tabs.map(function (t) {
             return '<a href="' + t[1] + '"' + (t[0] === page ? ' class="on" aria-current="page"' : '') + '>' + t[3] + '</a>';
