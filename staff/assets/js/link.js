@@ -76,6 +76,52 @@ V.checks = function (j) {
 // distance for US users: feet when close, miles when far (the data keeps meters)
 V.dist = function (m) { var ft = Math.round(m * 3.28084); return ft < 1000 ? ft + ' ft' : (m / 1609.34).toFixed(1) + ' miles'; };
 V.clean = function (j) { return V.checks(j).every(function (c) { return c[0]; }); };
+V.isUrgent = function (j) { return !!(j.answers && j.answers.indexOf('4') > -1); };
+
+/* Reports staff typed in on "Fill in the form by hand" are kept in this browser (preview),
+   so they show up in Review and on the job like any other report. */
+V.ENTERED = 'vign-staff-entered';
+V.loadEntered = function () { try { return JSON.parse(localStorage.getItem(V.ENTERED) || 'null') || {}; } catch (e) { return {}; } };
+V.keepEntered = function (j, fields) { var e = V.loadEntered(); e[j.id] = Object.assign(e[j.id] || {}, fields); try { localStorage.setItem(V.ENTERED, JSON.stringify(e)); return true; } catch (er) { return false; } };
+(function () { var e = V.loadEntered(); (V.jobs || []).forEach(function (j) { if (e[j.id]) Object.assign(j, e[j.id]); }); })();
+
+/* The visit answers (main system: weather, access, the form's own questions, footer).
+   A report entered in the preview has its own; the older sample reports get sample answers. */
+V.visitOf = function (j) {
+    if (j.visit) return j.visit;
+    if (!j.answers) return null;
+    var FM = window.VIGNFORMS, n = +String(j.id).replace(/\D/g, '') || 0, bad = j.answers.some(function (a) { return a === '3' || a === '4'; });
+    var v = { sample: true, weather: FM.WEATHER[n % 5], access: j.access || 'Exterior only', accessNote: '',
+        fu: bad ? 'Yes' : 'No', hazards: V.isUrgent(j) ? 'See the item(s) rated 4.' : '', limitations: j.access === 'Exterior only' ? 'Exterior only, as ordered.' : '' };
+    FM.fields(j.form, 'before').concat(FM.fields(j.form, 'after')).forEach(function (sec) {
+        sec.list.forEach(function (q) {
+            if (q[4]) return;   // optional questions left blank in the sample
+            if (q[2] === 'sel') v[q[0]] = q[3][q[0] === 'occupancy' && j.form === 'vacant' ? 1 : 0];
+            else if (q[2] === 'yn') v[q[0]] = 'Yes';
+        });
+    });
+    return v;
+};
+/* Photo labels like the main system (inspection_photos.photo_label): P-01, P-02 ... item photos first, then general ones */
+V.photoLabels = function (j) {
+    var n = 0, items = (j.photo || []).map(function (p) { return p ? 'P-' + ('0' + (++n)).slice(-2) : ''; }), all = [];
+    for (var i = 1; i <= Math.max(j.photos || 0, n); i++) all.push('P-' + ('0' + i).slice(-2));
+    return { items: items, all: all };
+};
+/* the Visit box: same on Review and the job page */
+V.visitHtml = function (j) {
+    var v = V.visitOf(j), FM = window.VIGNFORMS, e = V.esc; if (!v) return '';
+    var rows = [['Weather', v.weather], ['How the inspector got in', v.access + (v.accessNote ? ' · ' + v.accessNote : '')]];
+    FM.fields(j.form, 'before').concat(FM.fields(j.form, 'after')).forEach(function (sec) {
+        if (sec.ticks) { var t = sec.list.filter(function (q) { return v[q[0]] && v[q[0]] !== 'No'; }).map(function (q) { return q[2] === 'yn' ? q[1] : 'Other: ' + v[q[0]]; }); rows.push([sec.name, t.length ? t.join(', ') : 'None']); return; }
+        sec.list.forEach(function (q) { if (v[q[0]]) rows.push([q[1], v[q[0]]]); });
+    });
+    rows.push(['Follow-up recommended', v.fu || '–']);
+    if (v.hazards) rows.push(['Immediate hazards', v.hazards]);
+    if (v.limitations) rows.push(['Notes / limitations', v.limitations]);
+    return '<dl class="dl visit-dl">' + rows.map(function (r) { return '<dt>' + e(r[0]) + '</dt><dd>' + e(r[1]) + '</dd>'; }).join('') + '</dl>' +
+        (j.byStaff ? '<p class="muted small" style="margin:8px 0 0"><i class="fa-solid fa-pen-to-square"></i> Entered by staff · ' + e(j.byStaff) + '</p>' : v.sample ? '<p class="muted small" style="margin:8px 0 0"><span class="samp">sample</span> answers for this preview report</p>' : '');
+};
 
 /* ---------- R-14 what this staff account may see (set by an admin in Admin Menu > Admins & Staff) ----------
    Preview: read from the preview database in this browser; the sample default for Jenny Park is

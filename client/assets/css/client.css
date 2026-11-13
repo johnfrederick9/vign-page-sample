@@ -195,3 +195,10 @@ button.req-name[aria-expanded="true"] .caret { transform: rotate(180deg); }
 .attn { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }   /* 3 cards fill the row (Messages hidden) */
 .fld .fld-l { display: block; }
 .fld .fld-l .muted { display: inline; font-weight: 400; }
+
+/* ---------- Report: Urgent banner + Visit details (2026-11-13) ---------- */
+.rep-urg { display: flex; gap: 10px; align-items: flex-start; margin: 16px 0 0; padding: 12px 16px; border-radius: 12px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .9rem; }
+.rep-urg i { margin-top: 3px; }
+.rep-visit h4 { margin: 0 0 10px; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.rep-visit h4 .samp { text-transform: none; letter-spacing: 0; }
+.rep-visit .dl dd { word-break: break-word; }

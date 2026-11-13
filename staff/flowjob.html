@@ -52,12 +52,15 @@ VS.init = function () {
         L += V.card('Visits', j.visits + ' visit(s)', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Date</th><th>By</th><th>Result</th><th>GPS</th></tr></thead><tbody>' + visits + '</tbody></table></div>', true);
 
         if (j.answers) {
+            if (V.isUrgent(j)) L += '<p class="rv-urg"><i class="fa-solid fa-triangle-exclamation"></i> <span><b>Urgent report:</b> ' + form[1].filter(function (it, i) { return j.answers[i] === '4'; }).map(function (it) { return V.esc(it); }).join(' · ') + ' rated 4.</span></p>';
+            L += V.card('Visit', '', V.visitHtml(j));
+            var PL = V.photoLabels(j);
             L += V.card('Report', 'Score <span class="samp">sample formula</span> ' + V.scorePill(j), '<ul class="items">' + form[1].map(function (it, i) {
                 var a = j.answers[i], r = V.ratings[a];
                 return '<li><span class="rate ' + r[1] + '" style="display:grid;place-items:center;border-radius:6px">' + (a === 'NO' || a === 'NA' ? r[0] : a) + '</span><span>' + V.esc(it) + (j.findings[i] ? '<small>' + V.esc(j.findings[i]) + '</small>' : '') + '</span>' +
-                    (j.photo[i] ? '<span class="cam"><i class="fa-solid fa-camera"></i> photo</span>' : (a === '3' || a === '4') ? '<span class="cam miss"><i class="fa-solid fa-camera"></i> missing</span>' : '') + '</li>';
+                    (j.photo[i] ? '<span class="cam"><i class="fa-solid fa-camera"></i> ' + PL.items[i] + '</span>' : (a === '3' || a === '4') ? '<span class="cam miss"><i class="fa-solid fa-camera"></i> missing</span>' : '') + '</li>';
             }).join('') + '</ul>');
-            L += V.card('Photos', j.photos + ' photos', '<div class="photos">' + Array.apply(null, Array(Math.min(j.photos, 8))).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>IMG_' + (2201 + i) + '</small></div>'; }).join('') + '</div>');
+            L += V.card('Photos', j.photos + ' photos', '<div class="photos">' + PL.all.slice(0, 8).map(function (p) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>' + p + '</small></div>'; }).join('') + '</div>');
         }
 
         var iv = j.inv && V.inv(j.inv), inv = iv ? '<tr><td>' + iv.id + '<small class="muted" style="display:block">' + V.esc(iv.period) + '</small></td><td>' + V.day(iv.billed) + '</td><td class="r">' + V.money(iv.amount) + '<small class="muted" style="display:block">this job ' + V.money(j.price) + '</small></td><td class="r">' + V.money(V.invBal(iv)) + '</td></tr>' : '<tr><td colspan="4" class="empty">Not invoiced yet · price ' + V.money(j.price) + '</td></tr>';

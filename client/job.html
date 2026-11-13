@@ -47,12 +47,15 @@ VC.init = function () {
         html += '<div class="grid2"><div>';
         // report (locked until VIGN checks it)
         if (j.status === 'ready') {
-            var items = V.forms[j.form][1], sc = V.score(j);
+            var items = V.forms[j.form][1], sc = V.score(j), vr = V.visitRows(j), vs = V.visitOf(j) || {};
+            if (V.isUrgent(j)) html += '<p class="rep-urg"><i class="fa-solid fa-triangle-exclamation"></i> <span><b>Urgent:</b> ' + items.filter(function (it, i) { return j.answers[i] === '4'; }).map(function (it) { return V.esc(it); }).join(' · ') + ' rated 4 (urgent safety item). VIGN called you the same day.</span></p>';
             html += '<div id="report">' + V.card('<i class="fa-solid fa-file-circle-check"></i> Report: ' + V.esc(V.forms[j.form][0]), 'Checked by VIGN ' + V.day(j.reviewed),
                 '<div class="card2-b" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)"><span class="score rate ' + V.scoreCls(sc) + '" style="font-size:1.5rem;padding:8px 16px">' + sc + '</span><span class="small">Score out of 100 <span class="samp">sample formula</span><br><span class="muted">1 Good = 100 · 2 Minor = 67 · 3 Repair = 33 · 4 Urgent = 0 · N/O and N/A not counted</span></span>' +
                 '<span class="small muted" style="margin-left:auto">' + j.photos + ' photos · taken ' + j.miles + ' miles from the address</span></div>' +
+                '<div class="card2-b rep-visit" style="border-bottom:1px solid var(--line)"><h4>Visit details' + (vs.sample ? ' <span class="samp">sample</span>' : '') + '</h4><dl class="dl">' + vr.map(function (r) { return '<dt>' + V.esc(r[0]) + '</dt><dd>' + V.esc(r[1]) + '</dd>'; }).join('') + '</dl></div>' +
+                '<div class="card2-b rep-visit" style="padding-bottom:0"><h4>' + V.esc(window.VIGNFORMS.ratingSection(j.form)) + '</h4></div>' +
                 '<ul class="checklist">' + items.map(function (it, i) { var r = V.ratings[j.answers[i]]; return '<li><span class="rate ' + r[1] + '">' + r[0] + '</span><span>' + (i + 1) + '. ' + V.esc(it) + (j.findings[i] ? '<small>' + V.esc(j.findings[i]) + '</small>' : '') + '</span></li>'; }).join('') + '</ul>', true) + '</div>';
-            html += V.card('<i class="fa-regular fa-images"></i> Photos (' + j.photos + ')', '<a href="#" data-a="zip">Download all</a>', '<div class="photos">' + Array.apply(null, Array(j.photos)).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>IMG_' + (4100 + i) + '</small></div>'; }).join('') + '</div>');
+            html += V.card('<i class="fa-regular fa-images"></i> Photos (' + j.photos + ')', '<a href="#" data-a="zip">Download all</a>', '<div class="photos">' + Array.apply(null, Array(j.photos)).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>' + V.photoLabel(i) + '</small></div>'; }).join('') + '</div>');
         } else if (j.status !== 'cancelled') {
             html += V.card('<i class="fa-solid fa-file-circle-check"></i> Report', '', '<div class="locked1"><i class="fa-solid fa-hourglass-half"></i>' + (j.status === 'checking' ? 'The inspector sent the report. VIGN checks every report before you see it, so it shows here when it is ready.' : 'The report shows here after the visit, once VIGN has checked it.') + '</div>');
         }
@@ -78,7 +81,7 @@ VC.init = function () {
     V.$('#app').addEventListener('click', function (e) {
         var b = e.target.closest('[data-a]'); if (!b) return; e.preventDefault();
         var a = b.dataset.a;
-        if (a === 'pdf') V.download(j.id + ' report (sample).txt', 'VIGN USA report (preview sample)\n\n' + j.id + ' · ' + j.addr + ', ' + j.city + '\nScore (sample formula): ' + V.score(j) + '\n\n' + V.forms[j.form][1].map(function (it, i) { return (i + 1) + '. ' + it + ': ' + V.ratings[j.answers[i]][0]; }).join('\n'));
+        if (a === 'pdf') V.download(j.id + ' report (sample).txt', 'VIGN USA report (preview sample)\n\n' + j.id + ' · ' + j.addr + ', ' + j.city + '\nScore (sample formula): ' + V.score(j) + (V.isUrgent(j) ? '\nURGENT: an item is rated 4' : '') + '\n\nVisit\n' + V.visitRows(j).map(function (r) { return r[0] + ': ' + r[1]; }).join('\n') + '\n\n' + V.forms[j.form][1].map(function (it, i) { return (i + 1) + '. ' + it + ': ' + V.ratings[j.answers[i]][0]; }).join('\n'));
         if (a === 'zip') V.toast('All ' + j.photos + ' photos would download as one file (preview only).');
         if (a === 'send') {
             var t = V.$('#msg').value.trim(); if (!t) { V.toast('Write a message first.'); return; }

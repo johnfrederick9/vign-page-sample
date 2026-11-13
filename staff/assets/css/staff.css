@@ -381,3 +381,12 @@ body.st .ps-demo { right: auto; left: 14px; }
 @media (max-width: 700px) { .ffx { grid-template-columns: 1fr; } }
 .fld-l { display: block; }
 .fld-l .muted { display: inline; font-weight: 400; }
+
+/* ---------- Review: urgent first, Visit box, photo labels (2026-11-13) ---------- */
+.pill.urg { background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; font-weight: 700; }
+.pill.urg i { margin-right: 3px; }
+.rv-item.urg { border-left: 3px solid #dc2626; }
+.rv-urg { display: flex; gap: 10px; align-items: flex-start; margin: 0 0 14px; padding: 11px 14px; border-radius: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; font-size: .88rem; }
+.rv-urg i { margin-top: 3px; }
+.visit-dl dd { word-break: break-word; }
+.items .cam { white-space: nowrap; font-size: .76rem; }

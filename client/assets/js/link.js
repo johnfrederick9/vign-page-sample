@@ -99,6 +99,33 @@ V.shell = function () {
     q.addEventListener('keydown', function (e) { if (e.key === 'Enter' && q.value.trim()) location.href = 'jobs.html?q=' + encodeURIComponent(q.value.trim()); });
 };
 
+/* ---------- the report's visit details (same fields as the main system and the Staff Office Review) ---------- */
+V.isUrgent = function (j) { return !!(j.answers && j.answers.indexOf('4') > -1); };
+V.visitOf = function (j) {
+    if (j.visit) return j.visit;
+    if (!j.answers) return null;
+    var FM = window.VIGNFORMS, n = +String(j.id).replace(/\D/g, '') || 0, bad = j.answers.some(function (a) { return a === '3' || a === '4'; });
+    var v = { sample: true, weather: FM.WEATHER[n % 5], access: j.access || 'Exterior only', accessNote: '', fu: bad ? 'Yes' : 'No',
+        hazards: V.isUrgent(j) ? 'See the item(s) rated 4.' : '', limitations: j.access === 'Exterior only' ? 'Exterior only, as ordered.' : '' };
+    FM.fields(j.form, 'before').concat(FM.fields(j.form, 'after')).forEach(function (sec) {
+        sec.list.forEach(function (q) { if (q[4]) return; if (q[2] === 'sel') v[q[0]] = q[3][q[0] === 'occupancy' && j.form === 'vacant' ? 1 : 0]; else if (q[2] === 'yn') v[q[0]] = 'Yes'; });
+    });
+    return v;
+};
+V.visitRows = function (j) {
+    var v = V.visitOf(j), FM = window.VIGNFORMS; if (!v) return [];
+    var rows = [['Weather', v.weather], ['How the inspector got in', v.access + (v.accessNote ? ' · ' + v.accessNote : '')]];
+    FM.fields(j.form, 'before').concat(FM.fields(j.form, 'after')).forEach(function (sec) {
+        if (sec.ticks) { var t = sec.list.filter(function (q) { return v[q[0]] && v[q[0]] !== 'No'; }).map(function (q) { return q[2] === 'yn' ? q[1] : 'Other: ' + v[q[0]]; }); rows.push([sec.name, t.length ? t.join(', ') : 'None']); return; }
+        sec.list.forEach(function (q) { if (v[q[0]]) rows.push([q[1], v[q[0]]]); });
+    });
+    rows.push(['Follow-up recommended', v.fu || '–']);
+    if (v.hazards) rows.push(['Immediate hazards', v.hazards]);
+    if (v.limitations) rows.push(['Notes / limitations', v.limitations]);
+    return rows;
+};
+V.photoLabel = function (i) { return 'P-' + ('0' + (i + 1)).slice(-2); };   // main system photo_label
+
 V.band = function (icon, title, sub, actions) {
     return '<div class="band"><div><h1><i class="fa-solid ' + icon + '"></i>' + title + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (actions ? '<div class="band-actions">' + actions + '</div>' : '') + '</div>';
 };

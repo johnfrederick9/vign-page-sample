@@ -23,7 +23,7 @@
 var VS = window.VS = window.VS || {};
 VS.init = function () {
     var V = VS, tab = 'look', curId = V.param('job');
-    function list() { return V.jobs.filter(function (j) { return j.status === 'submitted' && (tab === 'look' ? !V.clean(j) : V.clean(j)); }); }
+    function list() { return V.jobs.filter(function (j) { return j.status === 'submitted' && (tab === 'look' ? !V.clean(j) : V.clean(j)); }).sort(function (a, b) { return (V.isUrgent(b) ? 1 : 0) - (V.isUrgent(a) ? 1 : 0); }); }   // urgent reports first
     function all() { return V.jobs.filter(function (j) { return j.status === 'submitted'; }); }
     if (curId && V.job(curId) && V.clean(V.job(curId))) tab = 'clean';
 
@@ -39,8 +39,8 @@ VS.init = function () {
         var j = V.job(curId), c = V.client(j.client), ins = V.ins(j.ins), form = V.forms[j.form], ch = V.checks(j);
         var left = '<div class="card2 rv-list">' + L.map(function (x) {
             var bad = V.checks(x).filter(function (k) { return !k[0]; });
-            return '<button class="rv-item' + (x.id === curId ? ' on' : '') + '" data-id="' + x.id + '"><b>' + x.id + '</b> · ' + V.esc(x.addr) + '<small>' + V.esc(V.client(x.client).name) + ' · ' + V.esc((V.ins(x.ins) || {}).name || '') + ' · sent ' + V.day(x.sent) + '</small>' +
-                '<span class="flags">' + V.scorePill(x) + (bad.length ? bad.map(function (k) { return V.pill(k[1].split('(')[0].replace(' from the address', ' away'), 'due-late'); }).join('') : V.pill('All checks passed', 'st-approved')) + '</span></button>';
+            return '<button class="rv-item' + (x.id === curId ? ' on' : '') + (V.isUrgent(x) ? ' urg' : '') + '" data-id="' + x.id + '"><b>' + x.id + '</b> · ' + V.esc(x.addr) + '<small>' + V.esc(V.client(x.client).name) + ' · ' + V.esc((V.ins(x.ins) || {}).name || '') + ' · sent ' + V.day(x.sent) + '</small>' +
+                '<span class="flags">' + (V.isUrgent(x) ? '<span class="pill urg"><i class="fa-solid fa-triangle-exclamation"></i> Urgent</span>' : '') + (x.byStaff ? V.pill('Entered by staff', 'st-new') : '') + V.scorePill(x) + (bad.length ? bad.map(function (k) { return V.pill(k[1].split('(')[0].replace(' from the address', ' away'), 'due-late'); }).join('') : V.pill('All checks passed', 'st-approved')) + '</span></button>';
         }).join('') + '</div>';
 
         // fake map: address pin centred, photo pin offset by GPS distance
@@ -49,26 +49,28 @@ VS.init = function () {
             '<span class="lbl"><i class="fa-solid fa-location-dot" style="color:var(--navy)"></i> address · <i class="fa-solid fa-camera" style="color:var(--red)"></i> photos · ' + V.dist(j.gps) + ' apart</span></div>';
 
         var right = '<div class="card2"><div class="card2-h"><h3>' + j.id + ' · ' + V.esc(form[0]) + '</h3><span class="muted">Score <span class="samp">sample formula</span> ' + V.scorePill(j) + '</span></div><div class="card2-b">' +
+            (V.isUrgent(j) ? '<p class="rv-urg"><i class="fa-solid fa-triangle-exclamation"></i> <span><b>Urgent report.</b> ' + form[1].filter(function (it, i) { return j.answers[i] === '4'; }).map(function (it) { return V.esc(it); }).join(' · ') + ' rated 4. Check it first and tell the client today.</span></p>' : '') +
             '<dl class="dl"><dt>Address</dt><dd>' + V.esc(j.addr) + ', ' + V.esc(j.city) + '</dd><dt>Client</dt><dd>' + V.esc(c.name) + ' · ' + V.esc(j.ref) + '</dd><dt>Inspector</dt><dd>' + V.esc(ins ? ins.name : '') + '</dd><dt>Due / sent</dt><dd>' + V.day(j.due) + ' / ' + V.day(j.sent) + '</dd></dl>' +
+            '<h4 style="margin:18px 0 8px">Visit</h4>' + V.visitHtml(j) +
             '<h4 style="margin:18px 0 8px">Checks</h4><ul class="checks">' + ch.map(function (k) { return '<li class="' + (k[0] ? 'ok' : 'bad') + '"><i class="fa-solid ' + (k[0] ? 'fa-circle-check' : 'fa-circle-xmark') + '"></i>' + V.esc(k[1]) + '</li>'; }).join('') + '</ul>' +
             '<h4 style="margin:18px 0 8px">Where the photos were taken</h4>' + map +
-            '<h4 style="margin:18px 0 8px">Photos (' + j.photos + ')</h4><div class="photos">' + Array.apply(null, Array(Math.min(j.photos, 6))).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>IMG_' + (3101 + i) + '</small></div>'; }).join('') + '</div>' +
+            '<h4 style="margin:18px 0 8px">Photos (' + j.photos + ')</h4><div class="photos">' + V.photoLabels(j).all.slice(0, 8).map(function (p) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>' + p + '</small></div>'; }).join('') + '</div>' +
             '<h4 style="margin:18px 0 8px">The report, as the client will see it</h4><ul class="items">' + form[1].map(function (it, i) {
-                var a = j.answers[i], r = V.ratings[a];
+                var a = j.answers[i], r = V.ratings[a], pl = V.photoLabels(j).items[i];
                 return '<li><span class="rate ' + r[1] + '" style="display:grid;place-items:center;border-radius:6px">' + (a === 'NO' || a === 'NA' ? r[0] : a) + '</span><span>' + V.esc(it) + (j.findings[i] ? '<small>' + V.esc(j.findings[i]) + '</small>' : '') + '</span>' +
-                    (j.photo[i] ? '<span class="cam"><i class="fa-solid fa-camera"></i></span>' : (a === '3' || a === '4') ? '<span class="cam miss"><i class="fa-solid fa-camera"></i> missing</span>' : '') + '</li>';
+                    (j.photo[i] ? '<span class="cam"><i class="fa-solid fa-camera"></i> ' + pl + '</span>' : (a === '3' || a === '4') ? '<span class="cam miss"><i class="fa-solid fa-camera"></i> missing</span>' : '') + '</li>';
             }).join('') + '</ul></div>' +
             '<div class="rv-actions"><button class="btn btn-green btn-sm" data-act="approve"><i class="fa-solid fa-check"></i> Approve &amp; deliver</button><button class="btn btn-ghost btn-sm" data-act="back" style="color:var(--r)"><i class="fa-solid fa-rotate-left"></i> Send back</button><button class="btn btn-ghost btn-sm" data-act="skip">Skip</button>' +
             '<a class="btn btn-ghost btn-sm" href="flowjob.html?job=' + j.id + '">Open job</a><span class="keys"><b>A</b> approve · <b>R</b> send back · <b>J</b>/<b>K</b> next / previous</span></div></div>';
         V.$('#app').innerHTML = html + '<div class="rv">' + left + '<div>' + right + '</div></div>';
     }
     function move(d) { var L = list(), i = L.map(function (x) { return x.id; }).indexOf(curId); if (L[i + d]) { curId = L[i + d].id; draw(); } }
-    function approve() { var j = V.job(curId); move(1); j.status = 'approved'; j.reviewed = 0; draw(); V.toast(j.id + ' approved and delivered to ' + V.client(j.client).name + ' (preview only).'); }
+    function approve() { var j = V.job(curId); move(1); j.status = 'approved'; j.reviewed = 0; if (j.byStaff) V.keepEntered(j, { status: 'approved', reviewed: 0 }); draw(); V.toast(j.id + ' approved and delivered to ' + V.client(j.client).name + ' (preview only).'); }
     function sendBack() {
         var j = V.job(curId), bad = V.checks(j).filter(function (k) { return !k[0]; }).map(function (k) { return k[1]; });
         V.modal('Send ' + j.id + ' back to the inspector', '<label class="fld" style="margin:0">Reason (goes in Job activity and to the inspector)<select id="rs"><option>Photo missing on an item rated 3 or 4</option><option>Photos not at the service address</option><option>Wrong job / wrong property</option><option>Answers need more detail</option><option>Other (type below)</option></select></label>' +
             '<label class="fld">Note to the inspector<textarea id="rn">' + V.esc(bad.join('. ')) + '</textarea></label>', '<button class="btn btn-primary btn-sm" data-ok>Send back</button>', function (m, close) {
-                V.$('[data-ok]', m).addEventListener('click', function () { move(1); j.status = 'returned'; j.returnNote = V.$('#rs', m).value + '. ' + V.$('#rn', m).value; close(); draw(); V.toast(j.id + ' sent back to ' + V.ins(j.ins).name + ' (preview only).'); });
+                V.$('[data-ok]', m).addEventListener('click', function () { move(1); j.status = 'returned'; j.returnNote = V.$('#rs', m).value + '. ' + V.$('#rn', m).value; if (j.byStaff) V.keepEntered(j, { status: 'returned', returnNote: j.returnNote }); close(); draw(); V.toast(j.id + ' sent back to ' + V.ins(j.ins).name + ' (preview only).'); });
             });
     }
     draw();
