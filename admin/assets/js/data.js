@@ -112,16 +112,17 @@ VA.sections = [
       ] },
 
     { key: 'affiliates', title: 'Affiliates & Codes', icon: 'fa-handshake', color: 'orange',
-      desc: 'Outside people (like podcasters) and sales staff who bring in clients. Each one has a CODE. A new client types the code on the Request Inspection form, or the admin adds it to the client. When that client pays, the affiliate earns a one-time payment or a % of each payment. Rates, months and "paid after the client pays" are SAMPLE guesses: Don to confirm (R-17).',
+      desc: 'Outside people (like podcasters) and sales staff who bring in clients. Each one has a CODE. A new client types the code on the Request Inspection form, or the admin adds it to the client. When that client pays, the affiliate earns a one-time payment or a % of each payment. Each code has a Start date and an End date (empty = no end): a client who pays outside those dates earns the affiliate nothing. Rates, months and "paid after the client pays" are SAMPLE guesses: Don to confirm (R-17).',
       add: 'Add Affiliate', toggle: true,
-      cols: [['name', 'Affiliate'], ['type', 'Type'], ['code', 'Code'], ['rule', 'Earns'], ['nClients', 'Clients', 'r'], ['earned', 'Earned', 'money'], ['owed', 'Owed Now', 'money'], ['w9', 'W-9 On File', 'yesno'], ['active', 'Active', 'yesno']],
+      cols: [['name', 'Affiliate'], ['type', 'Type'], ['code', 'Code'], ['start', 'Start Date', 'date'], ['end', 'End Date'], ['rule', 'Earns'], ['nClients', 'Clients', 'r'], ['earned', 'Earned', 'money'], ['owed', 'Owed Now', 'money'], ['w9', 'W-9 On File', 'yesno'], ['active', 'Active', 'yesno']],
       fields: [['name', 'Full name', 'text'], ['email', 'Email', 'text'], ['type', 'Type', 'select', ['Podcaster', 'Sales staff', 'Other']], ['show', 'Podcast / company (optional)', 'text'], ['code', 'Code (letters and numbers, like PODCASTJOE)', 'text'],
+               ['start', 'Start date (the code works from this day)', 'date'], ['end', 'End date (leave empty = no end)', 'date', 'blank'],
                ['earn', 'How they earn', 'select', ['Recurring % of each payment', 'One-time payment']], ['pct', 'Recurring: % of each client payment', 'number'], ['months', 'Recurring: for how many months (0 = no end)', 'number'], ['amount', 'One-time: amount ($) after the first payment', 'number'],
                ['w9', 'W-9 on file (needed before paying)', 'select', ['No', 'Yes']], ['active', 'Active', 'select', ['Yes', 'No']]],
       rows: [
-        { id: 'A-1', name: 'Joe Rivera', email: 'joe@mainstreetmoney.example', type: 'Podcaster', show: 'Main Street Money (podcast)', code: 'PODCASTJOE', earn: 'Recurring % of each payment', pct: 10, months: 12, amount: 0, w9: 'Yes', active: 'Yes' },
-        { id: 'A-2', name: 'Tina Marsh', email: 'tina@fieldnotes.example', type: 'Podcaster', show: 'Field Notes Show (podcast)', code: 'FIELDNOTES', earn: 'One-time payment', pct: 0, months: 0, amount: 150, w9: 'No', active: 'Yes' },
-        { id: 'A-3', name: 'Carla Diaz', email: 'carla@vign.example', type: 'Sales staff', show: 'VIGN sales', code: 'CARLA25', earn: 'Recurring % of each payment', pct: 5, months: 12, amount: 0, w9: 'Yes', active: 'Yes' }
+        { id: 'A-1', name: 'Joe Rivera', email: 'joe@mainstreetmoney.example', type: 'Podcaster', show: 'Main Street Money (podcast)', code: 'PODCASTJOE', start: -120, end: null, earn: 'Recurring % of each payment', pct: 10, months: 12, amount: 0, w9: 'Yes', active: 'Yes' },
+        { id: 'A-2', name: 'Tina Marsh', email: 'tina@fieldnotes.example', type: 'Podcaster', show: 'Field Notes Show (podcast)', code: 'FIELDNOTES', start: -30, end: 60, earn: 'One-time payment', pct: 0, months: 0, amount: 150, w9: 'No', active: 'Yes' },
+        { id: 'A-3', name: 'Carla Diaz', email: 'carla@vign.example', type: 'Sales staff', show: 'VIGN sales', code: 'CARLA25', start: -200, end: 165, earn: 'Recurring % of each payment', pct: 5, months: 12, amount: 0, w9: 'Yes', active: 'Yes' }
       ] },
 
     { key: 'commissions', title: 'Affiliate Commissions', icon: 'fa-hand-holding-dollar', color: 'green',

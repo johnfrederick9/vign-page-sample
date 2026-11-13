@@ -8,7 +8,7 @@
 (function (w) {
     var KEY = 'vign-db', VERSION = 1;
     // the tables the preview saves, and which fields are "days from today" (shifted when a new day starts)
-    var TABLES = { requests: ['date', 'wanted'], signups: ['date'], jobs: ['acc', 'due'], inspectors: [], finished: ['sent'], clients: ['pilotEnds', 'refSince'], users: ['last'], affiliates: [], commissions: ['payday'] };
+    var TABLES = { requests: ['date', 'wanted'], signups: ['date'], jobs: ['acc', 'due'], inspectors: [], finished: ['sent'], clients: ['pilotEnds', 'refSince'], users: ['last'], affiliates: ['start', 'end'], commissions: ['payday'] };
     var NAMES = { requests: 'New Inspection Requests', signups: 'Join requests (new inspectors)', jobs: 'Jobs', inspectors: 'Inspectors List', finished: 'Finished inspections', clients: 'Clients & rates', users: 'Admins & staff (permissions)', affiliates: 'Affiliates & codes', commissions: 'Affiliate commissions' };
     var DAY = 864e5;
     function today() { var d = new Date(); d.setHours(12, 0, 0, 0); return d; }

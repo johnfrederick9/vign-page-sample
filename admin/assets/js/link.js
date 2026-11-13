@@ -111,11 +111,13 @@ function prep(s) {
 /* ---------- R-17 affiliates: codes + commissions ---------- */
 V.cleanCode = function (c) { return String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, ''); };
 V.sameCode = function (a, b) { return !!a && V.cleanCode(a) === V.cleanCode(b); };
+// the code works only between its Start and End date (end empty = no end)
+V.affOn = function (a, day) { day = day || 0; return (a.start == null || day >= a.start) && (a.end == null || day <= a.end); };
 V.aff = function (code) { return code ? V.sec('affiliates').rows.filter(function (a) { return !a._del && V.sameCode(a.code, code); })[0] : null; };
 // a new invoice for a referred client makes its commission line by itself
 V.makeCommission = function (inv) {
     var c = V.sec('clients').rows.filter(function (x) { return x.name === inv.client; })[0], a = c && V.aff(c.refCode);
-    if (!a || a.active !== 'Yes') return null;
+    if (!a || a.active !== 'Yes' || !V.affOn(a, 0)) return null;   // outside the Start / End dates: no commission
     var cm = V.sec('commissions'), mine = cm.rows.filter(function (x) { return x.affiliate === a.name && x.client === c.name; });
     var line = { id: 'CM-' + (108 + cm.rows.length), affiliate: a.name, client: c.name, invoice: inv.id, base: inv.amount || 0, status: 'Waiting for client payment' };
     if (a.earn === 'One-time payment') { if (mine.length) return null; line.amount = +a.amount || 0; line.rule = 'One time, first payment'; }
@@ -434,6 +436,7 @@ function cell(s, c, r) {
         return '<a href="#" class="lnk" data-open="' + r._i + '" title="' + (LINKACT[s.key] ? 'Open' : 'Edit') + '">' + inner + '</a>';
     }
     if (s.key === 'clients' && c[0] === 'bal') return balBox(r.name, owed(r.name));
+    if (s.key === 'affiliates' && c[0] === 'end') return v == null ? '<span class="muted">No end</span>' : V.day(v) + (v < 0 ? ' <span class="pill1 red" style="color:#b91c1c;font-weight:700">Ended</span>' : '');
     if (s.key === 'affiliates' && c[0] === 'code') return '<span class="code1">' + V.esc(v) + '</span>';
     if ((s.key === 'clients' && c[0] === 'ref') || (s.key === 'requests' && c[0] === 'ref')) { var code = s.key === 'clients' ? r.refCode : r.ref, af = V.aff(code); if (!code) return '<span class="muted small">—</span>'; return af ? '<b>' + V.esc(af.name) + '</b><small><span class="code1">' + V.esc(V.cleanCode(code)) + '</span></small>' : '<span class="code1">' + V.esc(code) + '</span><small class="late">unknown code</small>'; }
     if (s.key === 'commissions' && c[0] === 'status' && v === 'Waiting for client payment') return V.pill('Waiting') + '<small>for the client to pay</small>';
@@ -604,7 +607,7 @@ function build(s, el) {
                 if (f[2] === 'select') return '<label' + wide + '>' + f[1] + '<select name="' + f[0] + '">' + f[3].map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + V.esc(o) + '</option>'; }).join('') + '</select></label>';
                 if (f[2] === 'textarea') return '<label class="wide">' + f[1] + '<textarea name="' + f[0] + '">' + V.esc(v) + '</textarea></label>';
                 if (f[2] === 'file') return '<label class="wide">' + f[1] + '<input type="file" name="' + f[0] + '" accept=".pdf,.doc,.docx">' + (r.name ? '<small class="muted">Now: ' + V.esc(r.name) + '</small>' : '') + '</label>';
-                if (f[2] === 'date') { var d = v === '' ? V.date(0) : V.date(v); return '<label' + wide + '>' + f[1] + '<input type="date" name="' + f[0] + '" value="' + d.toISOString().slice(0, 10) + '"></label>'; }
+                if (f[2] === 'date') { if (f[3] === 'blank' && (v == null || v === '')) return '<label' + wide + '>' + f[1] + '<input type="date" name="' + f[0] + '" value=""></label>'; var d = v === '' || v == null ? V.date(0) : V.date(v); return '<label' + wide + '>' + f[1] + '<input type="date" name="' + f[0] + '" value="' + d.toISOString().slice(0, 10) + '"></label>'; }
                 return '<label' + wide + '>' + f[1] + '<input type="' + (f[2] === 'number' ? 'number' : 'text') + '" name="' + f[0] + '" value="' + V.esc(v) + '"></label>';
             }).join('') + (s.key === 'clients' ? '<p class="wide note1"><i class="fa-solid fa-credit-card"></i> The card is charged automatically <b>only when the agreement is signed</b>. Only the last 4 digits are ever shown.</p>' : '') +
             (s.key === 'documents' ? '<p class="wide note1"><i class="fa-solid fa-lock"></i> Clients and inspectors only see their own files. 1099s are private: admin + that inspector only.</p>' : '') +
@@ -638,7 +641,7 @@ function build(s, el) {
                 if (f[2] === 'select' && isYN(f[3])) v = v ? 'Yes' : 'No'; // switch: ticked = Yes
                 if (f[2] === 'file') { if (v && v.name) target.name = v.name; else if (!target.name) target.name = 'New document.pdf'; return; }
                 if (f[2] === 'number') v = +v || 0;
-                if (f[2] === 'date') { var d = new Date(v + 'T12:00:00'); v = Math.round((d - V.date(0)) / 864e5); }
+                if (f[2] === 'date') { if (!v) v = f[3] === 'blank' ? null : 0; else { var d = new Date(v + 'T12:00:00'); v = Math.round((d - V.date(0)) / 864e5); } }
                 target[f[0]] = v;
             });
             if (s.key === 'clients' && target.auto === 'Yes' && target.agree !== 'Yes') { target.auto = 'No'; msg = ' Auto-charge stays OFF until the agreement is signed.'; }
@@ -647,7 +650,9 @@ function build(s, el) {
                 target.code = V.cleanCode(target.code);
                 if (!String(target.name || '').trim() || !target.code) { V.toast('Type a name and a code (letters and numbers).'); return; }
                 if (s.rows.some(function (a) { return a !== row && !a._del && V.sameCode(a.code, target.code); })) { V.toast('The code ' + target.code + ' is already used. Pick another one.'); return; }
+                if (target.start != null && target.end != null && target.end < target.start) { V.toast('The End date is before the Start date. Fix the dates.'); return; }
                 if (!row) { target.id = 'A-' + (s.rows.length + 1); msg = ' Code ' + target.code + ' is ready to share.'; }
+                if (!V.affOn(target, 0)) msg += ' Note: the code does not work today (outside its dates).';
             }
             if (s.key === 'clients' && target.refCode) { target.refCode = V.cleanCode(target.refCode); if (!V.aff(target.refCode)) msg = ' Note: no affiliate has the code ' + target.refCode + '.'; else msg = ' Referred by ' + V.aff(target.refCode).name + '.'; }
             if (s.key === 'users') {
