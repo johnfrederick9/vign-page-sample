@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Open Jobs | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="openjobs">
+<main class="content" id="app"></main>
+<script>
+var VIGN = window.VIGN = window.VIGN || {};
+// SMK ps/openjobsdetail.php: Open Jobs table (JobNum, Client, Address, Due Date, Go to job)
+VIGN.init = function () {
+    var V = VIGN, f = V.param('f') || 'all';
+    document.getElementById('app').innerHTML = V.band('fa-briefcase', 'Open Jobs', 'Jobs assigned to you that are not sent in yet.',
+        '<a class="bbtn" href="dueinsdaysdetail.html"><i class="fa-solid fa-calendar-day"></i> Due in 5 Days</a>') +
+        '<div class="card2" style="margin-top:18px" id="t"></div>';
+    var sel = '<select class="tb-select" id="flt"><option value="all">All open</option><option value="today">Due today</option><option value="late">Overdue</option><option value="property">Property / loan / collateral</option><option value="shop">Mystery shopping</option></select>';
+    var t = V.jobTable(document.getElementById('t'), function () {
+        var v = document.getElementById('flt').value;
+        return V.jobs.filter(V.isOpen).filter(function (j) {
+            return v === 'all' || (v === 'today' && j.due === 0) || (v === 'late' && j.due < 0) || (v === 'shop' && (j.svc === 'mystery' || j.svc === 'cx')) || (v === 'property' && j.svc !== 'mystery' && j.svc !== 'cx');
+        });
+    }, sel);
+    var s = document.getElementById('flt'); s.value = f; s.addEventListener('change', t.redraw); t.redraw();
+};
+</script>
+</body>
+</html>

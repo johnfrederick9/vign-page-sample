@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Upload a spreadsheet | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="upload">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/bulkupload.php: many jobs at once. The CSV is read in the browser, every row is checked,
+   the client fixes or drops rows, then the good rows are sent together. "Download the template" gives the empty file. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC;
+    var COLS = [['Service', 'Property Inspection, Loan Servicing or Collateral', true], ['Address', 'Street and number', true], ['City', '', true], ['State', '2 letters', true], ['ZIP', '5 digits', true], ['Reference', 'Your loan # or file #', false], ['Access', 'Inside or Outside only', false], ['Contact', 'Name and phone', false], ['Needed by', 'MM/DD/YYYY', false], ['Instructions', '', false]];
+    var SAMPLE = 'Service,Address,City,State,ZIP,Reference,Access,Contact,Needed by,Instructions\n' +
+        'Property Inspection,22 Front St,Freeport,NY,11520,Loan #8101,Inside,J. Diaz (516) 555-0144,,Call first\n' +
+        'Loan Servicing,190 Atlantic Ave,Oceanside,NY,11572,Loan #8102,Outside only,,,Vacant\n' +
+        'Loan Servicing,7 Elm St,Valley Stream,NY,1158,Loan #8103,Outside only,,,\n' +
+        'Property Inspection,,Merrick,NY,11566,Loan #8104,Inside,,,\n' +
+        'Collateral,55 Jerusalem Ave,Hempstead,NY,11550,Loan #8105,Outside only,,,Photo of the car plate\n';
+    if (V.kind === 'shop') {
+        COLS[0][1] = 'Mystery Shop or Mystery Shop + CX'; COLS[1][1] = 'Store name and street'; COLS[5][1] = 'Your store #'; COLS[6][1] = 'Leave empty';
+        SAMPLE = 'Service,Address,City,State,ZIP,Reference,Access,Contact,Needed by,Instructions\n' +
+            'Mystery Shop,Bright Brew #14 2210 Hempstead Tpke,East Meadow,NY,11554,Store #14,,,,Weekend afternoon\n' +
+            'Mystery Shop,Bright Brew #19 3128 Northern Blvd,Manhasset,NY,11030,Store #19,,,,\n' +
+            'Mystery Shop,Bright Brew #22 41 Main St,Port Washington,NY,1105,Store #22,,,,\n' +
+            'Mystery Shop + CX,,Garden City,NY,11530,Store #7,,,,Check the drive-thru\n';
+    }
+    var html = V.band('fa-file-arrow-up', 'Upload a spreadsheet', 'Send many inspections at once. Every row is checked before anything is sent.', '<a class="bbtn" href="newjob.html"><i class="fa-solid fa-plus"></i> One at a time</a>');
+    html += '<div class="grid2"><div>' + V.card('1. Choose your file', '', '<p class="small" style="margin:0 0 10px">A CSV file with one inspection per row. Start from the template so the columns match.</p><div class="acts1"><button class="btn btn-ghost btn-sm" id="tpl"><i class="fa-solid fa-download"></i> Download the template</button><label class="btn btn-primary btn-sm" style="cursor:pointer"><i class="fa-solid fa-file-csv"></i> Choose file<input type="file" id="file" accept=".csv,text/csv" hidden></label><button class="btn btn-ghost btn-sm" id="sample"><i class="fa-solid fa-flask"></i> Try a sample file</button></div>') +
+        '<div id="check"></div></div><div>' + V.card('Columns', '<span class="samp">sample, not final</span>', '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>Column</th><th>What to put</th></tr></thead><tbody>' + COLS.map(function (c) { return '<tr><td><b>' + c[0] + '</b>' + (c[2] ? ' <span style="color:var(--r)">*</span>' : '') + '</td><td class="small">' + c[1] + '</td></tr>'; }).join('') + '</tbody></table></div><p class="muted small" style="margin:10px 0 0">* needed. The real columns are still to be agreed with VIGN.</p>', true) + '</div></div>';
+    V.$('#app').innerHTML = html;
+
+    function parse(text) {
+        var lines = text.replace(/\r/g, '').split('\n').filter(function (l) { return l.trim(); });
+        lines.shift();
+        return lines.map(function (l, i) {
+            var c = l.split(','), r = { n: i + 2, svc: c[0] || '', addr: c[1] || '', city: c[2] || '', st: c[3] || '', zip: c[4] || '', ref: c[5] || '', access: c[6] || '', keep: true }, p = [];
+            if (!/property|loan|collateral|mystery/i.test(r.svc)) p.push('Service not known');
+            if (!r.addr.trim()) p.push('No street address');
+            if (!r.city.trim()) p.push('No city');
+            if (!/^[A-Z]{2}$/i.test(r.st)) p.push('State must be 2 letters');
+            if (!/^\d{5}$/.test(r.zip)) p.push('ZIP must be 5 digits');
+            r.problems = p; if (p.length) r.keep = false;
+            return r;
+        });
+    }
+    function show(rows) {
+        function draw() {
+            var good = rows.filter(function (r) { return r.keep; });
+            V.$('#check').innerHTML = V.card('2. Check the rows', good.length + ' of ' + rows.length + ' ready', '<div class="tbl-wrap"><table class="tbl cards"><thead><tr><th>Row</th><th>Address</th><th>Service</th><th>Reference</th><th>Check</th><th>Send?</th></tr></thead><tbody>' + rows.map(function (r, i) {
+                return '<tr' + (r.problems.length ? ' class="needs"' : '') + '><td data-l="Row">' + r.n + '</td><td data-l="Address">' + V.esc(r.addr || '—') + '<small class="muted" style="display:block">' + V.esc([r.city, r.st, r.zip].join(' ')) + '</small></td><td data-l="Service">' + V.esc(r.svc) + '</td><td data-l="Reference">' + V.esc(r.ref) + '</td>' +
+                    '<td data-l="Check">' + (r.problems.length ? '<b style="color:var(--r)">' + r.problems.map(V.esc).join('<br>') + '</b>' : '<span style="color:var(--g)"><i class="fa-solid fa-circle-check"></i> OK</span>') + '</td>' +
+                    '<td data-l="Send?">' + (r.problems.length ? '<button class="btn btn-ghost btn-sm" data-fix="' + i + '">Fix</button>' : '<input type="checkbox" data-keep="' + i + '"' + (r.keep ? ' checked' : '') + ' aria-label="Send this row">') + '</td></tr>';
+            }).join('') + '</tbody></table></div>' +
+                '<div class="card2-b form-foot"><span class="muted small" style="margin-right:auto">Rows with a problem are not sent until you fix them.</span><button class="btn btn-primary" id="go"' + (good.length ? '' : ' disabled') + '><i class="fa-solid fa-paper-plane"></i> Send ' + good.length + ' inspection' + (good.length === 1 ? '' : 's') + '</button></div>', true);
+            V.$$('[data-keep]').forEach(function (c) { c.addEventListener('change', function () { rows[+c.dataset.keep].keep = c.checked; draw(); }); });
+            V.$$('[data-fix]').forEach(function (b) { b.addEventListener('click', function () {
+                var r = rows[+b.dataset.fix];
+                V.modal('Fix row ' + r.n, '<p class="note1 red" style="margin:0"><i class="fa-solid fa-circle-exclamation"></i>' + r.problems.map(V.esc).join('. ') + '</p><label class="fld">Street address<input type="text" id="fa" value="' + V.esc(r.addr) + '"></label><div class="fld-row3"><label class="fld">City<input type="text" id="fc" value="' + V.esc(r.city) + '"></label><label class="fld">State<input type="text" id="fs" value="' + V.esc(r.st) + '"></label><label class="fld">ZIP<input type="text" id="fz" value="' + V.esc(r.zip) + '"></label></div>',
+                    '<button class="btn btn-primary btn-sm" data-ok>Save row</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () {
+                        var t = parse('h\n' + [r.svc, V.$('#fa', m).value, V.$('#fc', m).value, V.$('#fs', m).value, V.$('#fz', m).value, r.ref, r.access].join(','))[0];
+                        t.n = r.n; rows[+b.dataset.fix] = t; close(); draw(); V.toast(t.problems.length ? 'Still not right: ' + t.problems.join(', ') : 'Row ' + r.n + ' is OK now.');
+                    }); });
+            }); });
+            var go = V.$('#go'); if (go) go.addEventListener('click', function () {
+                var n = rows.filter(function (r) { return r.keep; }).length;
+                V.$('#check').innerHTML = V.card('3. Sent', '', '<p style="margin:0"><i class="fa-solid fa-circle-check" style="color:var(--g)"></i> <b>' + n + ' inspections sent to VIGN.</b> They show in Jobs as "Received".</p><p class="note1"><i class="fa-solid fa-circle-info"></i>Preview only: nothing was really sent.</p><div class="acts1" style="margin-top:12px"><a class="btn btn-primary" href="jobs.html">Go to Jobs</a></div>');
+            });
+        }
+        draw();
+    }
+    V.$('#tpl').addEventListener('click', function () { V.download('VIGN order template.csv', COLS.map(function (c) { return c[0]; }).join(',') + '\n', 'text/csv'); });
+    V.$('#sample').addEventListener('click', function () { show(parse(SAMPLE)); });
+    V.$('#file').addEventListener('change', function (e) { var fl = e.target.files[0]; if (!fl) return; var rd = new FileReader(); rd.onload = function () { show(parse(String(rd.result))); }; rd.readAsText(fl); });
+};
+</script>
+</body>
+</html>

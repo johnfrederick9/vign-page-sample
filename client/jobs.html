@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Jobs | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="jobs">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/search.php: every job the client can see. Search, a status filter, a date range, sort and pages,
+   exported as CSV or printed with the same filters. Filters live in the address bar (status, date, from, to, due, q).
+   Clicking the job # or address opens the job page. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC, P = new URLSearchParams(location.search);
+    var STATUSES = [
+        ['all', 'All', function () { return true; }],
+        ['open', 'Open', V.open],
+        ['needs', 'Needs you', function (j) { return V.needs(j) || V.late(j); }],
+        ['checking', 'Being checked', function (j) { return j.status === 'checking'; }],
+        ['ready', 'Report ready', function (j) { return j.status === 'ready'; }],
+        ['cancelled', 'Cancelled', function (j) { return j.status === 'cancelled'; }]
+    ];
+    var DUE = { late: [-999, -1], today: [0, 0], next7days: [1, 7], later: [8, 999] };
+    var status = P.get('status') || 'all', dkey = P.get('date') || 'created', due = P.get('due');
+    var from = V.fromIso(P.get('from')), to = V.fromIso(P.get('to'));
+    var f = STATUSES.filter(function (s) { return s[0] === status; })[0] || STATUSES[0];
+    function rows() {
+        return V.jobs.filter(function (j) {
+            if (!f[2](j)) return false;
+            if (due && DUE[due]) { if (!V.open(j) || j.status === 'checking' || j.due < DUE[due][0] || j.due > DUE[due][1]) return false; }
+            var d = j[dkey]; if (from != null && (d == null || d < from)) return false; if (to != null && (d == null || d > to)) return false;
+            return true;
+        });
+    }
+    var html = V.band('fa-briefcase', 'Jobs', 'Every inspection you sent VIGN. The address bar keeps your filters, so you can bookmark a list.',
+        '<a class="bbtn" href="bulkupload.html"><i class="fa-solid fa-file-arrow-up"></i> Upload a spreadsheet</a><a class="bbtn solid" href="newjob.html"><i class="fa-solid fa-plus"></i> Request an inspection</a>');
+    html += '<div class="card2" style="margin-top:16px"><form class="filters2" id="flt"><div style="flex-basis:100%"><div class="chips" role="group" aria-label="Status">' + STATUSES.map(function (s) {
+        var q = new URLSearchParams(location.search); q.set('status', s[0]); q.delete('due');
+        return '<a href="?' + q + '"' + (s[0] === status && !due ? ' class="on" aria-current="true"' : '') + '>' + s[1] + ' <span class="n">' + V.jobs.filter(s[2]).length + '</span></a>';
+    }).join('') + (due ? '<a class="on" href="jobs.html">Due: ' + { late: 'Late', today: 'Today', next7days: 'Next 7 days', later: 'Later' }[due] + ' <i class="fa-solid fa-xmark"></i></a>' : '') + '</div></div>' +
+        '<label>Which date<select name="date"><option value="created">Ordered</option><option value="due">Due</option><option value="sent">Report sent</option></select></label>' +
+        '<label>From<input type="date" name="from" value="' + (P.get('from') || '') + '"></label><label>To<input type="date" name="to" value="' + (P.get('to') || '') + '"></label>' +
+        '<input type="hidden" name="status" value="' + status + '"><button class="btn btn-primary btn-sm">Apply</button><a class="btn btn-ghost btn-sm" href="jobs.html">Clear</a>' +
+        '<span style="margin-left:auto;display:flex;gap:8px"><button type="button" class="btn btn-ghost btn-sm" id="csv"><i class="fa-solid fa-file-csv"></i> Export CSV</button><button type="button" class="btn btn-ghost btn-sm" id="pdf"><i class="fa-solid fa-print"></i> Print list</button></span></form>' +
+        '<div id="tbl"></div></div>';
+    V.$('#app').innerHTML = html;
+    V.$('[name=date]').value = dkey;
+
+    var t = V.table(V.$('#tbl'), {
+        info: 'jobs', sortKey: 'created', sortDir: -1, show: 25, rows: rows,
+        rowCls: function (j) { return V.needs(j) ? 'needs' : ''; },
+        search: function (j) { return j.id + ' ' + j.addr + ' ' + j.city + ' ' + j.ref + ' ' + V.services[j.svc][0] + ' ' + V.STATUS[j.status][0] + ' ' + (j.ins || ''); },
+        cols: [
+            { k: 'id', label: 'Job #', render: function (j) { return '<a href="job.html?job=' + j.id + '"><b>' + j.id + '</b></a><small class="muted" style="display:block">' + V.esc(j.ref) + '</small>'; } },
+            { k: 'addr', label: 'Address', render: function (j) { return '<a href="job.html?job=' + j.id + '">' + V.esc(j.addr) + '</a><small class="muted" style="display:block">' + V.esc(j.city) + '</small>'; } },
+            { k: 'svc', label: 'Service', render: V.svc },
+            { k: 'created', label: 'Ordered', render: function (j) { return V.day(j.created); } },
+            { k: 'due', label: 'Due', render: V.dueTxt },
+            { k: 'status', label: 'Status', sortVal: function (j) { return Object.keys(V.STATUS).indexOf(j.status); }, render: V.stPill },
+            { k: 'score', label: 'Score <span class="samp">sample</span>', sortVal: function (j) { return V.score(j) || -1; }, render: V.scorePill },
+            { k: 'rep', label: 'Report', sort: false, render: function (j) { return j.status === 'ready' ? '<a class="btn btn-ghost btn-sm" href="job.html?job=' + j.id + '#report"><i class="fa-regular fa-file-pdf"></i> View</a>' : '<span class="muted small">Not yet</span>'; } }
+        ]
+    });
+    if (P.get('q')) { var qi = V.$('#tbl [data-q]'); qi.value = P.get('q'); qi.dispatchEvent(new Event('input')); }
+    V.$('#csv').addEventListener('click', function () {
+        var csv = 'Job,' + V.refLabel + ',Address,City,Service,Ordered,Due,Status,Score (sample)\n' + t.all().map(function (j) { return [j.id, j.ref, j.addr, j.city, V.services[j.svc][0], V.day(j.created), V.day(j.due), V.STATUS[j.status][0], V.score(j) == null ? '' : V.score(j)].map(function (x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(','); }).join('\n');
+        V.download(V.company.name.toLowerCase().replace(/[^a-z]+/g, '-') + 'jobs.csv', csv, 'text/csv');
+    });
+    V.$('#pdf').addEventListener('click', function () { V.toast('A printable list with the same filters would open here (preview only).'); });
+};
+</script>
+</body>
+</html>

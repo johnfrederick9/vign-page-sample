@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Request an inspection | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-db.js"></script>
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="newjob">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/newjob.php: everything on one page (what, where, how fast, instructions, files),
+   then a review and ONE send. After sending: what happens next, and a link to the new job. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC;
+    var svcs = V.order;
+    var html = V.band('fa-plus', 'Request an inspection', 'One property per request. Many at once? <a href="bulkupload.html" style="color:#fff;text-decoration:underline">Upload a spreadsheet</a>.',
+        '<button class="bbtn" id="reset"><i class="fa-solid fa-rotate-left"></i> Start over</button>');
+    html += '<div class="grid2"><div><form class="form2" id="nf" novalidate>' +
+        '<fieldset><legend>What do you need?</legend><div class="opts">' + svcs.map(function (k, i) { var s = V.services[k]; return '<label class="opt"><input type="radio" name="svc" value="' + k + '"' + (i === 0 ? ' checked' : '') + '><span><b><i class="fa-solid ' + s[1] + '"></i> ' + s[0] + '</b><small>' + V.forms[V.formFor[k]][0] + ' · ' + V.money(V.price[k]) + ' <span class="samp">sample</span></small></span></label>'; }).join('') + '</div>' +
+        '</fieldset>' +
+        '<fieldset><legend>Where?</legend><label class="fld">' + (V.kind === 'shop' ? 'Store name and street address' : 'Street address') + '<input type="text" name="addr" placeholder="' + (V.kind === 'shop' ? 'e.g. Bright Brew #14, 2210 Hempstead Tpke' : 'e.g. 12 Hilton Ave') + '" autocomplete="off"></label>' +
+        '<div class="fld-row3"><label class="fld">City<input type="text" name="city" placeholder="Garden City"></label><label class="fld">State<input type="text" name="st" value="NY" maxlength="2"></label><label class="fld">ZIP<input type="text" name="zip" maxlength="10" placeholder="11530"></label></div>' +
+        '<label class="fld">Your reference (' + (V.kind === 'shop' ? 'store #' : 'loan #, file #') + ')<input type="text" name="ref" placeholder="' + V.refLabel + '"></label></fieldset>' +
+        (V.kind === 'shop' ? '<input type="hidden" name="access" value="Customer visit"><input type="hidden" name="contact" value="">' : '<fieldset><legend>Access</legend><div class="opts"><label class="opt"><input type="radio" name="access" value="Interior authorized" checked><span><b>Inside and outside</b><small>Someone will let the inspector in</small></span></label><label class="opt"><input type="radio" name="access" value="Exterior only"><span><b>Outside only</b><small>Vacant, or no access</small></span></label></div>' +
+        '<label class="fld">On-site contact (name and phone)<input type="text" name="contact" placeholder="Occupant, agent or key holder"></label></fieldset>') +
+        '<fieldset><legend>How fast?</legend><div class="opts"><label class="opt"><input type="radio" name="prio" value="Routine" checked><span><b>Routine</b><small>Within 5 days</small></span></label><label class="opt"><input type="radio" name="prio" value="Rush"><span><b>Rush</b><small>Within 2 days <span class="samp">sample</span></small></span></label></div>' +
+        '<label class="fld">Needed by <small class="muted">(at most 10 days from today)</small><input type="date" name="due" min="' + V.iso(1) + '" max="' + V.iso(10) + '" value="' + V.iso(5) + '"></label>' +
+        '<label class="fld">Repeat<select name="repeat"><option>None</option><option>Once a month</option><option>Twice a month</option></select><small class="muted">' + (V.kind === 'shop' ? 'For example every store, twice a month.' : 'For example a property checked every month.') + ' VIGN makes the next ones by itself.</small></label></fieldset>' +
+        '<fieldset><legend>Instructions and files</legend><label class="fld">Special instructions<textarea name="notes" placeholder="' + (V.kind === 'shop' ? 'When to visit, what to buy, what to watch for' : 'Anything the inspector should know') + '"></textarea></label>' +
+        '<div class="dropz"><i class="fa-solid fa-cloud-arrow-up"></i>Drop files here or <label style="color:var(--blue);cursor:pointer;font-weight:600">choose files<input type="file" name="files" multiple hidden></label><br><small>Access letters, photos, maps</small><div id="fnames" class="small" style="margin-top:6px"></div></div></fieldset>' +
+        '<div class="form-foot"><a class="btn btn-ghost" href="jobs.html">Cancel</a><button class="btn btn-primary" type="submit"><i class="fa-solid fa-eye"></i> Review and send</button></div></form></div>' +
+        '<div><div class="sum2">' + V.card('<i class="fa-solid fa-receipt"></i> Summary', '', '<div id="sum"></div>') +
+        V.card('<i class="fa-solid fa-circle-question"></i> What happens next', '', '<ol class="small" style="margin:0;padding-left:18px;line-height:1.7"><li>VIGN gets your request and picks an inspector near the address.</li><li>You see the inspector\'s name on the job page.</li><li>The inspector visits and sends the report with photos.</li><li>VIGN checks it, then it shows on the job page to view and download.</li></ol>') + '</div></div></div>';
+    V.$('#app').innerHTML = html;
+
+    var f = V.$('#nf');
+    function data() { var d = new FormData(f); return { svc: d.get('svc'), addr: (d.get('addr') || '').trim(), city: (d.get('city') || '').trim(), st: (d.get('st') || '').trim().toUpperCase(), zip: (d.get('zip') || '').trim(), ref: (d.get('ref') || '').trim(), access: d.get('access'), contact: (d.get('contact') || '').trim(), prio: d.get('prio'), due: V.fromIso(d.get('due')), notes: (d.get('notes') || '').trim(), repeat: d.get('repeat') || 'None', files: V.$$('[name=files]', f)[0].files }; }
+    function sum() {
+        var d = data();
+        V.$('#sum').innerHTML = '<dl class="dl"><dt>Service</dt><dd>' + V.esc(V.services[d.svc][0]) + '</dd><dt>Address</dt><dd>' + (d.addr ? V.esc(d.addr) + '<small class="muted" style="display:block;font-weight:400">' + V.esc([d.city, d.st, d.zip].filter(Boolean).join(', ')) + '</small>' : '<span class="muted">Not yet</span>') + '</dd>' +
+            '<dt>Speed</dt><dd>' + V.esc(d.prio) + ', by ' + V.day(d.due) + '</dd><dt>Repeat</dt><dd>' + V.esc(d.repeat) + (d.repeat !== 'None' ? '<small class="muted" style="display:block;font-weight:400">Next: ' + [1, 2].map(function (k) { return V.day(d.due + k * (d.repeat === 'Twice a month' ? 15 : 30)); }).join(', ') + '</small>' : '') + '</dd><dt>Price</dt><dd>' + V.money(V.price[d.svc]) + ' <span class="samp">sample</span><small class="muted" style="display:block;font-weight:400">Goes on your monthly bill</small></dd></dl>';
+        V.$('#fnames').textContent = Array.prototype.map.call(d.files, function (x) { return x.name; }).join(', ');
+    }
+    f.addEventListener('input', sum); f.addEventListener('change', sum); sum();
+    V.$('#reset').addEventListener('click', function () { f.reset(); sum(); });
+    f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var d = data(), miss = [];
+        if (!d.addr) miss.push('street address'); if (!d.city) miss.push('city'); if (!/^\d{5}(-\d{4})?$/.test(d.zip)) miss.push('a 5-digit ZIP'); if (d.due == null || d.due < 1 || d.due > 10) miss.push('a Needed by date 1 to 10 days from today');
+        if (miss.length) { V.toast('Please add: ' + miss.join(', ') + '.'); return; }
+        V.modal('Check and send', '<dl class="dl"><dt>Service</dt><dd>' + V.esc(V.services[d.svc][0]) + '</dd><dt>Address</dt><dd>' + V.esc(d.addr + ', ' + d.city + ', ' + d.st + ' ' + d.zip) + '</dd><dt>Reference</dt><dd>' + V.esc(d.ref || '—') + '</dd><dt>Access</dt><dd>' + V.esc(d.access) + '</dd><dt>Contact</dt><dd>' + V.esc(d.contact || '—') + '</dd><dt>Speed</dt><dd>' + V.esc(d.prio) + ', by ' + V.day(d.due) + '</dd><dt>Instructions</dt><dd style="font-weight:400">' + V.esc(d.notes || '—') + '</dd></dl>',
+            '<button class="btn btn-primary btn-sm" data-ok><i class="fa-solid fa-paper-plane"></i> Send to VIGN</button>', function (m, close) {
+                V.$('[data-ok]', m).addEventListener('click', function () {
+                    var id = 'VG-' + (24140 + V.jobs.length);
+                    V.jobs.unshift({ id: id, svc: d.svc, form: V.formFor[d.svc], addr: d.addr, city: d.city + ', ' + d.st + ' ' + d.zip, ref: d.ref || '—', created: 0, due: d.due, status: 'received', ins: '', prio: d.prio, visits: 0, price: V.price[d.svc], access: d.access, contact: d.contact, notes: d.notes || '—', repeat: d.repeat, from: 'Sent from this portal' });
+                    close();
+                    var rq = window.VIGNDB ? VIGNDB.add('requests', { company: V.company.name, contact: V.me.name, email: V.me.email, service: V.services[d.svc][0], addr: d.addr + ', ' + d.city + ', ' + d.st + ' ' + d.zip, wanted: d.due, notes: [d.ref && d.ref !== '—' ? 'Ref ' + d.ref : '', d.notes].filter(Boolean).join(' · '), repeat: d.repeat && d.repeat !== 'None' ? d.repeat : '', src: 'Client portal' }) : '';
+                    V.$('#app').innerHTML = V.band('fa-circle-check', 'Sent to VIGN', 'Job ' + id + ' · ' + V.esc(d.addr)) +
+                        V.card('<i class="fa-solid fa-paper-plane"></i> Sent to', '', '<p style="margin:0">VIGN USA has your request for <b>' + V.esc(d.addr + ', ' + d.city) + '</b>. You will see the inspector\'s name on the job page once one is assigned.</p><p class="note1"><i class="fa-solid fa-circle-info"></i>' + (rq ? 'Preview: saved in this browser as request <b>' + rq + '</b>. VIGN sees it in the Admin Menu under New Inspection Requests.' : 'Preview only: nothing was really sent.') + '</p><div class="acts1" style="margin-top:14px"><a class="btn btn-primary" href="job.html?job=' + id + '">Open the job</a><a class="btn btn-ghost" href="newjob.html">Request another</a></div>');
+                    try { sessionStorage.setItem('vc-new', JSON.stringify(V.jobs[0])); } catch (x) {}
+                });
+            });
+    });
+};
+</script>
+</body>
+</html>

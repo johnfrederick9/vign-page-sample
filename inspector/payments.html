@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Payments Received | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="payments">
+<main class="content" id="app"></main>
+<script>
+// SMK ps/payments.php: Payments Received with a "Date Paid" period filter
+// and columns Job #, Recipient, Address, Date Paid, Check #, How Paid, Amount.
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN, p = 'all';
+    function paid() { return V.jobs.filter(function (j) { return j.paid; }); }
+    var all = paid(),
+        month = all.filter(function (j) { return V.inPeriod(j.paid.date, 'cmonth'); }),
+        ytd = all.filter(function (j) { return V.inPeriod(j.paid.date, 'ytd'); }),
+        last = all.slice().sort(function (a, b) { return b.paid.date - a.paid.date; })[0];
+    var html = V.band('fa-money-check-dollar', 'Payments Received', 'Payments VIGN has sent you for approved reports.',
+        '<a class="bbtn" href="commissions.html"><i class="fa-solid fa-sack-dollar"></i> Commissions Owed</a>');
+    html += '<div class="stats">' +
+        V.stat('green', 'fa-money-bill-wave', V.money(V.sum(month)), 'Paid This Month') +
+        V.stat('blue', 'fa-chart-line', V.money(V.sum(ytd)), 'Paid Year To Date') +
+        V.stat('navy', 'fa-receipt', last ? V.dayShort(last.paid.date) : '–', 'Last Payment' + (last ? ' · ' + last.paid.check : '')) +
+        V.stat('amber', 'fa-building-columns', 'Direct deposit', 'How You Are Paid') + '</div>';
+    html += '<div class="card2" style="margin-top:18px"><div class="toolbar"><span class="small muted" style="font-weight:600">Date paid:</span><div class="tabs" id="per">' +
+        V.periods.map(function (x) { return '<button class="tab' + (x[0] === p ? ' on' : '') + '" data-p="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+        '</div></div><div id="t"></div></div>';
+    document.getElementById('app').innerHTML = html;
+
+    var t = V.table(document.getElementById('t'), {
+        rows: function () { return paid().filter(function (j) { return V.inPeriod(j.paid.date, p); }); },
+        sortKey: 'pd', sortDir: -1,
+        search: function (j) { return j.id + ' ' + j.addr + ' ' + j.client + ' ' + j.paid.check; },
+        cols: [
+            { k: 'id', label: 'Job #', render: function (j) { return '<a href="fulljobstatus.html?job=' + j.id + '"><b>' + j.id + '</b></a>'; } },
+            { k: 'client', label: 'Client', render: function (j) { return V.esc(j.client); } },
+            { k: 'addr', label: 'Address', render: function (j) { return V.esc(j.addr) + '<small>' + V.esc(j.city) + '</small>'; } },
+            { k: 'pd', label: 'Date Paid', sortVal: function (j) { return j.paid.date; }, render: function (j) { return V.day(j.paid.date); } },
+            { k: 'ck', label: 'Check / Ref #', sortVal: function (j) { return j.paid.check; }, render: function (j) { return V.esc(j.paid.check); } },
+            { k: 'how', label: 'How Paid', sort: false, render: function (j) { return V.esc(j.paid.how); } },
+            { k: 'fee', label: 'Amount', cls: 'r', render: function (j) { return V.money(j.fee); } }
+        ],
+        foot: function (r) { return '<tr><td colspan="6" data-l="">Total (' + r.length + ' jobs)</td><td class="r" data-l="Total">' + V.money(V.sum(r)) + '</td></tr>'; }
+    });
+    V.$$('#per .tab').forEach(function (b) {
+        b.addEventListener('click', function () { p = b.dataset.p; V.$$('#per .tab').forEach(function (x) { x.classList.toggle('on', x === b); }); t.redraw(); });
+    });
+};
+</script>
+</body>
+</html>

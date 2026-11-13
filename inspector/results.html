@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>My Reports | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="results">
+<main class="content" id="app"></main>
+<script>
+var VIGN = window.VIGN = window.VIGN || {};
+// SMK ps/results.php: reports sent in, with status (Needs changes / Waiting for review / Approved)
+VIGN.init = function () {
+    var V = VIGN, c = V.counts();
+    var app = document.getElementById('app');
+    app.innerHTML = V.band('fa-file-circle-check', 'My Reports', 'Reports you have sent in. Staff check each one before it goes to the client.') +
+        '<div class="stats">' +
+        V.stat('orange', 'fa-rotate-left', c.returned.length, 'Needs Changes') +
+        V.stat('amber', 'fa-hourglass-half', c.review.length, 'Waiting For Review') +
+        V.stat('green', 'fa-circle-check', V.jobs.filter(function (j) { return j.status === 'approved'; }).length, 'Approved') +
+        V.stat('blue', 'fa-star-half-stroke', avg(), 'Average Score (sample formula)') + '</div>' +
+        '<div class="card2" style="margin-top:18px" id="t"></div>';
+    function avg() { var s = V.jobs.filter(function (j) { return j.score != null; }); return s.length ? Math.round(s.reduce(function (t, j) { return t + j.score; }, 0) / s.length) : '–'; }
+    var sel = '<select class="tb-select" id="st"><option value="">All statuses</option><option value="returned">Needs changes</option><option value="submitted">Waiting for review</option><option value="approved">Approved</option></select>';
+    var t = V.table(document.getElementById('t'), {
+        toolbar: sel, sortKey: 'sent', sortDir: -1,
+        rows: function () { var v = document.getElementById('st').value; return V.jobs.filter(function (j) { return !V.isOpen(j) && (!v || j.status === v); }); },
+        search: function (j) { return j.id + ' ' + j.addr + ' ' + j.client + ' ' + j.ref; },
+        cols: [
+            { k: 'id', label: 'Job #', render: function (j) { return '<a href="fulljobstatus.html?job=' + j.id + '"><b>' + j.id + '</b></a><small>' + V.esc(j.ref) + '</small>'; } },
+            { k: 'addr', label: 'Address', render: function (j) { return V.esc(j.addr) + '<small>' + V.esc(j.city) + '</small>'; } },
+            { k: 'client', label: 'Client', render: function (j) { return V.esc(j.client) + '<small>' + V.esc(V.forms[j.form].title) + '</small>'; } },
+            { k: 'sent', label: 'Sent In', render: function (j) { return V.day(j.sent); } },
+            { k: 'photos', label: 'Photos', cls: 'r', render: function (j) { return j.photos || 0; } },
+            { k: 'score', label: 'Score <span class=\"samp\">sample</span>', cls: 'r', render: function (j) { return j.score != null ? '<span class="score rate ' + V.scoreCls(j.score) + '">' + j.score + '</span>' : '–'; } },
+            { k: 'status', label: 'Status', render: function (j) { return V.pill(V.status[j.status]) + (j.returned ? '<small style="max-width:260px">' + V.esc(j.returned) + '</small>' : ''); } },
+            { k: 'go', label: '', sort: false, render: function (j) { return '<a class="lnk-btn" href="fulljobstatus.html?job=' + j.id + '">' + (j.status === 'returned' ? 'Fix report' : 'View') + ' <i class="fa-solid fa-arrow-right"></i></a>'; } }
+        ]
+    });
+    var s = document.getElementById('st'); s.value = V.param('f') || ''; s.addEventListener('change', t.redraw); t.redraw();
+};
+</script>
+</body>
+</html>

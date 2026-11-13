@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="account">
+<main class="content" id="app"></main>
+<script>
+/* Client Settings (SMK requestor/account.php, opened from your name at the top right):
+   your details, the emails VIGN sends you, reports, how the portal opens, colleagues, password, company.
+   Saved in this browser (preview). Passwords are never saved. The sign-in email is set by VIGN. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC, e = V.esc;
+    var EMAILS = [['e_ready', 'A report is ready', 'Checked by VIGN and ready to download', 'Yes'], ['e_needs', 'The inspector needs something from me', 'A gate code, a key or a contact', 'Yes'],
+        ['e_assigned', 'An inspector is assigned', 'With the planned visit date', 'No'], ['e_invoice', 'A new invoice', 'And a receipt when you pay', 'Yes'],
+        ['e_late', 'A job is past its due date', 'VIGN also calls you', 'No'], ['e_weekly', 'Weekly summary', 'Every Monday: open jobs, reports, balance', 'Yes']];
+    var D = { name: V.me.name, title: V.me.title, phone: V.me.phone, billTo: '', pdf: 'attach', start: 'command.html' };
+    EMAILS.forEach(function (m) { D[m[0]] = m[3]; });
+    function sw(k, label, sub, S) { return '<label class="set-row"><span>' + label + '<small>' + sub + '</small></span><input type="checkbox" class="sw" role="switch" name="' + k + '"' + (S[k] === 'Yes' ? ' checked' : '') + '></label>'; }
+    function draw() {
+        var S = Object.assign({}, D, V.prefs());
+        var starts = [['command.html', 'Home'], ['jobs.html', 'Jobs'], ['invoices.html', 'Invoices']];
+        V.$('#app').innerHTML = V.band('fa-gear', 'Settings', e(V.me.name) + ' · ' + e(V.company.name)) +
+            '<form id="fs" novalidate><div class="grid2"><div>' +
+            V.card('<i class="fa-solid fa-user"></i> Your details', '', '<div class="fld-row"><label class="fld">Name<input type="text" name="name" maxlength="80" autocomplete="name" value="' + e(S.name) + '"></label><label class="fld">Job title<input type="text" name="title" maxlength="60" value="' + e(S.title) + '"></label></div>' +
+                '<div class="fld-row"><label class="fld">Phone<input type="tel" name="phone" maxlength="20" autocomplete="tel" value="' + e(S.phone) + '"></label><label class="fld">Email (your sign-in)<input type="email" value="' + e(V.me.email) + '" disabled></label></div>' +
+                '<p class="muted small" style="margin:8px 0 0"><i class="fa-solid fa-lock"></i> To change your sign-in email, call VIGN at ' + e(V.vign.phone) + '.</p>') +
+            V.card('<i class="fa-regular fa-envelope"></i> Email me when', '', EMAILS.map(function (m) { return sw(m[0], m[1], m[2], S); }).join('') +
+                '<label class="fld" style="margin-top:12px"><span class="fld-l">Also send invoices to <span class="muted small">(optional, e.g. your billing team)</span></span><input type="email" name="billTo" maxlength="120" placeholder="billing@yourcompany.com" value="' + e(S.billTo) + '"></label>') +
+            V.card('<i class="fa-solid fa-file-circle-check"></i> Reports', '', '<div class="fld">When a report is ready<div class="set-pick">' +
+                [['attach', 'Email the PDF', 'The report is attached to the email'], ['link', 'Email a link only', 'Open it here; nothing attached']].map(function (o) { return '<label><input type="radio" name="pdf" value="' + o[0] + '"' + (S.pdf === o[0] ? ' checked' : '') + '><span><b>' + o[1] + '</b><small>' + o[2] + '</small></span></label>'; }).join('') + '</div></div>') +
+            '</div><div>' +
+            V.card('<i class="fa-solid fa-sliders"></i> Preferences', '', '<label class="fld">Open this page after I sign in<select name="start">' + starts.map(function (x) { return '<option value="' + x[0] + '"' + (S.start === x[0] ? ' selected' : '') + '>' + x[1] + '</option>'; }).join('') + '</select></label>') +
+            V.card('<i class="fa-solid fa-key"></i> Change password', '', '<label class="fld">Current password<input type="password" name="pw0" autocomplete="current-password"></label><div class="fld-row"><label class="fld">New password<input type="password" name="pw1" autocomplete="new-password"></label><label class="fld">New password again<input type="password" name="pw2" autocomplete="new-password"></label></div><p class="muted small" style="margin:8px 0 0">At least 10 characters. Leave blank to keep your password.</p>') +
+            V.card('<i class="fa-solid fa-building"></i> Company', '', '<dl class="dl"><dt>Company</dt><dd>' + e(V.company.name) + '</dd><dt>Client #</dt><dd>' + V.company.id + '</dd><dt>Billing plan</dt><dd>' + e(V.company.plan) + '</dd></dl><p class="muted small" style="margin:10px 0 0">To change the company name, address or plan, call VIGN at ' + e(V.vign.phone) + '.</p>') +
+            '</div></div><div class="form-foot set-save"><a class="btn btn-ghost" href="command.html">Cancel</a><button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save settings</button></div></form>' +
+            // colleagues: its own form (add / remove right away)
+            V.card('<i class="fa-solid fa-users"></i> Colleagues', V.colleagues.length + ' people', '<div class="tbl-wrap"><table class="tbl cards"><thead><tr><th>Name</th><th>Can see</th><th>Last signed in</th><th></th></tr></thead><tbody>' + V.colleagues.map(function (c, i) { return '<tr><td data-l="Name"><b>' + e(c.name) + '</b>' + (c.you ? ' <span class="muted small">(you)</span>' : '') + (c.invited ? ' ' + V.pill('Invite sent', 'due-today') : '') + '<small class="muted" style="display:block">' + e(c.email) + '</small></td><td data-l="Can see">' + e(c.sees) + '</td><td data-l="Last signed in">' + (c.last == null ? '—' : V.ago(c.last)) + '</td><td>' + (c.you ? '' : '<button class="btn btn-ghost btn-sm" data-rm="' + i + '">Remove</button>') + '</td></tr>'; }).join('') + '</tbody></table></div>' +
+                '<div class="card2-b" style="border-top:1px solid var(--line)"><h4 style="margin:0">Add a colleague</h4><form id="fc"><div class="fld-row"><label class="fld">Name<input type="text" name="n"></label><label class="fld">Email<input type="email" name="e"></label></div><label class="fld">What can they see?<select name="s"><option>All ' + e(V.company.name) + ' jobs</option><option>Only jobs they send</option></select></label><div class="form-foot" style="margin-top:14px"><button class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane"></i> Add and send invite</button></div></form></div>', true);
+
+        var f = V.$('#fs');
+        f.addEventListener('submit', function (ev) {
+            ev.preventDefault();
+            var o = { name: f.name.value.trim(), title: f.title.value.trim(), phone: f.phone.value.trim(), billTo: f.billTo.value.trim(), pdf: (f.querySelector('[name=pdf]:checked') || {}).value || 'attach', start: f.start.value };
+            EMAILS.forEach(function (m) { o[m[0]] = f[m[0]].checked ? 'Yes' : 'No'; });
+            if (!o.name) { V.toast('Type your name.'); f.name.focus(); return; }
+            if (o.billTo && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(o.billTo)) { V.toast('The billing email does not look right.'); f.billTo.focus(); return; }
+            var p0 = f.pw0.value, p1 = f.pw1.value, p2 = f.pw2.value, pw = '';
+            if (p0 || p1 || p2) {
+                if (!p0) { V.toast('Type your current password.'); f.pw0.focus(); return; }
+                if (p1.length < 10) { V.toast('The new password needs at least 10 characters.'); f.pw1.focus(); return; }
+                if (p1 !== p2) { V.toast('The two new passwords do not match.'); f.pw2.focus(); return; }
+                pw = ' Password change shown only (preview: passwords are never saved).';
+            }
+            try { localStorage.setItem(V.prefsKey(), JSON.stringify(o)); } catch (er) { V.toast('This browser blocks saving, so nothing was kept.'); return; }
+            V.me.name = o.name; V.me.title = o.title; V.me.phone = o.phone;
+            V.$$('#meBtn span, .me-who b').forEach(function (x) { x.textContent = o.name; });
+            f.pw0.value = f.pw1.value = f.pw2.value = '';
+            V.toast('Settings saved (in this browser).' + pw);
+        });
+        V.$('#fc').addEventListener('submit', function (ev) { ev.preventDefault(); var d = new FormData(ev.target); if (!d.get('n') || !/@/.test(d.get('e') || '')) { V.toast('Add a name and an email.'); return; } V.colleagues.push({ name: d.get('n'), email: d.get('e'), sees: d.get('s'), last: null, invited: true }); draw(); V.toast('Invite sent to ' + d.get('e') + ' (preview only, no email sent).'); });
+        V.$$('[data-rm]').forEach(function (b) { b.addEventListener('click', function () { var c = V.colleagues[+b.dataset.rm]; V.colleagues.splice(+b.dataset.rm, 1); draw(); V.toast(c.name + ' can no longer sign in (preview only).'); }); });
+    }
+    draw();
+};
+</script>
+</body>
+</html>

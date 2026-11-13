@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Activity | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="activity">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/activity.php: everything that happened on the company's jobs, newest first.
+   Filter by type and by date, search by address or job #. Home shows the newest 8 of the same list. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC, kind = 'all', when = 'all';
+    var KINDS = [['all', 'Everything'], ['jobs', 'Jobs and visits', ['order', 'assigned', 'visit', 'needs']], ['reports', 'Reports', ['checking', 'ready']], ['money', 'Invoices and payments', ['invoice', 'paid']]];
+    var ICON = { order: 'fa-inbox', needs: 'fa-circle-exclamation', checking: 'fa-list-check', message: 'fa-comment', assigned: 'fa-user-check', visit: 'fa-person-walking', paid: 'fa-money-bill-wave', ready: 'fa-circle-check', invoice: 'fa-file-invoice-dollar' };
+    // older report-ready events from the jobs themselves
+    var feed = V.activity.concat(V.jobs.filter(function (j) { return j.status === 'ready'; }).map(function (j) { return [j.reviewed, '5:00 PM', 'ready', j.id, 'Report ready: ' + j.addr + ' (score ' + V.score(j) + ', sample)']; })).sort(function (a, b) { return b[0] - a[0]; });
+    function draw() {
+        var k = KINDS.filter(function (x) { return x[0] === kind; })[0], lim = { all: -9999, today: 0, week: -6, month: -30 }[when];
+        var rows = feed.filter(function (a) { return (!k[2] || k[2].indexOf(a[2]) > -1) && a[0] >= lim; });
+        V.$('#list').innerHTML = rows.length ? '<ul class="feed">' + rows.map(function (a) { var href = /^INV/.test(a[3]) ? 'invoices.html' : 'job.html?job=' + a[3]; return '<li><span class="ic k-' + a[2] + '"><i class="fa-solid ' + ICON[a[2]] + '"></i></span><span>' + V.esc(a[4]) + ' · <a href="' + href + '">' + a[3] + '</a><small>' + V.ago(a[0]) + ', ' + a[1] + '</small></span></li>'; }).join('') + '</ul>' : '<p class="empty" style="padding:24px">Nothing here.</p>';
+        V.$('#cnt').textContent = rows.length + ' events';
+    }
+    V.$('#app').innerHTML = V.band('fa-clock-rotate-left', 'Activity', 'Everything that happened on your jobs, newest first.') + '<div class="card2" style="margin-top:16px"><div class="filters2"><div class="chips" id="kinds">' + KINDS.map(function (x) { return '<a href="#" data-k="' + x[0] + '"' + (x[0] === kind ? ' class="on"' : '') + '>' + x[1] + '</a>'; }).join('') + '</div>' +
+        '<label style="margin-left:auto">When<select id="when"><option value="all">Any time</option><option value="today">Today</option><option value="week">This week</option><option value="month">This month</option></select></label><span class="muted small" id="cnt"></span></div><div id="list"></div></div>';
+    V.$('#kinds').addEventListener('click', function (e) { var a = e.target.closest('[data-k]'); if (!a) return; e.preventDefault(); kind = a.dataset.k; V.$$('#kinds a').forEach(function (x) { x.classList.toggle('on', x === a); }); draw(); });
+    V.$('#when').addEventListener('change', function (e) { when = e.target.value; draw(); });
+    draw();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>New Offers | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="offers">
+<main class="content" id="app"></main>
+<script>
+/* Don 2026-11-11: VIGN offers a job to every inspector who covers the area. The FIRST to accept gets it
+   ("When you snooze, you lose"). Decline sends it back to VIGN. If someone else accepted first: "Taken".
+   Preview: Maria's answer is kept in this browser, so the Admin Menu (same browser) shows it too. */
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN;
+    function draw() {
+        var open = V.offers.filter(function (o) { return o.state === 'open'; }), done = V.offers.filter(function (o) { return o.state !== 'open'; });
+        var card = function (o) {
+            var s = V.services[o.svc], d = V.due(o.due);
+            var foot = o.state === 'open'
+                ? '<div class="offer-acts"><button class="btn btn-primary" data-yes="' + o.id + '"><i class="fa-solid fa-check"></i> Accept</button><button class="btn btn-ghost" data-no="' + o.id + '"><i class="fa-solid fa-xmark"></i> Decline</button></div>'
+                : '<p class="offer-st ' + o.state + '">' + (o.state === 'accepted' ? '<i class="fa-solid fa-circle-check"></i> You accepted it. It is in <a href="fulljobstatus.html?job=' + o.id + '">your open jobs</a>.' : o.state === 'declined' ? '<i class="fa-solid fa-circle-xmark"></i> You declined. VIGN will give it to someone else.' : '<i class="fa-solid fa-lock"></i> Taken by another inspector. Someone accepted it first.') + '</p>';
+            return '<div class="card2 offer' + (o.state === 'taken' ? ' gone' : '') + '"><div class="card2-h"><h3><i class="fa-solid ' + s[1] + '" style="color:var(--blue)"></i> ' + V.esc(o.addr) + '</h3>' + V.pill(d) + '</div>' +
+                '<div class="card2-b"><dl class="offer-dl"><dt>Where</dt><dd>' + V.esc(o.city) + ' · ' + o.mi + ' mi from you</dd><dt>Service</dt><dd>' + V.esc(s[0]) + '</dd><dt>Client</dt><dd>' + V.esc(o.client) + '</dd><dt>Due</dt><dd>' + V.day(o.due) + ' <small class="muted">(VIGN gives at most 10 days)</small></dd><dt>You get paid</dt><dd><b>' + V.money(o.fee) + '</b> <span class="samp">sample</span></dd><dt>Sent to</dt><dd>' + o.sentTo + ' inspectors in this area · offered ' + V.day(o.sent) + '</dd></dl>' + foot + '</div></div>';
+        };
+        document.getElementById('app').innerHTML = V.band('fa-bullhorn', 'New Offers', 'Jobs VIGN sent to every inspector in the area. The first one to accept gets the job, so answer fast.', '<a class="bbtn" href="openjobsdetail.html"><i class="fa-solid fa-briefcase"></i> My Open Jobs</a>') +
+            '<p class="note2"><i class="fa-solid fa-bolt"></i> <b>First to accept wins.</b> If you can\'t do it, tap Decline so VIGN can give it to someone else quickly.</p>' +
+            '<h2 class="h2s">Waiting for your answer (' + open.length + ')</h2>' + (open.length ? '<div class="offers">' + open.map(card).join('') + '</div>' : '<p class="muted">No new offers right now.</p>') +
+            (done.length ? '<h2 class="h2s">Answered or taken</h2><div class="offers">' + done.map(card).join('') + '</div>' : '');
+    }
+    draw();
+    document.getElementById('app').addEventListener('click', function (e) {
+        var y = e.target.closest('[data-yes]'), n = e.target.closest('[data-no]'); if (!y && !n) return;
+        var o = V.offers.filter(function (x) { return x.id === (y || n).dataset[y ? 'yes' : 'no']; })[0];
+        V.answer(o, !!y); draw();
+        V.toast(y ? 'You got it! ' + o.addr + ' is now in your open jobs (preview only).' : 'Declined. VIGN will offer it to someone else (preview only).');
+    });
+};
+</script>
+</body>
+</html>

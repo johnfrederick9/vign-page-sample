@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Documents | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="documents">
+<main class="content" id="app"></main>
+<script>
+/* The customer's R-10: agreements and instructions VIGN uploads for this client, to view and download.
+   The client only ever sees its own files. An agreement that needs a signature can be signed here. ?sign=<id> opens one. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC, view = 'all';
+    function draw() {
+        var waiting = V.documents.filter(function (d) { return d.signed === 'Waiting'; });
+        V.$('#app').innerHTML = V.band('fa-folder-open', 'Documents', 'Agreements and instructions from VIGN. Only people at ' + V.esc(V.company.name) + ' can see these.') +
+            (waiting.length ? '<div class="note1 red" style="margin-top:16px;font-size:.9rem"><i class="fa-solid fa-file-signature"></i><b>' + waiting.length + ' to sign:</b> ' + waiting.map(function (d) { return V.esc(d.name.replace(/\.pdf$/, '')); }).join(', ') + '</div>' : '') +
+            '<div class="card2" style="margin-top:16px"><div class="tabs2">' + [['all', 'All'], ['Agreement', 'Agreements'], ['Instructions', 'Instructions'], ['sign', 'To sign']].map(function (t) { return '<button data-v="' + t[0] + '"' + (t[0] === view ? ' class="on"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div id="tbl"></div></div>';
+        V.table(V.$('#tbl'), { info: 'files', sortKey: 'up', sortDir: -1, rows: function () { return V.documents.filter(function (d) { return view === 'all' || (view === 'sign' ? d.signed === 'Waiting' : d.type === view); }); }, search: function (d) { return d.name + ' ' + d.type; }, cols: [
+            { k: 'name', label: 'File', render: function (d) { return '<a href="#" data-view="' + d.id + '"><b><i class="fa-regular ' + (/\.csv$/.test(d.name) ? 'fa-file-excel' : 'fa-file-pdf') + '" style="color:var(--r);margin-right:6px"></i>' + V.esc(d.name) + '</b></a><small class="muted" style="display:block">' + V.esc(d.note || d.size) + '</small>'; } },
+            { k: 'type', label: 'Type', render: function (d) { return V.esc(d.type); } }, { k: 'up', label: 'Added', render: function (d) { return V.day(d.up); } },
+            { k: 'signed', label: 'Signature', render: function (d) { return d.signed === 'Signed' ? V.pill('Signed ' + V.day(d.signedOn), 'st-approved') : d.signed === 'Waiting' ? V.pill('Waiting for you', 'due-today') : '<span class="muted">Not needed</span>'; } },
+            { k: 'a', label: '', sort: false, render: function (d) { return '<span class="acts1">' + (d.signed === 'Waiting' ? '<button class="btn btn-primary btn-sm" data-sign="' + d.id + '"><i class="fa-solid fa-file-signature"></i> Sign</button>' : '') + '<button class="btn btn-ghost btn-sm" data-dl="' + d.id + '"><i class="fa-solid fa-download"></i> Download</button></span>'; } }] });
+    }
+    function doc(id) { return V.documents.filter(function (d) { return d.id === id; })[0]; }
+    function sign(d) {
+        V.modal('Sign: ' + V.esc(d.name.replace(/\.pdf$/, '')), '<div class="mapbox1" style="height:180px"><div><i class="fa-regular fa-file-pdf" style="color:var(--r)"></i>The agreement would show here to read<br><small>(sample, the real text comes from VIGN)</small></div></div>' +
+            '<label class="fld">Type your full name to sign<input type="text" id="sn" value="' + V.esc(V.me.name) + '"></label><label class="fld" style="font-weight:400"><span><input type="checkbox" id="ag"> I have read it and agree, for ' + V.esc(V.company.name) + '.</span></label>',
+            '<button class="btn btn-primary btn-sm" data-ok><i class="fa-solid fa-file-signature"></i> Sign</button>', function (m, close) {
+                V.$('[data-ok]', m).addEventListener('click', function () {
+                    if (!V.$('#ag', m).checked || !V.$('#sn', m).value.trim()) { V.toast('Type your name and tick the box to sign.'); return; }
+                    d.signed = 'Signed'; d.signedOn = 0; V.save(); close(); draw();
+                    V.toast(/Auto-Pay/.test(d.name) ? (V.company.card ? 'Signed. Auto-pay is on for ' + V.company.card + ' (preview only).' : 'Signed. Add a card on the Invoices page to turn auto-pay on (preview only).') : 'Signed (preview only).');
+                });
+            });
+    }
+    draw();
+    V.$('#app').addEventListener('click', function (e) {
+        var t = e.target.closest('[data-v]'); if (t) { view = t.dataset.v; draw(); return; }
+        var s = e.target.closest('[data-sign]'); if (s) { sign(doc(s.dataset.sign)); return; }
+        var dl = e.target.closest('[data-dl]'); if (dl) { var d = doc(dl.dataset.dl); if (/\.csv$/.test(d.name)) V.download(d.name, 'Service,Address,City,State,ZIP,Reference,Access,Contact,Needed by,Instructions\n', 'text/csv'); else V.download(d.name.replace(/\.pdf$/, '') + ' (sample).txt', 'VIGN USA sample document (preview only)\n\n' + d.name + '\nFor: ' + V.company.name + '\n'); return; }
+        var v = e.target.closest('[data-view]'); if (v) { e.preventDefault(); var dd = doc(v.dataset.view); if (dd.signed === 'Waiting') { sign(dd); return; } V.modal(V.esc(dd.name), '<div class="mapbox1" style="height:200px"><div><i class="fa-regular fa-file-pdf" style="color:var(--r)"></i>The document would open here</div></div><dl class="dl"><dt>Type</dt><dd>' + V.esc(dd.type) + '</dd><dt>Added</dt><dd>' + V.day(dd.up) + '</dd><dt>Size</dt><dd>' + V.esc(dd.size) + '</dd></dl>'); }
+    });
+    var want = V.param('sign'); if (want && doc(want) && doc(want).signed === 'Waiting') sign(doc(want));
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Help | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="help">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/help.php: how to use the portal in short sections with anchors (help.html#sending), and VIGN's contact. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC;
+    var S = [
+        ['start', 'Getting started', '<p>Sign in with the email VIGN set up for you. <b>Home</b> shows what needs you: new reports, jobs where the inspector needs something, and your balance. <b>Settings</b> and this <b>Help</b> are under your name at the top right.</p>'],
+        ['sending', 'Requesting an inspection', '<p>Click <b>Request an inspection</b> at the top. Pick the service, type the address, say if the inspector can go inside, choose how fast, and add any instructions or files. Check it, then send. The job shows in <a href="jobs.html">Jobs</a> as "Received".</p><p>Many at once? Use <a href="bulkupload.html">Upload a spreadsheet</a> and start from the template. Every row is checked before anything is sent.</p>'],
+        ['following', 'Following up', '<p>Every job has its own page: where it is, the inspector and each visit. If the inspector needs something (a gate code, a key, a contact) the job shows <b>Needs you</b>. Answer on the job page.</p><p>You can request a change (date, rush, instructions), add files, or cancel a job before the visit.</p>'],
+        ['reports', 'Reports', '<p>VIGN checks every report before you see it. When it is ready the job shows <b>Report ready</b>: the score, every checklist item, the photos, and a PDF to download. <span class="samp">The score formula is a sample for now.</span></p>'],
+        ['paying', 'Invoices and paying', '<p>On the <a href="invoices.html">Invoices</a> page you see what you owe, when it is due, what you paid and a receipt for each payment. Pay any amount from $1 by card.</p><p>Your card is charged automatically <b>only after you sign the auto-pay agreement</b> in <a href="documents.html">Documents</a> and add a card. <span class="samp">Plans and prices are samples.</span></p>'],
+        ['documents', 'Documents', '<p>Agreements and instructions from VIGN are in <a href="documents.html">Documents</a>, to read, sign and download. Only people at your company can see them.</p>'],
+        ['access', 'Colleagues and access', '<p>In <a href="account.html">Settings</a> (under your name, top right) you can add a colleague and choose whether they see all your company\'s jobs or only the ones they send.</p>'],
+        ['contact', 'Contact VIGN', '<p><b>' + V.esc(V.vign.name) + '</b><br>Phone: ' + V.esc(V.vign.phone) + '<br>Email: ' + V.esc(V.vign.email) + '</p>']
+    ];
+    V.$('#app').innerHTML = V.band('fa-circle-question', 'Help', 'How to use the VIGN client portal.') + '<div class="card2" style="margin-top:16px"><div class="card2-b help1"><h2>On this page</h2><ul class="toc1">' + S.map(function (s) { return '<li><a href="#' + s[0] + '">' + s[1] + '</a></li>'; }).join('') + '</ul>' +
+        S.map(function (s) { return '<h2 id="' + s[0] + '">' + s[1] + '</h2>' + s[2]; }).join('') + '</div></div>';
+    if (location.hash && V.$(location.hash)) V.$(location.hash).scrollIntoView();
+};
+</script>
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Home | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="home">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/command.php: what needs the client's attention, what is due soon, what happened on their jobs. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC;
+    var ready = V.jobs.filter(function (j) { return j.status === 'ready' && j.reviewed >= -7; }).sort(function (a, b) { return b.reviewed - a.reviewed; });
+    var needs = V.jobs.filter(V.needs), late = V.jobs.filter(function (j) { return V.late(j) && !V.needs(j); });
+    var owed = V.owed(), pastDue = V.invoices.filter(function (r) { return r.status === 'Past due'; }).reduce(function (t, r) { return t + r.bal; }, 0);
+    var nextInv = V.invoices.filter(function (r) { return r.billed == null; })[0];
+    var openJ = V.jobs.filter(function (j) { return V.open(j) && j.status !== 'checking'; });
+    var dueIn = function (a, b) { return openJ.filter(function (j) { return j.due >= a && j.due <= b; }).length; };
+
+    var li = function (j, line) { return '<li><a href="job.html?job=' + j.id + '">' + V.esc(j.addr) + '</a> · ' + j.id + '<small>' + line + '</small></li>'; };
+    var html = V.band('fa-house', 'Welcome back, ' + V.esc(V.me.first), V.esc(V.company.name) + ' · ' + V.jobs.filter(V.open).length + ' jobs open right now',
+        '<a class="bbtn" href="bulkupload.html"><i class="fa-solid fa-file-arrow-up"></i> Upload a spreadsheet</a><a class="bbtn solid" href="newjob.html"><i class="fa-solid fa-plus"></i> Request an inspection</a>');
+
+    var hide = false; try { hide = localStorage.getItem('vc-welcome') === '1'; } catch (e) {}
+    if (!hide) html += '<div class="welcome" id="welcome"><button class="x" aria-label="Hide" id="wx"><i class="fa-solid fa-xmark"></i></button><h2><i class="fa-solid fa-hand-sparkles"></i> Welcome to your VIGN portal</h2><ul>' +
+        '<li><b>Request an inspection on one screen.</b> Pick the service, type the address, choose how fast. <a href="help.html#sending">How</a></li>' +
+        '<li><b>This page shows what needs you.</b> Reports ready, jobs where the inspector needs something, and your balance.</li>' +
+        '<li><b>Every job has its own page.</b> The inspector, each visit, the photos and the report to download.</li></ul></div>';
+
+    html += '<h2 class="h2s">Needs your attention</h2><div class="attn">' +
+        V.card('<i class="fa-solid fa-file-circle-check"></i>Reports ready', 'last 7 days', ready.length ? '<ul>' + ready.slice(0, 4).map(function (j) { return li(j, 'Checked ' + V.ago(j.reviewed) + ' · score ' + V.score(j) + ' (sample)'); }).join('') + '</ul><p class="foot"><a href="jobs.html?status=ready">See all reports</a></p>' : '<p class="empty1">No new reports this week.</p>') +
+        V.card('<i class="fa-solid fa-circle-exclamation" style="color:var(--r)"></i>The inspector needs you', '', needs.length || late.length ? '<ul>' + needs.map(function (j) { return li(j, '<b style="color:var(--r)">' + V.esc(j.needs.text) + '</b>'); }).join('') + late.map(function (j) { return li(j, 'Past the due date. VIGN is on it.'); }).join('') + '</ul><p class="foot"><a href="jobs.html?status=needs">See them all</a></p>' : '<p class="empty1">Nothing needs you.</p>') +
+        V.card('<i class="fa-solid fa-file-invoice-dollar"></i>Balance due', '', '<div class="big' + (pastDue ? ' red' : '') + '">' + V.money(owed) + '</div><p class="empty1">' + (pastDue ? V.money(pastDue) + ' is past due.' : 'Nothing past due.') + (nextInv ? ' Next monthly bill: ' + V.day(nextInv.next) + ', automatic.' : ' Each job is billed when its report is ready.') + '</p><p class="foot">' + (owed ? '<a class="btn btn-primary btn-sm" href="invoices.html">Pay now</a> ' : '') + '<a href="invoices.html">Invoices</a></p>') +
+        '</div>';
+
+    html += '<h2 class="h2s">Inspections due</h2><div class="card2" style="margin-top:12px"><div class="card2-b"><div class="duetiles">' +
+        [['Late', -999, -1, true], ['Today', 0, 0], ['Next 7 days', 1, 7], ['Later', 8, 999]].map(function (t) { var n = dueIn(t[1], t[2]); return '<a href="jobs.html?due=' + t[0].toLowerCase().replace(/ /g, '') + '"' + (t[3] && n ? ' class="hot"' : '') + '><b>' + n + '</b><span>' + t[0] + '</span></a>'; }).join('') +
+        '</div></div></div>';
+
+    var ICON = { order: 'fa-inbox', needs: 'fa-circle-exclamation', checking: 'fa-list-check', message: 'fa-comment', assigned: 'fa-user-check', visit: 'fa-person-walking', paid: 'fa-money-bill-wave', ready: 'fa-circle-check', invoice: 'fa-file-invoice-dollar' };
+    // R-12 (Don): the client's stores ranked by grade, highest first, so they see their best stores (mystery-shop clients)
+    if (V.kind === 'shop') {
+        var st = {};
+        V.jobs.forEach(function (j) { var s = V.score(j); if (s == null) return; var k = j.addr; (st[k] = st[k] || { name: j.addr, city: j.city, sc: [], last: j }).sc.push(s); if (j.reviewed > st[k].last.reviewed) st[k].last = j; });
+        var rank = Object.keys(st).map(function (k) { var o = st[k]; o.avg = Math.round(o.sc.reduce(function (a, b) { return a + b; }, 0) / o.sc.length); return o; }).sort(function (a, b) { return b.avg - a.avg; });
+        html += '<div style="margin-top:16px">' + V.card('<i class="fa-solid fa-ranking-star"></i> Your stores, best first', '<span class="samp">sample formula</span>',
+            '<div class="tbl-wrap"><table class="tbl"><thead><tr><th>#</th><th>Store</th><th class="r">Shops</th><th class="r">Average score</th><th>Last report</th></tr></thead><tbody>' + rank.map(function (o, i) {
+                return '<tr><td><b>' + (i + 1) + '</b></td><td>' + V.esc(o.name) + '<small class="muted" style="display:block">' + V.esc(o.city) + '</small></td><td class="r">' + o.sc.length + '</td><td class="r"><span class="score rate ' + V.scoreCls(o.avg) + '">' + o.avg + '</span></td><td><a href="job.html?job=' + o.last.id + '#report">' + o.last.id + '</a></td></tr>';
+            }).join('') + '</tbody></table></div>', true) + '</div>';
+    }
+    html += '<div style="margin-top:16px">' + V.card('<i class="fa-solid fa-clock-rotate-left"></i> Recent activity', '<a href="activity.html">See all activity</a>', '<ul class="feed">' + V.activity.slice(0, 8).map(function (a) {
+        var href = /^INV/.test(a[3]) ? 'invoices.html' : 'job.html?job=' + a[3];
+        return '<li><span class="ic k-' + a[2] + '"><i class="fa-solid ' + ICON[a[2]] + '"></i></span><span>' + V.esc(a[4]) + ' · <a href="' + href + '">' + a[3] + '</a><small>' + V.ago(a[0]) + ', ' + a[1] + '</small></span></li>';
+    }).join('') + '</ul>', true) + '</div>';
+
+    V.$('#app').innerHTML = html;
+    var wx = V.$('#wx'); if (wx) wx.addEventListener('click', function () { V.$('#welcome').remove(); try { localStorage.setItem('vc-welcome', '1'); } catch (e) {} });
+};
+</script>
+</body>
+</html>

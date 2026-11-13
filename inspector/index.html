@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Inspector Sign In | VIGN USA</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="ps">
+<!-- SMK ps/index.php: process server sign in. VIGN: inspector / shopper sign in. -->
+<div class="login">
+    <aside class="login-side">
+        <a href="../index.html" class="brand brand-light"><span class="logo-chip"><img class="brand-full" src="../images/vign-logo-full.png" alt="VignUSA.com, Verity Insight Group Network" width="900" height="214"></span></a>
+        <div>
+            <h2>Inspector &amp; Shopper Portal</h2>
+            <ul>
+                <li><i class="fa-solid fa-briefcase"></i> See your assigned jobs and due dates</li>
+                <li><i class="fa-solid fa-clipboard-list"></i> Fill out inspection forms on site from your phone</li>
+                <li><i class="fa-solid fa-camera"></i> Add photos with time and GPS stamps</li>
+                <li><i class="fa-solid fa-sack-dollar"></i> Track commissions owed and payments received</li>
+            </ul>
+        </div>
+        <p class="small" style="color:rgba(255,255,255,.55);margin:0">© VIGN USA · Verity Insight Group Network</p>
+    </aside>
+    <main class="login-main">
+        <div class="login-box">
+            <h1>Inspector Sign In</h1>
+            <p class="muted">Enter your login details.</p>
+            <form class="form" id="loginForm" style="margin-top:18px" autocomplete="off">
+                <label>Username or email <input type="text" name="u" maxlength="150"></label>
+                <label>Password <input type="password" name="p" maxlength="200"></label>
+                <button type="submit" class="btn btn-primary btn-block">Login</button>
+            </form>
+            <p class="alert" style="margin-top:16px">Preview: you do not need a password. Click <b>Login</b> to open the sample portal.</p>
+            <p class="muted small center" style="margin-top:16px">Not a member yet? <a href="../join.html">Join the network free</a><br><a href="../login.html">← Back to sign in</a></p>
+        </div>
+    </main>
+</div>
+<script>
+// Preview only: nothing is checked or sent. Go straight to the dashboard.
+document.getElementById('loginForm').addEventListener('submit', function (e) { e.preventDefault(); try { sessionStorage.setItem('vign-role', 'inspector'); } catch (er) {} location.href = 'command.html'; });
+</script>
+</body>
+</html>

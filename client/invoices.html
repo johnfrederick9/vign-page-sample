@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Invoices | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="invoices">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/invoices.php: what the company owes (open invoices, pay any amount from $1), what it paid,
+   a receipt for each payment, a statement for each month. VIGN adds the customer's billing rules (R-09):
+   the billing plan, and auto-pay only with a signed agreement and a card on file. Click an invoice # to see its jobs. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC, tab = V.param('tab') || 'open';
+    function draw() {
+        V.prep();
+        var owed = V.owed(), late = V.invoices.filter(function (r) { return r.status === 'Past due'; }), next = V.invoices.filter(function (r) { return r.billed == null; })[0];
+        var autoDoc = V.documents.filter(function (d) { return /Auto-Pay/.test(d.name); })[0];
+        var autoOn = V.company.agree === 'Yes' && autoDoc && autoDoc.signed === 'Signed' && !!V.company.card;
+        var html = V.band('fa-file-invoice-dollar', 'Invoices', V.esc(V.company.name) + ' · billed ' + V.esc(V.company.plan.toLowerCase()), owed ? '<button class="bbtn solid" id="payall"><i class="fa-solid fa-credit-card"></i> Pay now</button>' : '');
+        html += '<div class="money3" style="margin-top:16px"><div' + (owed ? ' class="red"' : '') + '><span>You owe now</span><b>' + V.money(owed) + '</b><small>' + V.invoices.filter(function (r) { return r.billed != null && r.bal > 0; }).length + ' open invoice(s)</small></div>' +
+            '<div' + (late.length ? ' class="red"' : '') + '><span>Past due</span><b>' + V.money(late.reduce(function (t, r) { return t + r.bal; }, 0)) + '</b><small>' + (late.length ? late.length + ' invoice(s)' : 'Nothing past due') + '</small></div>' +
+            (next ? '<div><span>Next bill (automatic)</span><b>' + V.money(next.amount) + '</b><small>' + V.day(next.next) + ' · ' + V.esc(next.period) + '</small></div>' : '<div><span>How you are billed</span><b>Per job</b><small>' + V.money(V.company.rate) + ' a job, billed when the report is ready</small></div>') + '</div>';
+        html += '<div class="grid2"><div><div class="card2" style="margin:0"><div class="tabs2" role="tablist">' + [['open', 'Open invoices'], ['paid', 'Paid'], ['receipts', 'Payments and receipts'], ['statements', 'Monthly statements']].map(function (t) { return '<button role="tab" data-tab="' + t[0] + '"' + (t[0] === tab ? ' class="on" aria-selected="true"' : '') + '>' + t[1] + '</button>'; }).join('') + '</div><div id="tbl"></div></div></div><div>';
+        html += V.card('<i class="fa-solid fa-calendar-check"></i> Your billing plan', '<span class="samp">sample prices</span>', '<div class="plan1 small"><div><span class="muted">Plan</span><br><b>' + V.esc(V.company.plan) + '</b></div><div><span class="muted">Price</span><br><b>' + V.money(V.company.rate) + ' a job</b></div><div><span class="muted">How it works</span><br>All the month\'s jobs on one bill, sent at the end of the month</div><div><span class="muted">Pay within</span><br>' + V.company.terms + ' days</div></div>' +
+            '<p class="note1"><i class="fa-solid fa-circle-info"></i>Other plans VIGN offers: per job, monthly flat fee, yearly flat fee. Ask VIGN to change your plan. Prices are samples, not decided yet.</p>');
+        html += V.card('<i class="fa-solid fa-credit-card"></i> Automatic card payment', '', '<dl class="dl"><dt>Service agreement</dt><dd>' + V.pill(V.company.agree === 'Yes' ? 'Signed' : 'Not signed', V.company.agree === 'Yes' ? 'st-approved' : 'due-late') + '</dd>' +
+            '<dt>Auto-pay agreement</dt><dd>' + V.pill(autoDoc.signed === 'Signed' ? 'Signed' : 'Not signed yet', autoDoc.signed === 'Signed' ? 'st-approved' : 'due-today') + '</dd><dt>Card on file</dt><dd>' + V.esc(V.company.card || 'None') + '</dd><dt>Auto-pay</dt><dd>' + V.pill(autoOn ? 'On' : 'Off', autoOn ? 'st-approved' : 'due-later') + '</dd></dl>' +
+            (autoOn ? '<p class="note1"><i class="fa-solid fa-circle-check"></i>Each bill is charged to ' + V.esc(V.company.card) + ' on the day it is sent.</p>' :
+                '<p class="note1"><i class="fa-solid fa-lock"></i>Your card is charged automatically <b>only after you sign the auto-pay agreement</b> and add a card.</p><div class="acts1" style="margin-top:10px">' + (autoDoc.signed !== 'Signed' ? '<a class="btn btn-primary btn-sm" href="documents.html?sign=' + autoDoc.id + '"><i class="fa-solid fa-file-signature"></i> Sign the agreement</a>' : '') + (!V.company.card ? '<button class="btn btn-ghost btn-sm" id="card"><i class="fa-solid fa-plus"></i> Add a card</button>' : '') + '</div>'));
+        html += '</div></div>';
+        V.$('#app').innerHTML = html;
+
+        var el = V.$('#tbl'), lnk = function (r) { return '<a href="#" data-inv="' + r.id + '"><b>' + r.id + '</b></a>'; };
+        if (tab === 'open') V.table(el, { info: 'invoices', sortKey: 'due', rows: function () { return V.invoices.filter(function (r) { return r.billed == null || r.bal > 0; }); }, search: function (r) { return r.id + ' ' + r.period; }, cols: [
+            { k: 'id', label: 'Invoice', render: function (r) { return (r.billed == null ? '<b class="muted">Next bill</b>' : lnk(r)) + '<small class="muted" style="display:block">' + V.esc(r.period) + '</small>'; } },
+            { k: 'billed', label: 'Sent', render: function (r) { return r.billed == null ? '<span class="muted">' + V.day(r.next) + '</span><small class="muted" style="display:block">automatic</small>' : V.day(r.billed); } },
+            { k: 'due', label: 'Due', render: function (r) { return r.billed == null ? '' : V.day(r.due) + '<small style="display:block">' + V.pill(r.due < 0 ? (-r.due) + ' days late' : 'In ' + r.due + ' days', r.due < 0 ? 'due-late' : r.due <= 7 ? 'due-soon' : 'due-later') + '</small>'; } },
+            { k: 'amount', label: 'Amount', cls: 'r', render: function (r) { return V.money(r.amount); } }, { k: 'bal', label: 'Balance', cls: 'r', render: function (r) { return r.billed == null ? '<span class="muted">—</span>' : '<b>' + V.money(r.bal) + '</b>'; } },
+            { k: 'pay', label: '', sort: false, render: function (r) { return r.billed != null && r.bal > 0 ? '<button class="btn btn-primary btn-sm" data-pay="' + r.id + '">Pay</button>' : ''; } }] });
+        if (tab === 'paid') V.table(el, { info: 'invoices', sortKey: 'billed', sortDir: -1, rows: function () { return V.invoices.filter(function (r) { return r.billed != null && r.bal === 0; }); }, search: function (r) { return r.id + ' ' + r.period; }, cols: [
+            { k: 'id', label: 'Invoice', render: function (r) { return lnk(r) + '<small class="muted" style="display:block">' + V.esc(r.period) + '</small>'; } }, { k: 'billed', label: 'Sent', render: function (r) { return V.day(r.billed); } },
+            { k: 'paidOn', label: 'Paid', render: function (r) { return V.day(r.paidOn == null ? 0 : r.paidOn) + '<small class="muted" style="display:block">' + V.esc(r.how || 'Card') + '</small>'; } }, { k: 'amount', label: 'Amount', cls: 'r', render: function (r) { return V.money(r.amount); } }] });
+        if (tab === 'receipts') V.table(el, { info: 'payments', sortKey: 'on', sortDir: -1, rows: function () { return V.payments; }, search: function (p) { return p.id + ' ' + p.inv + ' ' + p.how; }, cols: [
+            { k: 'on', label: 'Date', render: function (p) { return V.day(p.on); } }, { k: 'inv', label: 'Invoice', render: function (p) { return V.esc(p.inv); } }, { k: 'how', label: 'How', render: function (p) { return V.esc(p.ref); } },
+            { k: 'amount', label: 'Amount', cls: 'r', render: function (p) { return V.money(p.amount); } }, { k: 'r', label: '', sort: false, render: function (p) { return '<button class="btn btn-ghost btn-sm" data-rcpt="' + p.id + '"><i class="fa-solid fa-receipt"></i> Receipt</button>'; } }] });
+        if (tab === 'statements') V.table(el, { info: 'statements', sortKey: 'i', rows: function () { return ['November 2026', 'October 2026', 'September 2026', 'August 2026', 'July 2026'].map(function (m, i) { return { i: i, m: m }; }); }, search: function (s) { return s.m; }, cols: [
+            { k: 'm', label: 'Month', sort: false, render: function (s) { return '<b>' + s.m + '</b>' + (s.i === 0 ? '<small class="muted" style="display:block">so far</small>' : ''); } }, { k: 'd', label: '', sort: false, render: function (s) { return '<button class="btn btn-ghost btn-sm" data-stmt="' + s.m + '"><i class="fa-regular fa-file-pdf"></i> Statement</button>'; } }] });
+    }
+    function autoDoc0() { return V.documents.filter(function (d) { return /Auto-Pay/.test(d.name); })[0]; }
+    draw();
+
+    V.$('#app').addEventListener('click', function (e) {
+        var t = e.target.closest('[data-tab]'); if (t) { tab = t.dataset.tab; history.replaceState(null, '', '?tab=' + tab); draw(); return; }
+        if (e.target.closest('#payall')) { V.pay(null, draw); return; }
+        var p = e.target.closest('[data-pay]'); if (p) { V.pay([p.dataset.pay], draw); return; }
+        if (e.target.closest('#card')) { V.modal('Add a card', '<p class="small" style="margin:0">You type your card on the payment service\'s own secure page, never on VIGN\'s. VIGN only keeps the last 4 digits.</p><p class="note1"><i class="fa-solid fa-circle-info"></i>Preview: the payment service is not chosen yet (Sir Rob), so this saves a sample card.</p>', '<button class="btn btn-primary btn-sm" data-ok>Add sample card</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { V.company.card = 'Visa •••• 0927'; V.save(); close(); draw(); V.toast(autoDoc0().signed === 'Signed' ? 'Sample card added. Auto-pay is on (preview only).' : 'Sample card added. Auto-pay stays off until the auto-pay agreement is signed.'); }); }); return; }
+        var r = e.target.closest('[data-rcpt]'); if (r) { var pm = V.payments.filter(function (x) { return x.id === r.dataset.rcpt; })[0]; V.download('Receipt ' + pm.id + ' (sample).txt', 'VIGN USA receipt (preview sample)\n\n' + pm.id + '\n' + V.company.name + '\nDate: ' + V.day(pm.on) + '\nInvoice: ' + pm.inv + '\nPaid: ' + V.money(pm.amount) + ' by ' + pm.ref + '\n'); return; }
+        var s = e.target.closest('[data-stmt]'); if (s) { V.toast('The ' + s.dataset.stmt + ' statement PDF would download here (preview only).'); return; }
+        var i = e.target.closest('[data-inv]'); if (i) {
+            e.preventDefault();
+            var inv = V.invoices.filter(function (x) { return x.id === i.dataset.inv; })[0], jobs = V.jobs.filter(function (j) { return j.inv === inv.id; });
+            V.modal('Invoice ' + inv.id, '<dl class="dl"><dt>For</dt><dd>' + V.esc(inv.period) + '</dd><dt>Sent</dt><dd>' + V.day(inv.billed) + '</dd><dt>Due</dt><dd>' + V.day(inv.due) + '</dd><dt>Amount</dt><dd>' + V.money(inv.amount) + '</dd><dt>Paid</dt><dd>' + V.money(inv.paid) + '</dd><dt>Balance</dt><dd>' + V.money(inv.bal) + '</dd></dl>' +
+                '<h4 style="margin:6px 0 0">Jobs on this invoice' + (jobs.length < 5 ? '' : '') + '</h4><p class="muted small" style="margin:0">Showing the ' + jobs.length + ' sample jobs in this preview.</p><div class="tbl-wrap"><table class="tbl"><thead><tr><th>Job</th><th>Address</th><th>Report</th><th class="r">Price</th></tr></thead><tbody>' +
+                jobs.map(function (j) { return '<tr><td><a href="job.html?job=' + j.id + '">' + j.id + '</a></td><td>' + V.esc(j.addr) + '</td><td>' + V.day(j.reviewed) + '</td><td class="r">' + V.money(j.price) + '</td></tr>'; }).join('') + '</tbody></table></div>',
+                (inv.bal > 0 ? '<button class="btn btn-primary btn-sm" data-ok>Pay ' + V.money(inv.bal) + '</button>' : '') + '<button class="btn btn-ghost btn-sm" data-dl><i class="fa-regular fa-file-pdf"></i> Download PDF</button>', function (m, close) {
+                    var ok = V.$('[data-ok]', m); if (ok) ok.addEventListener('click', function () { close(); V.pay([inv.id], draw); });
+                    V.$('[data-dl]', m).addEventListener('click', function () { V.toast('The invoice PDF would download here (preview only).'); });
+                }, true);
+        }
+    });
+};
+</script>
+</body>
+</html>

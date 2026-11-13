@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Commissions Owed | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="commissions">
+<main class="content" id="app"></main>
+<script>
+// SMK ps/commissions.php: Commissions Owed with a "Job Completed" period filter
+// (All Dates, Previous Day, Previous Week, Previous Month, Current Month, Month to Date, Quarter to Date, Year to Date)
+// and columns Job #, Recipient, Address, Manner, Date Completed, Amount.
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN, p = 'all';
+    function owed() { return V.jobs.filter(function (j) { return !j.paid && !V.isOpen(j); }); }
+    var html = V.band('fa-sack-dollar', 'Commissions Owed', 'Jobs you have sent in that are not paid yet. You are paid after the report is approved.',
+        '<a class="bbtn" href="payments.html"><i class="fa-solid fa-money-check-dollar"></i> Payments Received</a>');
+    var o = owed(), ok = o.filter(function (j) { return j.status === 'approved'; }), rv = o.filter(function (j) { return j.status !== 'approved'; });
+    var d = V.date(0), toFri = (5 - d.getDay() + 7) % 7 || 7;
+    html += '<div class="stats">' +
+        V.stat('blue', 'fa-sack-dollar', V.money(V.sum(o)), 'All Owed (' + o.length + ' jobs)') +
+        V.stat('green', 'fa-circle-check', V.money(V.sum(ok)), 'Approved, To Be Paid') +
+        V.stat('amber', 'fa-hourglass-half', V.money(V.sum(rv)), 'In Review / Needs Changes') +
+        V.stat('navy', 'fa-calendar', V.dayShort(toFri), 'Next Pay Date') + '</div>';
+    html += '<div class="card2" style="margin-top:18px"><div class="toolbar"><span class="small muted" style="font-weight:600">Job completed:</span><div class="tabs" id="per">' +
+        V.periods.map(function (x) { return '<button class="tab' + (x[0] === p ? ' on' : '') + '" data-p="' + x[0] + '">' + x[1] + '</button>'; }).join('') +
+        '</div></div><div id="t"></div></div>';
+    document.getElementById('app').innerHTML = html;
+
+    var t = V.table(document.getElementById('t'), {
+        rows: function () { return owed().filter(function (j) { return V.inPeriod(j.sent, p); }); },
+        sortKey: 'sent', sortDir: -1,
+        search: function (j) { return j.id + ' ' + j.addr + ' ' + j.client; },
+        cols: [
+            { k: 'id', label: 'Job #', render: function (j) { return '<a href="fulljobstatus.html?job=' + j.id + '"><b>' + j.id + '</b></a>'; } },
+            { k: 'client', label: 'Client', render: function (j) { return V.esc(j.client); } },
+            { k: 'addr', label: 'Address', render: function (j) { return V.esc(j.addr) + '<small>' + V.esc(j.city) + '</small>'; } },
+            { k: 'svc', label: 'Service', render: function (j) { return V.svc(j); } },
+            { k: 'sent', label: 'Date Completed', render: function (j) { return V.day(j.sent); } },
+            { k: 'status', label: 'Status', render: function (j) { return V.pill(j.status === 'approved' ? ['To be paid', 'st-field'] : V.status[j.status]); } },
+            { k: 'fee', label: 'Amount', cls: 'r', render: function (j) { return V.money(j.fee); } }
+        ],
+        foot: function (r) { return '<tr><td colspan="6" data-l="">Total (' + r.length + ' jobs)</td><td class="r" data-l="Total">' + V.money(V.sum(r)) + '</td></tr>'; }
+    });
+    V.$$('#per .tab').forEach(function (b) {
+        b.addEventListener('click', function () { p = b.dataset.p; V.$$('#per .tab').forEach(function (x) { x.classList.toggle('on', x === b); }); t.redraw(); });
+    });
+};
+</script>
+</body>
+</html>

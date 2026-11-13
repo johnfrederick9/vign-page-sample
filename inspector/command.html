@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Dashboard | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="command">
+<main class="content" id="app"></main>
+<script>
+// SMK ps/command.php: dashboard with stat cards (Open Jobs, Due In 5 Days, Awaiting Signature ...),
+// money cards (Owed, Owed Completed, Paid This Month) and Alerts.
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN, c = V.counts(), h = new Date().getHours();
+    var html = V.band('fa-gauge-high', 'Dashboard',
+        'Good ' + (h < 12 ? 'morning' : h < 18 ? 'afternoon' : 'evening') + ', ' + V.esc(V.me.name.split(' ')[0]) + ' · Compiled ' + new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+        '<a class="bbtn" href="uploadphoto.html"><i class="fa-solid fa-camera"></i> Upload Photo</a><a class="bbtn solid" href="openjobsdetail.html"><i class="fa-solid fa-briefcase"></i> My Open Jobs</a>');
+
+    if (c.offers.length) html += '<a class="offerbar" href="offers.html"><i class="fa-solid fa-bullhorn"></i><span><b>' + c.offers.length + ' new offer' + (c.offers.length > 1 ? 's' : '') + '</b> near you: ' + c.offers.map(function (o) { return V.esc(o.addr); }).join(', ') + '. First to accept gets it.</span><b class="go">Answer now <i class="fa-solid fa-arrow-right"></i></b></a>';
+    var rem = c.open.filter(function (j) { return V.reminder(j) != null && V.reminder(j) <= 0; });
+    if (rem.length) html += '<div class="rembar"><i class="fa-regular fa-envelope"></i><span><b>Reminder</b> (also sent to your email): ' + rem.map(function (j) { return '<a href="fulljobstatus.html?job=' + j.id + '">' + V.esc(j.addr) + '</a> is due ' + V.day(j.due) + ' (in ' + j.due + ' day' + (j.due === 1 ? '' : 's') + ')'; }).join(' · ') + '</span></div>';
+    html += '<div class="stats">' +
+        V.stat('blue', 'fa-briefcase', c.open.length, 'Open Jobs', 'openjobsdetail.html') +
+        V.stat('amber', 'fa-calendar-day', c.due5.length, 'Due In 5 Days', 'dueinsdaysdetail.html') +
+        V.stat('red', 'fa-triangle-exclamation', c.late.length, 'Overdue', 'openjobsdetail.html?f=late') +
+        V.stat('orange', 'fa-rotate-left', c.returned.length, 'Needs Changes', 'results.html?f=returned') +
+        V.stat('navy', 'fa-hourglass-half', c.review.length, 'Waiting For Review', 'results.html?f=submitted') +
+        '</div>';
+
+    html += '<div class="stats">' +
+        V.stat('blue', 'fa-sack-dollar', V.money(V.sum(c.open) + V.sum(c.review) + V.sum(c.returned) + V.sum(c.owed)), 'Owed (all jobs)', 'commissions.html') +
+        V.stat('green', 'fa-circle-check', V.money(V.sum(c.owed)), 'Owed (approved)', 'commissions.html') +
+        V.stat('amber', 'fa-clipboard-check', V.money(V.sum(c.review) + V.sum(c.returned)), 'Owed (in review)', 'commissions.html') +
+        V.stat('green', 'fa-money-bill-wave', V.money(V.sum(c.paid.filter(function (j) { return V.inPeriod(j.paid.date, 'cmonth'); }))), 'Paid This Month', 'payments.html') +
+        '</div>';
+
+    var today = c.today.concat(c.late).sort(function (a, b) { return a.due - b.due || a.mi - b.mi; });
+    html += '<div class="grid2"><div><div class="card2"><div class="card2-h"><h3><i class="fa-solid fa-route" style="color:var(--blue)"></i> Today\'s route</h3><span class="muted">' + today.length + ' stops · nearest first</span></div>' +
+        '<ul class="alerts">' + (today.length ? today.map(function (j) {
+            var d = V.due(j.due);
+            return '<li><span class="ic ' + (j.due < 0 ? 'red' : 'amber') + '"><i class="fa-solid ' + V.services[j.svc][1] + '"></i></span><span style="flex:1"><a href="fulljobstatus.html?job=' + j.id + '"><b>' + V.esc(j.addr) + '</b></a><small>' + V.esc(j.city) + ' · ' + V.esc(j.win) + ' · ' + j.mi + ' mi</small></span>' + V.pill(d) + '</li>';
+        }).join('') : '<li class="empty">No stops today.</li>') + '</ul></div></div>';
+
+    html += '<div><div class="card2" id="alerts"><div class="card2-h"><h3><i class="fa-regular fa-bell" style="color:var(--red)"></i> Alerts</h3><span class="muted" id="alertsNew">' + (V.alertsNew() ? V.alertsNew() + ' new' : 'All read') + '</span></div><ul class="alerts">' +
+        V.alerts.map(function (a) { return '<li><span class="ic ' + a[0] + '"><i class="fa-solid ' + a[1] + '"></i></span><span><a href="' + a[4] + '"><b>' + V.esc(a[2]) + '</b></a><small>' + V.esc(a[3]) + '</small></span></li>'; }).join('') + '</ul></div>' +
+        '<div class="card2"><div class="card2-h"><h3><i class="fa-solid fa-mobile-screen" style="color:var(--blue)"></i> Use it on your phone</h3></div><div class="card2-b small">Open this portal in your phone\'s browser and tap <b>Share → Add to Home Screen</b>. Forms, photos and signatures all work from the phone.</div></div></div></div>';
+
+    document.getElementById('app').innerHTML = html;
+};
+</script>
+</body>
+</html>

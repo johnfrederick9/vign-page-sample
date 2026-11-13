@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Settings | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="settings">
+<main class="content" id="app"></main>
+<script>
+// Inspector Settings (like SMK ps/settings): my details, where and what I work, how I get told, how I get paid, password.
+// Sample values; saved in this browser only. Bank details are NEVER typed here: the office changes them.
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN, KEY = 'vign-ins-settings';
+    var D = { name: V.me.name, email: 'maria.lopez@example.com', mobile: '(516) 555-0117', area: V.me.area, zip: '11550',
+        zips: '11550, 11553, 11530, 11590, 11520', miles: '25', svc: ['loan', 'property', 'collateral', 'mystery'], days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
+        n_offers: 'Text', n_due: 'Email', n_back: 'Both', n_pay: 'Email' };
+    var S = Object.assign({}, D, V.store(KEY) || {});
+    var e = V.esc;
+    function inp(k, label, type, extra) { return '<label class="fld">' + label + '<input type="' + (type || 'text') + '" name="' + k + '" value="' + e(S[k]) + '"' + (extra || '') + '></label>'; }
+    function how(k, label, sub) {
+        return '<div class="set-row"><span>' + label + '<small>' + sub + '</small></span><div class="chooser">' + ['Text', 'Email', 'Both', 'Off'].map(function (o) {
+            return '<label><input type="radio" name="' + k + '" value="' + o + '"' + (S[k] === o ? ' checked' : '') + '>' + o + '</label>'; }).join('') + '</div></div>';
+    }
+    var h = V.band('fa-gear', 'Settings', 'Your details, where you work, how we contact you and how you get paid.');
+    h += '<form id="sf" novalidate><div class="set-grid">';
+    // 1. my details
+    h += '<div class="card2"><div class="card2-h"><h3><i class="fa-solid fa-user" style="color:var(--blue)"></i> My details</h3><span class="muted">' + V.me.id + '</span></div><div class="card2-b">' +
+        inp('name', 'Full name', 'text', ' maxlength="80" required autocomplete="name"') +
+        '<div class="fld-row">' + inp('email', 'Email', 'email', ' maxlength="120" required autocomplete="email"') + inp('mobile', 'Mobile (for job texts)', 'tel', ' maxlength="20" autocomplete="tel"') + '</div>' +
+        '<div class="fld-row">' + inp('area', 'Home base (city, state)', 'text', ' maxlength="60"') + inp('zip', 'Home ZIP', 'text', ' maxlength="5" inputmode="numeric" pattern="\\d{5}"') + '</div></div></div>';
+    // 2. where and what I work
+    h += '<div class="card2"><div class="card2-h"><h3><i class="fa-solid fa-map-location-dot" style="color:var(--g)"></i> Where and what I work</h3></div><div class="card2-b">' +
+        '<label class="fld">ZIP codes I cover<textarea name="zips" rows="2" maxlength="400" placeholder="11550, 11553, ...">' + e(S.zips) + '</textarea></label>' +
+        '<label class="fld">How far I will drive<select name="miles">' + ['10', '25', '50', '75', '100'].map(function (m) { return '<option value="' + m + '"' + (S.miles === m ? ' selected' : '') + '>Up to ' + m + ' miles</option>'; }).join('') + '</select></label>' +
+        '<div class="fld">Work I do<div class="set-chk">' + Object.keys(V.services).map(function (k) { return '<label><input type="checkbox" name="svc" value="' + k + '"' + (S.svc.indexOf(k) > -1 ? ' checked' : '') + '><i class="fa-solid ' + V.services[k][1] + '"></i>' + e(V.services[k][0]) + '</label>'; }).join('') + '</div></div>' +
+        '<div class="fld">Days I am available<div class="set-chk">' + ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(function (d) { return '<label><input type="checkbox" name="days" value="' + d + '"' + (S.days.indexOf(d) > -1 ? ' checked' : '') + '>' + d + '</label>'; }).join('') + '</div></div>' +
+        '<p class="muted small" style="margin:12px 0 0">New offers only go to inspectors whose ZIP codes and work match the job.</p></div></div>';
+    // 3. notifications
+    h += '<div class="card2"><div class="card2-h"><h3><i class="fa-regular fa-bell" style="color:var(--red)"></i> How we tell you</h3></div><div class="card2-b">' +
+        how('n_offers', 'New offers near me', 'First to accept gets the job, so Text is fastest') +
+        how('n_due', 'Due date reminders', 'Day 5 after you accept, and the day before it is due') +
+        how('n_back', 'Report sent back', 'When the office needs a fix or a photo') +
+        how('n_pay', 'Payments', 'When your pay is sent') + '</div></div>';
+    // 4. getting paid + password
+    h += '<div class="card2"><div class="card2-h"><h3><i class="fa-solid fa-money-check-dollar" style="color:var(--g)"></i> Getting paid</h3></div><div class="card2-b">' +
+        '<div class="set-pay"><i class="fa-solid fa-building-columns"></i><span><b>Direct deposit</b> · account ending ••••4821<small class="muted" style="display:block">W-9 on file · 1099 sent each January (Documents)</small></span></div>' +
+        '<p class="muted small" style="margin:10px 0 0"><i class="fa-solid fa-lock"></i> To change your bank account, call the office at <a href="tel:' + V.me.tel + '">' + V.me.phone + '</a>. Bank numbers are never typed into the portal.</p>' +
+        '<h3 style="font-size:.95rem;margin:20px 0 0">Change password</h3>' +
+        '<label class="fld">Current password<input type="password" name="pw0" autocomplete="current-password"></label>' +
+        '<div class="fld-row"><label class="fld">New password<input type="password" name="pw1" autocomplete="new-password" minlength="10"></label><label class="fld">New password again<input type="password" name="pw2" autocomplete="new-password"></label></div>' +
+        '<p class="muted small" style="margin:8px 0 0">At least 10 characters.</p></div></div>';
+    h += '</div><div class="set-save"><a class="btn btn-ghost" href="command.html">Cancel</a><button class="btn btn-primary" type="submit"><i class="fa-solid fa-floppy-disk"></i> Save settings</button></div></form>';
+    V.$('#app').innerHTML = h;
+
+    V.$('#sf').addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var f = ev.target, fd = new FormData(f), o = {};
+        ['name', 'email', 'mobile', 'area', 'zip', 'zips', 'miles', 'n_offers', 'n_due', 'n_back', 'n_pay'].forEach(function (k) { o[k] = String(fd.get(k) || '').trim(); });
+        o.svc = fd.getAll('svc'); o.days = fd.getAll('days');
+        if (!o.name) { V.toast('Type your full name.'); f.name.focus(); return; }
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(o.email)) { V.toast('Type a valid email.'); f.email.focus(); return; }
+        if (o.zip && !/^\d{5}$/.test(o.zip)) { V.toast('Home ZIP is 5 numbers.'); f.zip.focus(); return; }
+        if (!o.svc.length) { V.toast('Pick at least one kind of work, or you will get no offers.'); return; }
+        var p0 = fd.get('pw0'), p1 = fd.get('pw1'), p2 = fd.get('pw2'), pwMsg = '';
+        if (p0 || p1 || p2) {
+            if (!p0) { V.toast('Type your current password.'); f.pw0.focus(); return; }
+            if (String(p1).length < 10) { V.toast('The new password needs at least 10 characters.'); f.pw1.focus(); return; }
+            if (p1 !== p2) { V.toast('The two new passwords do not match.'); f.pw2.focus(); return; }
+            pwMsg = ' Password change shown only (preview: passwords are never saved).';
+            f.pw0.value = f.pw1.value = f.pw2.value = '';
+        }
+        V.store(KEY, o); // never the passwords
+        V.me.name = o.name; V.me.area = o.area;
+        var b = V.$('.top-user b'), sm = V.$('.top-user small'); if (b) b.textContent = o.name; if (sm) sm.textContent = V.me.id + ' · ' + o.area;
+        V.toast('Settings saved (in this browser).' + pwMsg);
+    });
+};
+</script>
+</body>
+</html>

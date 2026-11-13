@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Due in 5 Days | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps" data-page="due5">
+<main class="content" id="app"></main>
+<script>
+var VIGN = window.VIGN = window.VIGN || {};
+// SMK ps/dueinsdaysdetail.php: jobs due within N days
+VIGN.init = function () {
+    var V = VIGN;
+    document.getElementById('app').innerHTML = V.band('fa-calendar-day', 'Due in 5 Days', 'Open jobs due from today through the next few days, soonest first.',
+        '<a class="bbtn" href="openjobsdetail.html"><i class="fa-solid fa-briefcase"></i> All Open Jobs</a>') +
+        '<div class="card2" style="margin-top:18px" id="t"></div>';
+    var sel = '<select class="tb-select" id="days"><option value="1">Today + tomorrow</option><option value="3">Next 3 days</option><option value="5" selected>Next 5 days</option><option value="7">Next 7 days</option></select>';
+    var t = V.jobTable(document.getElementById('t'), function () {
+        var d = +document.getElementById('days').value;
+        return V.jobs.filter(V.isOpen).filter(function (j) { return j.due >= 0 && j.due <= d; });
+    }, sel);
+    document.getElementById('days').addEventListener('change', t.redraw);
+};
+</script>
+</body>
+</html>

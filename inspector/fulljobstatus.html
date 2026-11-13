@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job Status | VIGN Inspector Portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+    <script src="assets/js/inspection.js" defer></script>
+</head>
+<body class="ps" data-page="openjobs">
+<main class="content" id="app"></main>
+<script>
+// SMK ps/fulljobstatus.php: job header, details, address, files, photos, status history (Date/Time, Event, Status, Server, Notes).
+// "New Inspection" opens the form modal (SMK: modalnewattempt.php).
+var VIGN = window.VIGN = window.VIGN || {};
+VIGN.init = function () {
+    var V = VIGN, j = V.job(V.param('job')) || V.jobs[0], f = V.forms[j.form], st = V.status[j.status], d = V.due(j.due);
+    var canWork = V.isOpen(j) || j.status === 'returned';
+    var startLabel = j.status === 'returned' ? 'Fix &amp; Resend' : j.status === 'in_field' ? 'Continue Inspection' : 'New Inspection';
+    var act = '<a class="bbtn" href="' + V.maps(j) + '" target="_blank" rel="noopener"><i class="fa-solid fa-diamond-turn-right"></i> Directions</a>' +
+        '<a class="bbtn" href="uploadphoto.html?job=' + j.id + '"><i class="fa-solid fa-camera"></i> Upload Photo</a>' +
+        (canWork ? '<button class="bbtn ' + (j.status === 'returned' ? 'red' : 'solid') + '" id="startBtn"><i class="fa-solid fa-clipboard-list"></i> ' + startLabel + '</button>' : '');
+    var html = V.band(V.services[j.svc][1], 'Job ' + j.id, V.esc(j.addr) + ', ' + V.esc(j.city) + ' &nbsp;' + V.pill(st), act);
+
+    html += '<div class="grid2"><div>';
+    if (j.status === 'returned') html += card('<span style="color:var(--r)"><i class="fa-solid fa-rotate-left"></i> Sent back by VIGN staff</span>', '', '<div class="note red">' + V.esc(j.returned) + '</div>');
+    if (j.notes) html += card('<i class="fa-solid fa-circle-info" style="color:var(--a)"></i> Client instructions', '', '<div class="note">' + V.esc(j.notes) + '</div>' + (j.contact ? '<p class="small" style="margin:10px 0 0">' + V.esc(j.contact) + '</p>' : ''));
+
+    html += card('Job details', '', '<dl class="dl">' +
+        dl('Job #', j.id) + dl('Client', V.esc(j.client)) + dl('Client ref', V.esc(j.ref)) + dl('Service', V.svc(j)) +
+        dl('Form', V.esc(f.title) + ' (' + f.items.length + ' items)') + dl('Access', V.esc(j.access)) +
+        (V.isOpen(j) ? dl('Due date', V.day(j.due) + ' ' + V.pill(d) + '<small class="muted" style="display:block">At most 10 days after you get the job</small>') + (V.reminder(j) != null ? dl('Reminder email', (V.reminder(j) <= 0 ? 'Sent ' : 'Goes out ') + V.day(V.reminder(j)) + ' (day 5)') : '') + dl('Time window', V.esc(j.win)) : dl('Sent in', V.day(j.sent))) +
+        (j.score != null ? dl('Score <span class="samp">sample</span>', '<span class="score rate ' + V.scoreCls(j.score) + '">' + j.score + ' / 100</span>') : '') +
+        dl('Your fee', V.money(j.fee) + (j.paid ? ' ' + V.pill(['Paid', 'st-paid']) : '')) + '</dl>');
+
+    html += card('Address', '', '<dl class="dl">' + dl('Address', V.esc(j.addr)) + dl('CSZ', V.esc(j.city)) + dl('County', V.esc(j.county)) + dl('Distance', j.mi + ' miles from your area') + '</dl>');
+
+    // Status history (SMK columns: Date/Time, Event, Status, Server, Notes)
+    var ev = [[j.assigned, '9:05 AM', 'Job created', 'New', 'VIGN dispatch', 'From client order'],
+              [j.assigned, '9:20 AM', 'Assigned', 'Assigned', 'VIGN dispatch', 'Assigned to ' + V.me.name],
+              [j.assigned, '10:02 AM', 'Accepted', 'Assigned', V.me.name, '']];
+    if (j.status === 'in_field') ev.push([0, '7:41 AM', 'Inspection started', 'In field', V.me.name, 'On site']);
+    if (j.sent != null) ev.push([j.sent, '4:12 PM', 'Report sent in', 'Submitted', V.me.name, (j.photos || 0) + ' photos']);
+    if (j.status === 'returned') ev.push([Math.min(0, j.sent + 1), '11:30 AM', 'Sent back', 'Needs changes', 'VIGN QA', 'Missing photo on item 7']);
+    if (j.done != null) ev.push([j.done, '2:15 PM', 'Approved', 'Delivered', 'VIGN QA', 'Report delivered to client']);
+    if (j.paid) ev.push([j.paid.date, '8:00 AM', 'Paid', 'Paid', 'VIGN billing', j.paid.check]);
+    html += '<div class="card2"><div class="card2-h"><h3>Status history</h3><span class="muted">' + ev.length + ' events</span></div><div class="tbl-wrap"><table class="tbl cards"><thead><tr><th>Date/Time</th><th>Event</th><th>Status</th><th>By</th><th>Notes</th></tr></thead><tbody>' +
+        ev.map(function (e) { return '<tr><td data-l="Date/Time">' + V.day(e[0]) + '<small>' + e[1] + '</small></td><td data-l="Event"><b>' + e[2] + '</b></td><td data-l="Status">' + e[3] + '</td><td data-l="By">' + V.esc(e[4]) + '</td><td data-l="Notes">' + V.esc(e[5]) + '</td></tr>'; }).join('') +
+        '</tbody></table></div></div>';
+    html += '</div><div>';
+
+    html += card('Files', 'From the client', '<ul class="files">' + (j.files || ['Inspection order.pdf']).map(function (n) {
+        return '<li><i class="fa-regular fa-file-pdf"></i><a href="#" onclick="return false">' + V.esc(n) + '</a></li>'; }).join('') + '</ul>');
+
+    var nph = j.photos || 0, ph = '';
+    for (var i = 0; i < Math.min(nph, 8); i++) ph += '<div class="ph"><i class="fa-regular fa-image fa-2x"></i><small>Item ' + (i + 1) + ' · ' + V.dayShort(j.sent) + '</small></div>';
+    html += card('Photos', nph + ' photos', nph ? '<div class="photos">' + ph + '</div>' : '<p class="muted small" style="margin:0">No photos yet. Photos you take during the inspection show up here.</p>');
+
+    html += '<div class="card2"><div class="card2-h"><h3>Rating legend</h3></div><div class="legend" style="border:0">' + V.ratings.map(function (r) {
+        var sm = r[0] === 'NO' || r[0] === 'NA'; return '<span><b class="rate ' + (sm ? 'r0' : 'r' + r[0]) + '">' + (sm ? r[1] : r[0]) + '</b>' + r[2] + '</span>'; }).join('') + '</div></div>';
+    html += '<div class="card2"><div class="card2-b small">Questions about this job? Call the office at <a href="tel:' + V.me.tel + '">' + V.me.phone + '</a>.</div></div>';
+    html += '</div></div>';
+
+    document.getElementById('app').innerHTML = html;
+    var b = document.getElementById('startBtn');
+    if (b) b.addEventListener('click', function () { V.openInspection(j); });
+    if (b && V.param('start')) V.openInspection(j);
+
+    function card(title, right, body) { return '<div class="card2"><div class="card2-h"><h3>' + title + '</h3>' + (right ? '<span class="muted">' + right + '</span>' : '') + '</div><div class="card2-b">' + body + '</div></div>'; }
+    function dl(k, v) { return '<dt>' + k + ' :</dt><dd>' + v + '</dd>'; }
+};
+</script>
+</body>
+</html>

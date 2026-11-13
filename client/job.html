@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Job | VIGN Client portal</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+    <link rel="stylesheet" href="assets/css/flow.css">
+    <link rel="stylesheet" href="assets/css/client.css">
+    <script src="../js/vign-forms.js" defer></script>
+    <script src="assets/js/data.js" defer></script>
+    <script src="assets/js/link.js" defer></script>
+</head>
+<body class="ps st" data-page="job">
+<main class="content" id="app"></main>
+<script>
+/* SMK requestor/case.php: one job on one page. Where it is (Received > Inspector assigned > Visit > Being checked > Report ready),
+   the inspector and each visit, the map, the photos and the report to download (only after VIGN checks it),
+   the invoice, and the message thread with VIGN. Actions: answer what the inspector needs, request a change, add files, cancel. */
+var VC = window.VC = window.VC || {};
+VC.init = function () {
+    var V = VC;
+    // a job just sent from "Request an inspection" (kept for this browser tab only)
+    try { var nj = JSON.parse(sessionStorage.getItem('vc-new') || 'null'); if (nj && !V.job(nj.id)) V.jobs.unshift(nj); } catch (e) {}
+    var j = V.job(V.param('job'));
+    if (!j) { V.$('#app').innerHTML = V.band('fa-briefcase', 'We couldn\'t open that job', 'It may have been typed wrong. <a href="jobs.html" style="color:#fff;text-decoration:underline">Go to Jobs</a>'); return; }
+    document.title = j.id + ' · ' + j.addr + ' | VIGN Client portal';
+
+    function draw() {
+        var s = V.STATUS[j.status], steps = ['received', 'scheduled', 'in_field', 'checking', 'ready'], at = steps.indexOf(j.status);
+        var thread = V.threads.filter(function (t) { return t.job === j.id; })[0];
+        var inv = j.inv && V.invoices.filter(function (r) { return r.id === j.inv; })[0];
+        var html = V.band(s[2], V.esc(j.addr) + ' <small style="font-weight:500;opacity:.75;font-size:.6em">' + j.id + '</small>', V.esc(j.city) + ' · ' + V.esc(j.ref) + ' · ' + V.esc(V.services[j.svc][0]),
+            '<a class="bbtn" href="jobs.html"><i class="fa-solid fa-arrow-left"></i> Jobs</a>' + (V.open(j) ? '<button class="bbtn" data-a="change"><i class="fa-solid fa-pen"></i> Request a change</button><button class="bbtn" data-a="files"><i class="fa-solid fa-paperclip"></i> Add files</button>' : '') +
+            (j.status === 'received' || j.status === 'scheduled' ? '<button class="bbtn red" data-a="cancel"><i class="fa-solid fa-ban"></i> Cancel job</button>' : '') +
+            (j.status === 'ready' ? '<button class="bbtn solid" data-a="pdf"><i class="fa-solid fa-download"></i> Download report (PDF)</button>' : ''));
+
+        if (V.needs(j)) html += '<div class="note1 red" style="margin-top:16px;font-size:.92rem"><i class="fa-solid fa-circle-exclamation"></i><b>The inspector needs you:</b> ' + V.esc(j.needs.text) + ' <button class="btn btn-primary btn-sm" data-a="answer" style="margin-left:8px">Answer</button></div>';
+
+        html += j.status === 'cancelled' ? '<div class="note1" style="margin-top:16px"><i class="fa-solid fa-ban"></i>' + V.esc(j.note || 'This job was cancelled.') + '</div>' :
+            '<div class="card2" style="margin-top:16px"><div class="card2-b"><ol class="track1">' + ['Received', V.STATUS.scheduled[0], 'Visit', 'Being checked', 'Report ready'].map(function (t, i) {
+                return '<li class="' + (i < at || j.status === 'ready' ? 'done' : i === at ? 'now' : '') + '"><span></span>' + t + '</li>'; }).join('') + '</ol><p class="muted small" style="margin:12px 0 0;text-align:center">' + V.esc(s[3]) + '</p></div></div>';
+
+        html += '<div class="grid2"><div>';
+        // report (locked until VIGN checks it)
+        if (j.status === 'ready') {
+            var items = V.forms[j.form][1], sc = V.score(j);
+            html += '<div id="report">' + V.card('<i class="fa-solid fa-file-circle-check"></i> Report: ' + V.esc(V.forms[j.form][0]), 'Checked by VIGN ' + V.day(j.reviewed),
+                '<div class="card2-b" style="display:flex;gap:18px;align-items:center;flex-wrap:wrap;border-bottom:1px solid var(--line)"><span class="score rate ' + V.scoreCls(sc) + '" style="font-size:1.5rem;padding:8px 16px">' + sc + '</span><span class="small">Score out of 100 <span class="samp">sample formula</span><br><span class="muted">1 Good = 100 · 2 Minor = 67 · 3 Repair = 33 · 4 Urgent = 0 · N/O and N/A not counted</span></span>' +
+                '<span class="small muted" style="margin-left:auto">' + j.photos + ' photos · taken ' + j.miles + ' miles from the address</span></div>' +
+                '<ul class="checklist">' + items.map(function (it, i) { var r = V.ratings[j.answers[i]]; return '<li><span class="rate ' + r[1] + '">' + r[0] + '</span><span>' + (i + 1) + '. ' + V.esc(it) + (j.findings[i] ? '<small>' + V.esc(j.findings[i]) + '</small>' : '') + '</span></li>'; }).join('') + '</ul>', true) + '</div>';
+            html += V.card('<i class="fa-regular fa-images"></i> Photos (' + j.photos + ')', '<a href="#" data-a="zip">Download all</a>', '<div class="photos">' + Array.apply(null, Array(j.photos)).map(function (x, i) { return '<div class="ph"><i class="fa-regular fa-image"></i><small>IMG_' + (4100 + i) + '</small></div>'; }).join('') + '</div>');
+        } else if (j.status !== 'cancelled') {
+            html += V.card('<i class="fa-solid fa-file-circle-check"></i> Report', '', '<div class="locked1"><i class="fa-solid fa-hourglass-half"></i>' + (j.status === 'checking' ? 'The inspector sent the report. VIGN checks every report before you see it, so it shows here when it is ready.' : 'The report shows here after the visit, once VIGN has checked it.') + '</div>');
+        }
+        html += '</div><div>';
+        // details
+        html += V.card('<i class="fa-solid fa-circle-info"></i> Job details', '', '<dl class="dl">' +
+            '<dt>Status</dt><dd>' + V.stPill(j) + '</dd><dt>Service</dt><dd>' + V.esc(V.services[j.svc][0]) + '</dd><dt>Form</dt><dd>' + V.esc(V.forms[j.form][0]) + '</dd>' +
+            '<dt>Your reference</dt><dd>' + V.esc(j.ref) + '</dd><dt>Ordered</dt><dd>' + V.day(j.created) + (j.from ? '<small class="muted" style="display:block;font-weight:400">' + V.esc(j.from) + '</small>' : '') + '</dd>' +
+            '<dt>Due</dt><dd>' + V.dueTxt(j) + '</dd><dt>Priority</dt><dd>' + V.esc(j.prio) + '</dd><dt>Access</dt><dd>' + V.esc(j.access) + '</dd>' + (j.contact ? '<dt>On-site contact</dt><dd>' + V.esc(j.contact) + '</dd>' : '') +
+            '<dt>Instructions</dt><dd style="font-weight:400">' + V.esc(j.notes) + '</dd></dl>');
+        html += V.card('<i class="fa-solid fa-user-shield"></i> ' + (V.kind === 'shop' ? 'Shopper' : 'Inspector') + ' and visits', '', j.ins ? '<dl class="dl"><dt>' + (V.kind === 'shop' ? 'Shopper' : 'Inspector') + '</dt><dd>' + V.esc(j.ins) + '</dd>' +
+            (j.visitOn != null ? '<dt>Visit planned</dt><dd>' + V.dayLong(j.visitOn) + '</dd>' : '') + '<dt>Visits so far</dt><dd>' + j.visits + '</dd>' + (j.sent != null ? '<dt>Report sent</dt><dd>' + V.day(j.sent) + '</dd>' : '') + '</dl>' +
+            '<div class="mapbox1" style="margin-top:12px"><div><i class="fa-solid fa-location-dot"></i>Map of the address and where the photos were taken<br><small>(shows on the live site)</small></div></div>' : '<p class="muted small" style="margin:0">VIGN is choosing ' + (V.kind === 'shop' ? 'a shopper' : 'an inspector') + ' near ' + V.esc(j.city) + '.</p>');
+        if (inv) html += V.card('<i class="fa-solid fa-file-invoice-dollar"></i> Invoice', '', '<dl class="dl"><dt>Invoice</dt><dd><a href="invoices.html">' + inv.id + '</a></dd><dt>For</dt><dd style="font-weight:400">' + V.esc(inv.period) + '</dd><dt>This job</dt><dd>' + V.money(j.price) + ' <span class="samp">sample price</span></dd><dt>Invoice status</dt><dd>' + V.esc((V.prep(), inv.status)) + '</dd></dl>');
+        else if (j.status !== 'cancelled') html += V.card('<i class="fa-solid fa-file-invoice-dollar"></i> Billing', '', '<p class="small" style="margin:0">On your <b>' + V.esc(V.company.plan) + '</b> plan this job goes on the monthly bill sent ' + V.day(V.invoices[0].next) + '. ' + V.money(j.price) + ' <span class="samp">sample price</span></p>');
+        html += V.card('<i class="fa-solid fa-paperclip"></i> Files', '', '<ul class="feed" style="margin:-8px -18px">' + (j.files || []).concat(['Order ' + j.id + '.pdf']).map(function (f) { return '<li><span class="ic k-order"><i class="fa-regular fa-file"></i></span><span>' + V.esc(f) + '<small>Added by you</small></span></li>'; }).join('') + '</ul>');
+        html += '</div></div>';
+        V.$('#app').innerHTML = html;
+    }
+    draw();
+    if (location.hash === '#report' && V.$('#report')) V.$('#report').scrollIntoView();
+
+    V.$('#app').addEventListener('click', function (e) {
+        var b = e.target.closest('[data-a]'); if (!b) return; e.preventDefault();
+        var a = b.dataset.a;
+        if (a === 'pdf') V.download(j.id + ' report (sample).txt', 'VIGN USA report (preview sample)\n\n' + j.id + ' · ' + j.addr + ', ' + j.city + '\nScore (sample formula): ' + V.score(j) + '\n\n' + V.forms[j.form][1].map(function (it, i) { return (i + 1) + '. ' + it + ': ' + V.ratings[j.answers[i]][0]; }).join('\n'));
+        if (a === 'zip') V.toast('All ' + j.photos + ' photos would download as one file (preview only).');
+        if (a === 'send') {
+            var t = V.$('#msg').value.trim(); if (!t) { V.toast('Write a message first.'); return; }
+            var th = V.threads.filter(function (x) { return x.job === j.id; })[0]; if (!th) { th = { job: j.id, unread: false, msgs: [] }; V.threads.unshift(th); }
+            th.msgs.push({ from: 'You', who: V.me.name, on: 0, at: 'now', text: t }); draw(); V.toast('Sent to VIGN (preview only).');
+        }
+        if (a === 'answer') V.modal('Answer the inspector', '<p class="small" style="margin:0">' + V.esc(j.needs.text) + '</p><label class="fld">Gate code, contact or what they should do<textarea id="ans"></textarea></label>', '<button class="btn btn-primary btn-sm" data-ok>Send</button>', function (m, close) {
+            V.$('[data-ok]', m).addEventListener('click', function () { var t = V.$('#ans', m).value.trim() || 'Answer sent'; var th = V.threads.filter(function (x) { return x.job === j.id; })[0]; if (!th) { th = { job: j.id, unread: false, msgs: [] }; V.threads.unshift(th); } th.msgs.push({ from: 'You', who: V.me.name, on: 0, at: 'now', text: t }); th.unread = false; V.save(); j.needs = null; close(); draw(); V.toast('Sent. The inspector can go back now (preview only).'); });
+        });
+        if (a === 'change') V.modal('Request a change', '<label class="fld">How fast<select id="sp"><option>Keep as it is</option><option>Make it a rush</option><option>It can wait (no rush)</option></select></label><label class="fld">New due date<input type="date" id="nd" value="' + V.iso(Math.max(j.due, 1)) + '"></label><label class="fld">Extra instructions for the inspector<textarea id="ex"></textarea></label><label class="fld">Something else<textarea></textarea></label>',
+            '<button class="btn btn-primary btn-sm" data-ok>Send request</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { if (V.$('#sp', m).value === 'Make it a rush') j.prio = 'Rush'; close(); draw(); V.toast('Change request sent to VIGN (preview only).'); }); });
+        if (a === 'files') V.modal('Add files', '<label class="fld">What is it?<select><option>Access letter / key info</option><option>Photo</option><option>Instructions</option><option>Other</option></select></label><label class="fld">File<input type="file" id="fl"></label><label class="fld">Note for VIGN<textarea></textarea></label>',
+            '<button class="btn btn-primary btn-sm" data-ok>Add</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { var fl = V.$('#fl', m).files[0]; j.files = (j.files || []).concat([fl ? fl.name : 'New file.pdf']); close(); draw(); V.toast('File added (preview only, not uploaded).'); }); });
+        if (a === 'cancel') V.modal('Cancel this job?', '<p style="margin:0">' + V.esc(j.addr) + ' · ' + j.id + '</p><label class="fld">Why (helps VIGN)<select><option>Loan paid off / no longer needed</option><option>Sent by mistake</option><option>Sent twice</option><option>Other</option></select></label><p class="note1"><i class="fa-solid fa-circle-info"></i>There is no charge for a job cancelled before the visit. <span class="samp">sample rule</span></p>',
+            '<button class="btn btn-primary btn-sm" data-ok style="background:var(--r);border-color:var(--r)">Cancel job</button>', function (m, close) { V.$('[data-ok]', m).addEventListener('click', function () { j.status = 'cancelled'; j.note = 'Cancelled by you ' + V.day(0) + '.'; close(); draw(); V.toast('Job cancelled (preview only).'); }); });
+    });
+};
+</script>
+</body>
+</html>

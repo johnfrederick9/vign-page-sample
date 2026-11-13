@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Client Sign In | VIGN USA</title>
+    <link rel="icon" href="../images/vign-mark-64.png" type="image/png">
+    <link rel="stylesheet" href="../vendors/fontawesome/css/all.min.css">
+    <link rel="stylesheet" href="../css/vign.css">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body class="ps">
+<!-- SMK requestor/index.php (client door): sign in, then Home (command.php).
+     VIGN is one company, so there is no agency code to type. -->
+<div class="login">
+    <aside class="login-side">
+        <a href="../index.html" class="brand brand-light"><span class="logo-chip"><img class="brand-full" src="../images/vign-logo-full.png" alt="VignUSA.com, Verity Insight Group Network" width="900" height="214"></span></a>
+        <div>
+            <h2>Client portal</h2>
+            <ul>
+                <li><i class="fa-solid fa-paper-plane"></i> Request inspections, one at a time or from a spreadsheet</li>
+                <li><i class="fa-solid fa-location-dot"></i> Follow every job: inspector, visit, report</li>
+                <li><i class="fa-solid fa-file-circle-check"></i> View and download checked reports with photos</li>
+                <li><i class="fa-solid fa-file-invoice-dollar"></i> See your invoices, pay, and download your agreements</li>
+            </ul>
+        </div>
+        <p class="small" style="color:rgba(255,255,255,.55);margin:0">© VIGN USA · Verity Insight Group Network</p>
+    </aside>
+    <main class="login-main">
+        <div class="login-box">
+            <h1>Client Sign In</h1>
+            <p class="muted">For companies that order inspections from VIGN.</p>
+            <form class="form" id="f" style="margin-top:18px" autocomplete="off">
+                <label>Email <input type="text" name="u" maxlength="150"></label>
+                <label>Password <input type="password" name="p" maxlength="200"></label>
+                <button type="submit" class="btn btn-primary btn-block">Sign In</button>
+            </form>
+            <p class="alert" style="margin-top:16px">Preview: no password needed. Pick a sample client:</p><div style="display:grid;gap:8px;margin-top:8px"><button type="button" class="btn btn-ghost btn-block" data-who="fh"><i class="fa-solid fa-house"></i> First Harbor Mortgage <small class="muted">(property and loan inspections)</small></button><button type="button" class="btn btn-ghost btn-block" data-who="bb"><i class="fa-solid fa-mug-hot"></i> Bright Brew Coffee Co. <small class="muted">(mystery shopping)</small></button></div>
+            <div style="margin-top:12px;padding:10px 12px;border-radius:10px;background:#f2f5fc;border:1px solid #dbe3f3;font-size:13px;line-height:1.5">
+                <b>Why two sample clients?</b> VIGN does two kinds of work:
+                <ul style="margin:6px 0 0;padding-left:18px">
+                    <li><b>First Harbor</b> (a lender): an inspector checks a house and takes photos.</li>
+                    <li><b>Bright Brew</b> (a coffee chain): a mystery shopper visits a store as a customer and grades it. It also sees its stores ranked best first.</li>
+                </ul>
+                <p style="margin:6px 0 0;color:#5b6478">Preview only. In the real system, each client signs in and sees only their own company.</p>
+            </div>
+            <p class="muted small center" style="margin-top:16px">Client accounts are made by VIGN. Need one? Call 516 924-0087.<br><a href="../login.html">← Back to sign in</a></p>
+        </div>
+    </main>
+</div>
+<script>
+/* Preview: pick which sample client to open. Kept for this browser tab only. */
+function go(who) { try { sessionStorage.setItem('vign-role', 'client'); } catch (er) {} try { sessionStorage.setItem('vc-who', who); sessionStorage.removeItem('vc-state'); sessionStorage.removeItem('vc-new'); } catch (e) {} var to = 'command.html'; try { var p = JSON.parse(localStorage.getItem('vign-client-settings-' + (who === 'bb' ? 1003 : 1001)) || 'null'); if (p && ['command.html', 'jobs.html', 'invoices.html'].indexOf(p.start) > -1) to = p.start; } catch (er) {} location.href = to; }
+document.getElementById('f').addEventListener('submit', function (e) { e.preventDefault(); go('fh'); });
+document.querySelectorAll('[data-who]').forEach(function (b) { b.addEventListener('click', function () { go(b.dataset.who); }); });
+</script>
+</body>
+</html>
