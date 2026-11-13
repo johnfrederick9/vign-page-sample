@@ -400,3 +400,11 @@ button.top-user:hover { background: var(--bg-soft); }
 .fld-l .muted { display: inline; font-weight: 400; }
 .acct-menu a.on { background: var(--bg-soft, #f5f7fb); }
 .acct-menu a.on i { color: var(--blue); }
+
+/* R-18 photos: no people WARNING (always shown) */
+.nopeople { display: flex; gap: 12px; align-items: flex-start; margin: 0 0 14px; padding: 12px 14px; border-radius: 10px; background: #fef2f2; border: 2px solid #dc2626; color: #991b1b; font-size: .9rem; line-height: 1.35; }
+.nopeople > i { font-size: 1.25rem; color: #dc2626; margin-top: 1px; }
+.nopeople b { display: block; font-weight: 800; letter-spacing: .01em; }
+.nopeople span { display: block; margin-top: 3px; font-weight: 500; }
+.nopeople.sm { margin: 8px 0 10px; padding: 9px 12px; font-size: .86rem; }
+.nopeople.sm > i { font-size: 1.05rem; }

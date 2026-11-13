@@ -60,7 +60,7 @@ V.openInspection = function (j) {
                 return '<button type="button" class="rt' + (sm ? ' sm' : '') + '" data-v="' + r[0] + '" role="radio" aria-checked="false"><b class="rate ' + (sm ? 'r0' : 'r' + r[0]) + '">' + (sm ? '–' : r[0]) + '</b><span>' + r[1] + '<small>' + r[2] + '</small></span></button>'; }).join('') +
             '</div><p class="urgent-box" data-urg hidden><i class="fa-solid fa-triangle-exclamation"></i> <b>Urgent.</b> The office is told as soon as you send this report. If anyone is in danger, call 911 first.</p>' +
             '<label class="fld">Findings <span class="req" data-nreq hidden>Write what you saw (needed for 3 or 4).</span><textarea data-note placeholder="What did you see? Observed facts only."></textarea></label>' +
-            '<div class="fld">Photos <span class="req" data-req hidden>A photo is required for a rating of 3 or 4.</span><div class="photo-row"><label class="btn btn-ghost btn-sm"><i class="fa-solid fa-camera"></i> Take photo<input type="file" accept="image/*" capture="environment" data-file></label><div class="thumbs" data-thumbs></div></div></div>' +
+            '<div class="fld">Photos <span class="req" data-req hidden>A photo is required for a rating of 3 or 4.</span>' + V.noPeople(true) + '<div class="photo-row"><label class="btn btn-ghost btn-sm"><i class="fa-solid fa-camera"></i> Take photo<input type="file" accept="image/*" capture="environment" data-file></label><div class="thumbs" data-thumbs></div></div></div>' +
             '<div class="nav2"><button type="button" class="btn btn-ghost" data-prev>Back</button><button type="button" class="btn btn-primary" data-next>' + (i === n - 1 ? 'Last questions →' : 'Next item →') + '</button></div></div></section>';
     });
 

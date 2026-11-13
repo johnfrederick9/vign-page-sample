@@ -236,6 +236,11 @@ V.shell = function () {
     q.addEventListener('keydown', function (e) { if (e.key === 'Enter' && q.value.trim()) location.href = 'flowjobs.html?q=' + encodeURIComponent(q.value.trim()); });
 };
 
+/* R-18 (Don 2026-11-13): permanent WARNING on every photo step. Always shown, no close button. */
+V.noPeople = function (small) {
+    return '<div class="nopeople' + (small ? ' sm' : '') + '" role="alert"><i class="fa-solid fa-triangle-exclamation"></i><div><b>WARNING: ' + "Do NOT add photos with people in them." + '</b>' +
+        (small ? '' : '<span>' + "If a photo the inspector sent shows a person, leave it out and ask the inspector for a new one." + '</span>') + '</div></div>';
+};
 V.band = function (icon, title, sub, actions) {
     return '<div class="band"><div><h1><i class="fa-solid ' + icon + '"></i>' + title + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' + (actions ? '<div class="band-actions">' + actions + '</div>' : '') + '</div>';
 };

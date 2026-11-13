@@ -140,6 +140,11 @@ V.shell = function () {
 };
 
 // Page header band: VIGN.band(icon, title, subtitle, actionsHtml)
+/* R-18 (Don 2026-11-13): permanent WARNING on every photo step. Always shown, no close button. */
+V.noPeople = function (small) {
+    return '<div class="nopeople' + (small ? ' sm' : '') + '" role="alert"><i class="fa-solid fa-triangle-exclamation"></i><div><b>WARNING: ' + "Do NOT take photos with people in them." + '</b>' +
+        (small ? '' : '<span>' + "If someone is in view, wait until they leave or take the photo from another angle. Photos with people in them are not accepted." + '</span>') + '</div></div>';
+};
 V.band = function (icon, title, sub, actions) {
     return '<div class="band"><div><h1><i class="fa-solid ' + icon + '"></i>' + V.esc(title) + '</h1>' + (sub ? '<p>' + sub + '</p>' : '') + '</div>' +
         (actions ? '<div class="band-actions">' + actions + '</div>' : '') + '</div>';

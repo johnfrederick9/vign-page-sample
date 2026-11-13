@@ -28,7 +28,7 @@ VIGN.init = function () {
         jobs.map(function (j) { return '<label><input type="checkbox" name="job" value="' + j.id + '"' + (j.id === pre ? ' checked' : '') + '><span><b>' + j.id + '</b> · ' + V.esc(j.addr) + '<small>' + V.esc(j.city) + ' · ' + V.status[j.status][0] + '</small></span></label>'; }).join('') +
         '</div></div></div>';
     html += '<div class="card2"><div class="card2-h stephead"><b>2</b><h3>Select checklist item</h3></div><div class="card2-b"><p class="muted small" id="s2help" style="margin:0 0 10px"></p><div class="pick" id="items"></div></div></div>';
-    html += '<div class="card2"><div class="card2-h stephead"><b>3</b><h3>Upload photo</h3></div><div class="card2-b">' +
+    html += '<div class="card2"><div class="card2-h stephead"><b>3</b><h3>Upload photo</h3></div><div class="card2-b">' + V.noPeople() +
         '<label class="drop"><i class="fa-solid fa-cloud-arrow-up"></i><b>Choose from files</b> or take a photo<input type="file" accept="image/*" multiple id="file"></label>' +
         '<div class="thumbs" id="thumbs" style="margin-top:10px"></div>' +
         '<div class="fld">Type<div class="chooser"><label><input type="radio" name="type" value="Finding" checked>Finding</label><label><input type="radio" name="type" value="General">General / exterior</label><label><input type="radio" name="type" value="Receipt">Receipt</label></div></div>' +
