@@ -129,7 +129,7 @@ V.gate = function () {
 V.shell = function (page) {
     var links = [['menu', 'index.html', 'fa-table-cells-large', 'Admin Menu']];
     document.body.insertAdjacentHTML('afterbegin',
-        '<header class="anav" id="anav"><div class="anav-in"><a class="anav-brand" href="index.html"><img src="../images/vign-logo.png" alt="VIGN USA"><span>Admin</span></a>' +
+        '<header class="anav" id="anav"><div class="anav-in"><a class="anav-brand" href="index.html"><img src="../images/vign-mark.png" alt="VignUSA.com"><span>Admin</span></a>' +
         '<button class="anav-burger" id="burger" aria-label="Menu"><i class="fa-solid fa-bars"></i></button>' +
         '<nav class="anav-links" aria-label="Admin menu">' + links.map(function (l) {
             return '<a href="' + l[1] + '"' + (l[0] === page ? ' class="on"' : '') + ' data-nav="' + l[0] + '"><i class="fa-solid ' + l[2] + '"></i>' + l[3] + (l[4] ? '<span class="cnt">' + l[4] + '</span>' : '') + '</a>';

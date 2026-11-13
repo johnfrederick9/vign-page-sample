@@ -764,3 +764,11 @@ a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible
 .pic-desc b { color: var(--ink); font-weight: 700; }
 .pic-desc b::after { content: " ·"; color: var(--ink-3); font-weight: 400; }
 .shop-card .pic-desc { margin-bottom: -8px; }
+
+/* ---------- Don's new logo (2026-11-13): full logo where there is room, V mark in small spots ---------- */
+.brand img.brand-full, .brand-stack img.brand-full { width: auto; height: 54px; max-width: 100%; border-radius: 0; }
+.logo-chip { display: inline-flex; align-items: center; background: #fff; padding: 10px 14px; border-radius: 12px; box-shadow: 0 4px 14px rgba(8, 16, 40, .18); }
+.logo-chip img.brand-full { height: 40px; }
+.auth-mobile-brand img.brand-full { height: 40px; }
+@media (max-width: 920px) { .brand-stack img.brand-full { height: 40px; } }
+@media (max-width: 560px) { .brand-stack img.brand-full { height: 34px; } .logo-chip img.brand-full { height: 34px; } }

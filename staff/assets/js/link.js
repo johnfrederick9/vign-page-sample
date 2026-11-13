@@ -121,7 +121,7 @@ V.shell = function () {
     var initials = V.me.name.split(' ').map(function (p) { return p[0]; }).join('');
     var waits = [['review', 'flowreview.html', 'fa-list-check', 'Review', review, true], ['chase', 'flowjobs.html?view=late', 'fa-person-running', 'Chase', chase, true]];
 
-    var hdr = '<header class="hdr"><a class="hdr-brand" href="command.html"><img src="../images/vign-logo.png" alt="VIGN USA"><span>Staff<br>Office</span></a>' +
+    var hdr = '<header class="hdr"><a class="hdr-brand" href="command.html"><img src="../images/vign-mark.png" alt="VignUSA.com"><span>Staff<br>Office</span></a>' +
         '<button class="top-burger" id="burger" aria-label="Open menu"><i class="fa-solid fa-bars"></i></button>' +
         '<div class="top-search"><i class="fa-solid fa-magnifying-glass"></i><input type="search" id="q" placeholder="Find a job, address, client..." autocomplete="off"><span class="kbd">Ctrl K</span><div class="top-results" id="qr"></div></div>' +
         // one bell for everything waiting on you: Review + Chase + Alerts (New job is on Home and Jobs)
